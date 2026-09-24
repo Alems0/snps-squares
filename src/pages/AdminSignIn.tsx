@@ -23,8 +23,6 @@ export default function AdminSignIn() {
       } else {
         setError('Invalid credentials or unauthorized email')
       }
-    } catch (err) {
-      setError('Authentication failed')
     } finally {
       setLoading(false)
     }

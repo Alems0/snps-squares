@@ -6,11 +6,11 @@ const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'stecher2789@gmail.com'
  * Sign in admin with email and password
  * Phase 1: Stub implementation - will use Supabase Auth in production
  */
-export async function signInAdmin(email: string, _password: string) {
+export async function signInAdmin(email: string) {
   // TODO: Replace with real Supabase auth
   // const { data, error } = await supabase.auth.signInWithPassword({
   //   email,
-  //   password: _password,
+  //   password,
   // })
   
   // Phase 1 stub: Check against allowlist

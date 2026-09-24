@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 
 interface Square {
   id: string
@@ -74,7 +74,7 @@ export default function Board() {
                 >
                   NFC
                 </div>
-                <div className="grid grid-cols-10 gap-1">
+                <div className="grid grid-cols-11 gap-1">
                   <div className="w-8 h-8"></div>
                   {nfcNumbers.map((num, i) => (
                     <div
@@ -88,45 +88,46 @@ export default function Board() {
               </div>
 
               {/* Grid with AFC numbers and squares */}
-              <div className="grid grid-cols-10 gap-1">
-                {Array.from({ length: 10 }, (_, row) => (
-                  <>
-                    {/* AFC number for this row */}
-                    <div
-                      key={`afc-${row}`}
-                      className="w-8 h-8 flex items-center justify-center font-bold text-sm bg-[var(--color-afc)] text-white rounded"
-                    >
-                      {afcNumbers[row]}
-                    </div>
-                    {/* Squares for this row */}
-                    {Array.from({ length: 10 }, (_, col) => {
-                      const index = row * 10 + col
-                      const square = squares[index]
-                      
-                      let bgColor = 'bg-white'
-                      if (square.claimed && square.paid) {
-                        bgColor = 'bg-[var(--color-success)]'
-                      } else if (square.claimed) {
-                        bgColor = 'bg-[var(--color-warning)]'
-                      }
+              <div className="grid grid-cols-11 gap-1">
+                {Array.from({ length: 10 }, (_, row) => {
+                  return (
+                    <React.Fragment key={`row-${row}`}>
+                      {/* AFC number for this row */}
+                      <div
+                        className="w-8 h-8 flex items-center justify-center font-bold text-sm bg-[var(--color-afc)] text-white rounded"
+                      >
+                        {afcNumbers[row]}
+                      </div>
+                      {/* Squares for this row */}
+                      {Array.from({ length: 10 }, (_, col) => {
+                        const index = row * 10 + col
+                        const square = squares[index]
+                        
+                        let bgColor = 'bg-white'
+                        if (square.claimed && square.paid) {
+                          bgColor = 'bg-[var(--color-success)]'
+                        } else if (square.claimed) {
+                          bgColor = 'bg-[var(--color-warning)]'
+                        }
 
-                      return (
-                        <button
-                          key={square.id}
-                          onClick={() => handleSquareClick(index)}
-                          className={`w-8 h-8 border-2 border-[var(--color-border)] rounded text-xs font-medium hover:border-[var(--color-primary)] transition-colors ${bgColor} ${
-                            square.claimed ? 'text-white' : 'text-[var(--color-text)]'
-                          }`}
-                          title={square.claimed ? `Claimed by ${square.claimedBy}` : 'Available'}
-                        >
-                          {square.claimed && square.claimedBy 
-                            ? square.claimedBy.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
-                            : ''}
-                        </button>
-                      )
-                    })}
-                  </>
-                ))}
+                        return (
+                          <button
+                            key={square.id}
+                            onClick={() => handleSquareClick(index)}
+                            className={`w-8 h-8 border-2 border-[var(--color-border)] rounded text-xs font-medium hover:border-[var(--color-primary)] transition-colors ${bgColor} ${
+                              square.claimed ? 'text-white' : 'text-[var(--color-text)]'
+                            }`}
+                            title={square.claimed ? `Claimed by ${square.claimedBy}` : 'Available'}
+                          >
+                            {square.claimed && square.claimedBy 
+                              ? square.claimedBy.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+                              : ''}
+                          </button>
+                        )
+                      })}
+                    </React.Fragment>
+                  )
+                })}
               </div>
             </div>
           </div>

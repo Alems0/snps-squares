@@ -1,13 +1,31 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
-// Phase 1: Stub client - will be configured with real credentials later
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
+// Phase 1: Lazy-create client to avoid crash when env vars are missing
+// In Phase 2, this will be called only after credentials are configured
+let supabaseClient: SupabaseClient | null = null
+
+function getSupabaseClient(): SupabaseClient {
+  if (!supabaseClient) {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Supabase credentials not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env')
+    }
+    supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    })
+  }
+  return supabaseClient
+}
+
+// Export a proxy that creates the client on first use
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    return getSupabaseClient()[prop as keyof SupabaseClient]
   },
 })
 
