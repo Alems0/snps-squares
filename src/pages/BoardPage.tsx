@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Board from '../components/Board'
-import { supabase } from '../lib/supabase'
+import { supabase, type Game } from '../lib/supabase'
 
 interface TopBuyer {
   name: string
@@ -12,7 +12,9 @@ interface TopBuyer {
 
 export default function BoardPage() {
   const [topBuyers, setTopBuyers] = useState<TopBuyer[]>([])
+  const [game, setGame] = useState<Game | null>(null)
   const [loading, setLoading] = useState(true)
+  const [prizePot, setPrizePot] = useState(0)
 
   useEffect(() => {
     fetchTopBuyers()
@@ -24,7 +26,7 @@ export default function BoardPage() {
 
       const { data: gameData, error: gameError } = await supabase
         .from('games')
-        .select('id, cost_per_square')
+        .select('*')
         .eq('status', 'active')
         .maybeSingle()
 
@@ -34,9 +36,11 @@ export default function BoardPage() {
         return
       }
 
+      setGame(gameData)
+
       const { data: squaresData, error: squaresError } = await supabase
         .from('squares')
-        .select('claimed_by_name, claimed_by_email')
+        .select('claimed_by_name, claimed_by_email, payment_status')
         .eq('game_id', gameData.id)
         .not('claimed_by_email', 'is', null)
 
@@ -45,6 +49,13 @@ export default function BoardPage() {
         setLoading(false)
         return
       }
+
+      // Calculate prize pot from paid squares only
+      const paidSquares = squaresData?.filter(s => s.payment_status === 'paid').length || 0
+      const totalRevenue = paidSquares * gameData.cost_per_square
+      const charityAmount = totalRevenue * (gameData.charity_percentage / 100)
+      const pot = totalRevenue - charityAmount
+      setPrizePot(pot)
 
       const buyerMap = new Map<string, { name: string; count: number }>()
       
@@ -94,7 +105,7 @@ export default function BoardPage() {
           <div className="flex items-center gap-4 sm:gap-8">
             <div className="text-right">
               <div className="text-xs uppercase tracking-wider opacity-90 font-semibold">Prize Pot</div>
-              <div className="text-2xl sm:text-3xl font-bold tracking-tight">$0</div>
+              <div className="text-2xl sm:text-3xl font-bold tracking-tight">${prizePot.toFixed(0)}</div>
             </div>
             <Link
               to="/admin"
@@ -117,18 +128,18 @@ export default function BoardPage() {
               </div>
               <div className="p-6">
                 <p className="text-sm text-[var(--color-text)] leading-relaxed mb-5 break-words">
-                  Each square costs $10. Numbers will be randomly assigned after all squares are filled. Winners are determined by the last digit of each team's score at the end of each quarter.
+                  Each square costs ${game?.cost_per_square || 10}. Numbers will be randomly assigned after all squares are filled. Winners are determined by the last digit of each team's score at the end of each quarter.
                 </p>
                 <div className="border-t border-gray-200 pt-5 space-y-4">
                   <div>
                     <div className="text-xs text-[var(--color-text-muted)] uppercase font-bold tracking-wider mb-2">
                       Cost per Square
                     </div>
-                    <div className="text-3xl font-bold text-[var(--color-primary)] tracking-tight">$10</div>
+                    <div className="text-3xl font-bold text-[var(--color-primary)] tracking-tight">${game?.cost_per_square || 10}</div>
                   </div>
                   <div>
                     <div className="text-xs text-[var(--color-text-muted)] uppercase font-bold tracking-wider mb-1">
-                      Charity Donation (10%)
+                      Charity Donation ({game?.charity_percentage || 0}%)
                     </div>
                     <div className="text-sm font-semibold text-[var(--color-secondary)]">Community Charity</div>
                   </div>

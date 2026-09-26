@@ -196,13 +196,13 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       {/* Selection Panel */}
       {selectedSquares.length > 0 && (
         <div className="bg-[var(--color-primary)] text-white rounded-xl shadow-lg mb-4 p-4">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="bg-white text-[var(--color-primary)] rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg">
+              <div className="bg-white text-[var(--color-primary)] rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0">
                 {selectedSquares.length}
               </div>
               <div>
-                <div className="font-bold">
+                <div className="font-bold text-base">
                   {selectedSquares.length} square{selectedSquares.length > 1 ? 's' : ''} selected
                 </div>
                 <div className="text-sm opacity-90">
@@ -210,16 +210,16 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                 </div>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
               <button
                 onClick={handleCancelSelection}
-                className="px-4 py-2 bg-white border-2 border-white text-[var(--color-primary)] rounded-lg font-semibold hover:shadow-lg transition-all"
+                className="flex-1 sm:flex-initial px-4 py-2 bg-white border-2 border-white text-[var(--color-primary)] rounded-lg font-semibold hover:shadow-lg transition-all"
               >
                 Clear
               </button>
               <button
                 onClick={handleProceedToClaim}
-                className="px-4 py-2 bg-white text-[var(--color-primary)] rounded-lg font-semibold hover:shadow-lg transition-all"
+                className="flex-1 sm:flex-initial px-4 py-2 bg-white text-[var(--color-primary)] rounded-lg font-semibold hover:shadow-lg transition-all"
               >
                 Claim Now
               </button>
@@ -230,12 +230,12 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
       {/* Board container */}
-      <div className="p-8">
-        <div className="flex gap-4">
+      <div className="p-4 md:p-8">
+        <div className="flex gap-2 md:gap-4">
           {/* Left AFC label (vertical) */}
           <div className="flex items-center justify-center">
             <div 
-              className="font-bold text-white text-base px-2 py-6 rounded-lg whitespace-nowrap bg-[var(--color-secondary)] shadow-md"
+              className="font-bold text-white text-sm md:text-base px-1.5 md:px-2 py-4 md:py-6 rounded-lg whitespace-nowrap bg-[var(--color-secondary)] shadow-md"
               style={{ 
                 writingMode: 'vertical-rl',
                 textOrientation: 'mixed'
@@ -246,22 +246,22 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
           </div>
 
           {/* Main grid with NFC header */}
-          <div className="flex-1">
+          <div className="flex-1 overflow-x-auto">
             {/* NFC header with numbers */}
-            <div className="mb-3">
+            <div className="mb-2 md:mb-3">
               <div 
-                className="font-bold text-white text-center py-2 rounded-lg mb-3 bg-[var(--color-primary)] shadow-md"
+                className="font-bold text-white text-center text-sm md:text-base py-1.5 md:py-2 rounded-lg mb-2 md:mb-3 bg-[var(--color-primary)] shadow-md"
               >
                 NFC
               </div>
-              <div className="grid grid-cols-11 gap-1.5">
+              <div className="grid grid-cols-11 gap-1 md:gap-1.5">
                 {/* Empty corner cell */}
-                <div className="w-10 h-10"></div>
+                <div className="w-8 h-8 md:w-10 md:h-10"></div>
                 {/* NFC numbers */}
                 {nfcNumbers.map((num, i) => (
                   <div
                     key={`nfc-${i}`}
-                    className="w-10 h-10 flex items-center justify-center font-bold text-sm bg-[#4a5568] text-white rounded shadow-sm"
+                    className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center font-bold text-xs md:text-sm bg-[var(--color-primary)] text-white rounded shadow-sm"
                   >
                     {num === -1 ? '?' : num}
                   </div>
@@ -270,13 +270,13 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
             </div>
 
             {/* Grid with AFC numbers and squares */}
-            <div className="grid grid-cols-11 gap-1.5">
+            <div className="grid grid-cols-11 gap-1 md:gap-1.5">
               {Array.from({ length: 10 }, (_, row) => {
                 return (
                   <React.Fragment key={`row-${row}`}>
                     {/* AFC number for this row */}
                     <div
-                      className="w-10 h-10 flex items-center justify-center font-bold text-sm bg-[var(--color-secondary)] text-white rounded shadow-sm"
+                      className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center font-bold text-xs md:text-sm bg-[var(--color-secondary)] text-white rounded shadow-sm"
                     >
                       {afcNumbers[row] === -1 ? '?' : afcNumbers[row]}
                     </div>
@@ -313,7 +313,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                           key={position}
                           onClick={() => handleSquareClick(position)}
                           disabled={isClaimed}
-                          className={`w-10 h-10 border-2 ${borderColor} rounded text-lg font-medium hover:border-[var(--color-primary)] hover:shadow-md transition-all ${bgColor} ${textColor} flex items-center justify-center ${cursorStyle} disabled:hover:border-gray-300 disabled:hover:shadow-none`}
+                          className={`w-8 h-8 md:w-10 md:h-10 border-2 ${borderColor} rounded text-sm md:text-lg font-medium hover:border-[var(--color-primary)] hover:shadow-md transition-all ${bgColor} ${textColor} flex items-center justify-center ${cursorStyle} disabled:hover:border-gray-300 disabled:hover:shadow-none`}
                           title={
                             isClaimed
                               ? `Claimed by ${square?.claimed_by_name}`
@@ -334,7 +334,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
         </div>
 
         {/* Legend */}
-        <div className="mt-6 flex justify-center gap-8 text-xs font-medium text-[var(--color-text-muted)]">
+        <div className="mt-4 md:mt-6 flex flex-wrap justify-center gap-4 md:gap-8 text-xs font-medium text-[var(--color-text-muted)]">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 border border-gray-300 bg-white flex items-center justify-center text-green-500 text-xs rounded shadow-sm">+</div>
             <span>Available</span>

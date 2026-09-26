@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { isAllowedAdmin, signOutAdmin } from '../lib/auth'
 import { useAuth } from '../lib/useAuth'
 import { supabase, type Square, type Game } from '../lib/supabase'
+import ConfigureGameModal from '../components/ConfigureGameModal'
 
 interface ClaimData extends Square {
   name: string
@@ -21,6 +22,7 @@ export default function AdminPanel() {
     revenue: 0,
     charity: 0
   })
+  const [showConfigureModal, setShowConfigureModal] = useState(false)
 
   useEffect(() => {
     if (loading) return
@@ -223,6 +225,114 @@ export default function AdminPanel() {
     }
   }
 
+  const handleRandomizeNumbers = async () => {
+    if (!game) {
+      alert('No active game found.')
+      return
+    }
+
+    if (game.numbers_locked) {
+      alert('Numbers are locked. Please unlock the board first.')
+      return
+    }
+
+    const hasNumbers = game.afc_numbers.some(n => n !== -1) || game.nfc_numbers.some(n => n !== -1)
+    if (hasNumbers) {
+      const confirmed = window.confirm(
+        'Numbers have already been set. Are you sure you want to randomize them again?'
+      )
+      if (!confirmed) return
+    }
+
+    try {
+      // Fisher-Yates shuffle
+      const shuffle = (array: number[]) => {
+        const arr = [...array]
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1))
+          ;[arr[i], arr[j]] = [arr[j], arr[i]]
+        }
+        return arr
+      }
+
+      const afcNumbers = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+      const nfcNumbers = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+      const { error } = await supabase
+        .from('games')
+        .update({
+          afc_numbers: afcNumbers,
+          nfc_numbers: nfcNumbers
+        })
+        .eq('id', game.id)
+
+      if (error) throw error
+
+      alert('Numbers randomized successfully!')
+      await fetchGameAndClaims()
+    } catch (err) {
+      console.error('Error randomizing numbers:', err)
+      alert('Failed to randomize numbers. Please try again.')
+    }
+  }
+
+  const handleLockBoard = async () => {
+    if (!game) {
+      alert('No active game found.')
+      return
+    }
+
+    const newLockState = !game.numbers_locked
+    const action = newLockState ? 'lock' : 'unlock'
+    const confirmed = window.confirm(
+      `Are you sure you want to ${action} the board?${newLockState ? ' Locked boards prevent number randomization.' : ''}`
+    )
+    if (!confirmed) return
+
+    try {
+      const { error } = await supabase
+        .from('games')
+        .update({ numbers_locked: newLockState })
+        .eq('id', game.id)
+
+      if (error) throw error
+
+      alert(`Board ${action}ed successfully!`)
+      await fetchGameAndClaims()
+    } catch (err) {
+      console.error(`Error ${action}ing board:`, err)
+      alert(`Failed to ${action} board. Please try again.`)
+    }
+  }
+
+  const handleConfigureGame = async (updates: {
+    cost_per_square: number
+    charity_percentage: number
+    q1_payout: number
+    q2_payout: number
+    q3_payout: number
+    final_payout: number
+    venmo_handle: string
+    join_password: string
+  }) => {
+    if (!game) throw new Error('No active game found')
+
+    try {
+      const { error } = await supabase
+        .from('games')
+        .update(updates)
+        .eq('id', game.id)
+
+      if (error) throw error
+
+      alert('Game configuration saved successfully!')
+      await fetchGameAndClaims()
+    } catch (err) {
+      console.error('Error saving game configuration:', err)
+      throw err
+    }
+  }
+
   const handleExportCSV = async () => {
     if (!game) {
       alert('No active game found')
@@ -309,114 +419,164 @@ export default function AdminPanel() {
       <main className="flex-1 container mx-auto max-w-7xl px-6 py-12">
         <h1 className="text-4xl font-bold mb-12">Admin Panel</h1>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-          <div className="bg-white rounded-xl shadow-md p-8">
-            <h3 className="text-lg font-bold mb-4 text-[var(--color-text-muted)] uppercase tracking-wide text-sm">Total Squares</h3>
-            <p className="text-4xl font-bold text-[var(--color-primary)] mb-4">100</p>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-sm font-bold mb-3 text-[var(--color-text-muted)] uppercase tracking-wide">Total Squares</h3>
+            <p className="text-4xl font-bold text-[var(--color-primary)] mb-3">100</p>
             <p className="text-sm text-[var(--color-text-muted)]">{stats.totalClaimed} claimed, {100 - stats.totalClaimed} available</p>
           </div>
-          <div className="bg-white rounded-xl shadow-md p-8">
-            <h3 className="text-lg font-bold mb-4 text-[var(--color-text-muted)] uppercase tracking-wide text-sm">Revenue</h3>
-            <p className="text-4xl font-bold text-[var(--color-success)] mb-4">${stats.revenue}</p>
-            <p className="text-sm text-[var(--color-text-muted)]">{stats.totalPaid} paid, {stats.totalPending} pending</p>
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-sm font-bold mb-3 text-[var(--color-text-muted)] uppercase tracking-wide">Revenue</h3>
+            <p className="text-4xl font-bold text-[var(--color-success)] mb-3">${stats.revenue}</p>
+            <p className="text-sm text-[var(--color-text-muted)]">Based on {stats.totalPaid} paid square{stats.totalPaid !== 1 ? 's' : ''}</p>
           </div>
-          <div className="bg-white rounded-xl shadow-md p-8">
-            <h3 className="text-lg font-bold mb-4 text-[var(--color-text-muted)] uppercase tracking-wide text-sm">Charity</h3>
-            <p className="text-4xl font-bold text-[var(--color-info)] mb-4">${stats.charity.toFixed(2)}</p>
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-sm font-bold mb-3 text-[var(--color-text-muted)] uppercase tracking-wide">Charity</h3>
+            <p className="text-4xl font-bold text-[var(--color-info)] mb-3">${stats.charity.toFixed(2)}</p>
             <p className="text-sm text-[var(--color-text-muted)]">{game?.charity_percentage || 0}% of revenue</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-sm font-bold mb-3 text-[var(--color-text-muted)] uppercase tracking-wide">Board Status</h3>
+            <div className="flex items-center gap-2 mb-3">
+              <div className={`w-4 h-4 rounded-full ${game?.numbers_locked ? 'bg-red-500' : 'bg-green-500'}`}></div>
+              <p className="text-lg font-bold text-[var(--color-text)]">{game?.numbers_locked ? 'Locked' : 'Open'}</p>
+            </div>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              {game?.numbers_locked ? 'Numbers cannot be changed' : 'Numbers can be randomized'}
+            </p>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-10 mb-16">
+        <div className="grid md:grid-cols-2 gap-8 mb-12">
           <section className="bg-white rounded-xl shadow-md p-8">
-            <h2 className="text-2xl font-bold mb-8">Game Settings</h2>
-            <div className="space-y-5">
-              <button className="w-full bg-[var(--color-primary)] text-white py-3.5 px-6 rounded-lg hover:opacity-90 transition-all font-semibold shadow-sm hover:shadow-md">
-                Start New Season
+            <h2 className="text-2xl font-bold mb-6 text-[var(--color-text)]">Game Settings</h2>
+            <div className="space-y-4">
+              <button 
+                onClick={() => setShowConfigureModal(true)}
+                disabled={!game}
+                className="w-full bg-[var(--color-primary)] text-white py-3 px-6 rounded-lg hover:opacity-90 transition-all font-semibold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Edit game cost, payouts, charity %, venmo handle, and join password"
+              >
+                ⚙️ Configure Game
               </button>
-              <button className="w-full bg-[var(--color-secondary)] text-white py-3.5 px-6 rounded-lg hover:opacity-90 transition-all font-semibold shadow-sm hover:shadow-md">
-                Randomize Numbers
+              <button 
+                onClick={handleRandomizeNumbers}
+                disabled={!game}
+                className="w-full bg-[var(--color-secondary)] text-white py-3 px-6 rounded-lg hover:opacity-90 transition-all font-semibold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Shuffle AFC and NFC axis numbers (0-9)"
+              >
+                🎲 Randomize Numbers
               </button>
-              <button className="w-full bg-[var(--color-warning)] text-white py-3.5 px-6 rounded-lg hover:opacity-90 transition-all font-semibold shadow-sm hover:shadow-md">
-                Lock Board
+              <button 
+                onClick={handleLockBoard}
+                disabled={!game}
+                className="w-full bg-[var(--color-warning)] text-white py-3 px-6 rounded-lg hover:opacity-90 transition-all font-semibold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                title={game?.numbers_locked ? 'Allow number randomization' : 'Prevent number changes'}
+              >
+                {game?.numbers_locked ? '🔓 Unlock Board' : '🔒 Lock Board'}
               </button>
-              <button className="w-full bg-[var(--color-info)] text-white py-3.5 px-6 rounded-lg hover:opacity-90 transition-all font-semibold shadow-sm hover:shadow-md">
-                Update Scores
+              <button 
+                disabled
+                className="w-full bg-gray-400 text-white py-3 px-6 rounded-lg transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Coming soon: Manual score entry for Q1-Final"
+              >
+                📊 Update Scores
               </button>
-              <button className="w-full bg-[var(--color-surface)] border-2 border-[var(--color-border)] py-3.5 px-6 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold">
-                Configure Payouts
+              <button 
+                disabled
+                className="w-full bg-gray-400 text-white py-3 px-6 rounded-lg transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Coming soon: Archive current game and create new season"
+              >
+                🔄 Start New Season
               </button>
-              <button className="w-full bg-[var(--color-surface)] border-2 border-[var(--color-border)] py-3.5 px-6 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold">
-                Update Venmo Handle
-              </button>
-              <button className="w-full bg-[var(--color-surface)] border-2 border-[var(--color-border)] py-3.5 px-6 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold">
-                Set Join Password
-              </button>
-              <div className="pt-3 border-t-2 border-gray-200">
+              <div className="pt-4 border-t-2 border-gray-200 mt-6">
                 <button 
                   onClick={handleResetBoard}
-                  className="w-full bg-red-600 text-white py-3.5 px-6 rounded-lg hover:bg-red-700 transition-all font-semibold shadow-sm hover:shadow-md"
+                  className="w-full bg-red-600 text-white py-3 px-6 rounded-lg hover:bg-red-700 transition-all font-semibold shadow-sm hover:shadow-md"
+                  title="Remove all claims from all squares (cannot be undone)"
                 >
-                  Reset Board
+                  ⚠️ Reset Board
                 </button>
               </div>
             </div>
           </section>
 
           <section className="bg-white rounded-xl shadow-md p-8">
-            <h2 className="text-2xl font-bold mb-8">Player Actions</h2>
-            <div className="space-y-5">
+            <h2 className="text-2xl font-bold mb-6 text-[var(--color-text)]">Actions</h2>
+            <div className="space-y-4">
               <button 
                 onClick={handleExportCSV}
                 disabled={!game}
-                className="w-full bg-[var(--color-surface)] border-2 border-[var(--color-border)] py-3.5 px-6 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[var(--color-surface)] border-2 border-[var(--color-border)] py-3 px-6 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Download CSV with all 100 squares and claim details"
               >
-                Export Roster CSV
+                📥 Export Roster CSV
               </button>
+            </div>
+            
+            {/* Info Section */}
+            <div className="mt-8 pt-8 border-t-2 border-gray-200">
+              <h3 className="text-sm font-bold mb-3 text-[var(--color-text-muted)] uppercase tracking-wide">Quick Stats</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-[var(--color-text-muted)]">Cost per square:</span>
+                  <span className="font-bold text-[var(--color-primary)]">${game?.cost_per_square || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[var(--color-text-muted)]">Charity %:</span>
+                  <span className="font-bold text-[var(--color-info)]">{game?.charity_percentage || 0}%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[var(--color-text-muted)]">Total payouts:</span>
+                  <span className="font-bold text-[var(--color-success)]">
+                    ${(game?.q1_payout || 0) + (game?.q2_payout || 0) + (game?.q3_payout || 0) + (game?.final_payout || 0)}
+                  </span>
+                </div>
+              </div>
             </div>
           </section>
         </div>
 
         <section className="bg-white rounded-xl shadow-md p-8">
-          <h2 className="text-2xl font-bold mb-8">Recent Claims</h2>
+          <h2 className="text-2xl font-bold mb-6">Recent Claims</h2>
           {claimsLoading ? (
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)]"></div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-8 px-8">
               <table className="w-full">
                 <thead>
                   <tr className="border-b-2 border-[var(--color-border)]">
-                    <th className="text-left py-5 px-6 font-bold text-sm uppercase tracking-wide text-[var(--color-text-muted)]">Name</th>
-                    <th className="text-left py-5 px-6 font-bold text-sm uppercase tracking-wide text-[var(--color-text-muted)]">Square</th>
-                    <th className="text-left py-5 px-6 font-bold text-sm uppercase tracking-wide text-[var(--color-text-muted)]">Email</th>
-                    <th className="text-left py-5 px-6 font-bold text-sm uppercase tracking-wide text-[var(--color-text-muted)]">Status</th>
-                    <th className="text-left py-5 px-6 font-bold text-sm uppercase tracking-wide text-[var(--color-text-muted)]">Payment Method</th>
-                    <th className="text-left py-5 px-6 font-bold text-sm uppercase tracking-wide text-[var(--color-text-muted)]">Actions</th>
+                    <th className="text-left py-4 px-4 font-bold text-xs uppercase tracking-wider text-[var(--color-text-muted)]">Name</th>
+                    <th className="text-left py-4 px-4 font-bold text-xs uppercase tracking-wider text-[var(--color-text-muted)]">Square</th>
+                    <th className="text-left py-4 px-4 font-bold text-xs uppercase tracking-wider text-[var(--color-text-muted)]">Email</th>
+                    <th className="text-left py-4 px-4 font-bold text-xs uppercase tracking-wider text-[var(--color-text-muted)]">Status</th>
+                    <th className="text-left py-4 px-4 font-bold text-xs uppercase tracking-wider text-[var(--color-text-muted)]">Payment</th>
+                    <th className="text-left py-4 px-4 font-bold text-xs uppercase tracking-wider text-[var(--color-text-muted)]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {claims.length === 0 ? (
                     <tr>
-                      <td className="py-10 px-6 text-center" colSpan={6}>
+                      <td className="py-12 px-4 text-center" colSpan={6}>
                         <p className="text-[var(--color-text-muted)] font-medium">No claims yet</p>
                       </td>
                     </tr>
                   ) : (
                     claims.map((claim) => (
                       <tr key={claim.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                        <td className="py-5 px-6 font-medium">{claim.name}</td>
-                        <td className="py-5 px-6">
-                          <span className="inline-flex items-center justify-center bg-[var(--color-primary)] text-white font-bold text-sm px-3 py-1 rounded">
+                        <td className="py-4 px-4 font-medium text-[var(--color-text)]">{claim.name}</td>
+                        <td className="py-4 px-4">
+                          <span className="inline-flex items-center justify-center bg-[var(--color-primary)] text-white font-bold text-sm px-3 py-1 rounded shadow-sm">
                             #{claim.position}
                           </span>
                         </td>
-                        <td className="py-5 px-6 text-sm text-[var(--color-text-muted)]">
+                        <td className="py-4 px-4 text-sm text-[var(--color-text-muted)]">
                           {claim.claimed_by_email || 'N/A'}
                         </td>
-                        <td className="py-5 px-6">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                        <td className="py-4 px-4">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
                             claim.payment_status === 'paid' 
                               ? 'bg-green-100 text-green-800' 
                               : claim.payment_status === 'unpaid'
@@ -426,28 +586,28 @@ export default function AdminPanel() {
                             {claim.payment_status}
                           </span>
                         </td>
-                        <td className="py-5 px-6">
+                        <td className="py-4 px-4">
                           {claim.payment_method ? (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 capitalize">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 capitalize shadow-sm">
                               {claim.payment_method}
                             </span>
                           ) : (
                             <span className="text-[var(--color-text-muted)] text-sm">—</span>
                           )}
                         </td>
-                        <td className="py-5 px-6">
+                        <td className="py-4 px-4">
                           <div className="flex gap-2">
                             {claim.payment_status !== 'paid' && (
                               <>
                                 <button
                                   onClick={() => handleMarkPaid(claim.id)}
-                                  className="px-4 py-2 bg-[var(--color-success)] text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all"
+                                  className="px-3 py-1.5 bg-[var(--color-success)] text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all shadow-sm"
                                 >
                                   Mark Paid
                                 </button>
                                 <button
                                   onClick={() => handleRemoveClaim(claim)}
-                                  className="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-all"
+                                  className="px-3 py-1.5 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-all shadow-sm"
                                 >
                                   Remove
                                 </button>
@@ -467,6 +627,15 @@ export default function AdminPanel() {
           )}
         </section>
       </main>
+
+      {/* Configure Game Modal */}
+      {showConfigureModal && game && (
+        <ConfigureGameModal
+          game={game}
+          onClose={() => setShowConfigureModal(false)}
+          onSave={handleConfigureGame}
+        />
+      )}
     </div>
   )
 }
