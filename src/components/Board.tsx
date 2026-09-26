@@ -213,7 +213,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
             <div className="flex gap-2">
               <button
                 onClick={handleCancelSelection}
-                className="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg font-semibold transition-all"
+                className="px-4 py-2 bg-white border-2 border-white text-[var(--color-primary)] rounded-lg font-semibold hover:shadow-lg transition-all"
               >
                 Clear
               </button>
