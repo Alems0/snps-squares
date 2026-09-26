@@ -56,10 +56,10 @@ export default function AdminPanel() {
           <div className="flex items-center gap-6">
             <span className="text-sm opacity-90">{user.email}</span>
             <nav className="flex items-center gap-4">
-              <Link to="/board" className="px-4 py-2 rounded-lg bg-white bg-opacity-10 hover:bg-opacity-20 transition-all font-medium">View Board</Link>
+              <Link to="/board" className="px-4 py-2 rounded-lg bg-white text-[var(--color-primary)] border-2 border-white hover:bg-[var(--color-surface)] transition-all font-semibold shadow-sm">View Board</Link>
               <button 
                 onClick={handleSignOut}
-                className="px-4 py-2 rounded-lg bg-white bg-opacity-10 hover:bg-opacity-20 transition-all font-medium"
+                className="px-4 py-2 rounded-lg bg-[var(--color-secondary)] text-white border-2 border-[var(--color-secondary)] hover:bg-opacity-90 transition-all font-semibold shadow-sm"
               >
                 Sign Out
               </button>
