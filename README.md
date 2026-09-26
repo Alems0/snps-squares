@@ -109,9 +109,9 @@ npm run preview
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `VITE_SUPABASE_URL` | Supabase project URL | Yes (production) |
-| `VITE_SUPABASE_ANON_KEY` | Supabase anon key | Yes (production) |
-| `VITE_ADMIN_EMAIL` | Admin email allowlist | Yes |
+| `VITE_SUPABASE_URL` | Supabase project URL | Yes |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon key | Yes |
+| `VITE_ADMIN_EMAIL` | Admin email allowlist (Google OAuth) | Yes |
 
 ## Project Structure
 
@@ -140,13 +140,23 @@ snps-squares/
 
 ## Admin Access
 
-Admin email is configured via `VITE_ADMIN_EMAIL` (defaults to `stecher2789@gmail.com`).
+Admin access is controlled via Google OAuth through Supabase Auth. Only the email specified in `VITE_ADMIN_EMAIL` (defaults to `stecher2789@gmail.com`) can access the admin panel.
 
-**Phase 1 Note**: Authentication is currently stubbed. In production, this will use Supabase Auth with the admin email allowlist enforced at the database level via the `admins` table.
+**Authentication Flow:**
+1. Navigate to `/admin`
+2. Click "Sign in with Google"
+3. Authenticate with your Google account
+4. If your email matches `VITE_ADMIN_EMAIL`, you'll be granted admin access
+5. If your email doesn't match, you'll be signed out and shown an access denied message
+
+**Configuration:**
+- The Google OAuth provider must be enabled in your Supabase project (Auth > Providers > Google)
+- Site URL and redirect URLs must be configured in Supabase Auth settings
+- `VITE_ADMIN_EMAIL` environment variable controls the admin allowlist
 
 To access the admin panel:
 1. Navigate to `/admin`
-2. Sign in with the admin email
+2. Sign in with Google using the authorized admin email
 3. Manage games, squares, scores, and settings
 
 ## Tailwind CSS v4
@@ -190,7 +200,9 @@ Key tables:
 - ✅ Supabase client stub
 - ✅ Database schema draft
 
-### Phase 2 (Next)
+### Phase 2 (Current)
+- ✅ Google OAuth authentication via Supabase
+- ✅ Admin email allowlist enforcement
 - Square claiming flow (modal, validation)
 - Payment tracking (Venmo handle display, mark as paid)
 - Number randomization + lock

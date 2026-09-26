@@ -1,47 +1,55 @@
-// import { supabase } from './supabase'
+import { supabase } from './supabase'
+import type { User } from '@supabase/supabase-js'
 
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'stecher2789@gmail.com'
+const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || 'stecher2789@gmail.com').toLowerCase()
 
 /**
- * Sign in admin with email and password
- * Phase 1: Stub implementation - will use Supabase Auth in production
+ * Sign in admin with Google OAuth
  */
-export async function signInAdmin(email: string) {
-  // TODO: Replace with real Supabase auth
-  // const { data, error } = await supabase.auth.signInWithPassword({
-  //   email,
-  //   password,
-  // })
+export async function signInWithGoogle() {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/admin`,
+    },
+  })
   
-  // Phase 1 stub: Check against allowlist
-  if (email !== ADMIN_EMAIL) {
-    throw new Error('Unauthorized: Email not in admin allowlist')
+  if (error) {
+    throw error
   }
   
-  // In production, this will be handled by Supabase Auth
-  return {
-    user: { email },
-    session: null,
-  }
+  return data
 }
 
 /**
  * Sign out current admin
  */
 export async function signOutAdmin() {
-  // TODO: Replace with real Supabase auth
-  // const { error } = await supabase.auth.signOut()
-  return { error: null }
+  const { error } = await supabase.auth.signOut()
+  if (error) {
+    throw error
+  }
 }
 
 /**
  * Get current admin session
  */
-export async function getCurrentAdmin(): Promise<{ user?: { email: string } } | null> {
-  // TODO: Replace with real Supabase auth
-  // const { data: { session } } = await supabase.auth.getSession()
-  // return session
-  return null
+export async function getCurrentSession() {
+  const { data: { session }, error } = await supabase.auth.getSession()
+  
+  if (error) {
+    throw error
+  }
+  
+  return session
+}
+
+/**
+ * Get current user
+ */
+export async function getCurrentUser(): Promise<User | null> {
+  const session = await getCurrentSession()
+  return session?.user || null
 }
 
 /**
@@ -49,19 +57,18 @@ export async function getCurrentAdmin(): Promise<{ user?: { email: string } } | 
  */
 export async function isAdmin(email?: string): Promise<boolean> {
   if (!email) {
-    const session = await getCurrentAdmin()
-    email = session?.user?.email
+    const user = await getCurrentUser()
+    email = user?.email
   }
   
   if (!email) return false
   
-  // TODO: In production, check against admins table in Supabase
-  // const { data, error } = await supabase
-  //   .from('admins')
-  //   .select('id')
-  //   .eq('email', email)
-  //   .single()
-  // return !!data && !error
-  
-  return email === ADMIN_EMAIL
+  return email.toLowerCase() === ADMIN_EMAIL
+}
+
+/**
+ * Check if user email is allowed admin (case-insensitive)
+ */
+export function isAllowedAdmin(email: string): boolean {
+  return email.toLowerCase() === ADMIN_EMAIL
 }

@@ -1,16 +1,67 @@
-import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { isAllowedAdmin, signOutAdmin } from '../lib/auth'
+import { useAuth } from '../lib/useAuth'
 
 export default function AdminPanel() {
-  // TODO: Add auth check - redirect if not authenticated
+  const navigate = useNavigate()
+  const { user, loading } = useAuth()
+
+  useEffect(() => {
+    if (loading) return
+
+    if (!user?.email) {
+      navigate('/admin')
+      return
+    }
+
+    if (!isAllowedAdmin(user.email)) {
+      signOutAdmin().then(() => {
+        navigate('/admin')
+      }).catch(() => {
+        navigate('/admin')
+      })
+    }
+  }, [user, loading, navigate])
+
+  const handleSignOut = async () => {
+    try {
+      await signOutAdmin()
+      navigate('/admin')
+    } catch (err) {
+      console.error('Error signing out:', err)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface)]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)] mx-auto"></div>
+          <p className="mt-4 text-[var(--color-text-muted)]">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
   
   return (
     <div className="min-h-screen flex flex-col bg-[var(--color-surface)]">
       <header className="bg-[var(--color-primary)] text-white py-4 px-4">
         <div className="container mx-auto max-w-7xl flex justify-between items-center">
           <Link to="/" className="text-2xl font-bold">SNPS Admin</Link>
-          <nav className="flex gap-4">
+          <nav className="flex gap-4 items-center">
+            <span className="text-sm opacity-80">{user.email}</span>
             <Link to="/board" className="hover:opacity-80 transition-opacity">View Board</Link>
-            <button className="hover:opacity-80 transition-opacity">Sign Out</button>
+            <button 
+              onClick={handleSignOut}
+              className="hover:opacity-80 transition-opacity"
+            >
+              Sign Out
+            </button>
           </nav>
         </div>
       </header>
