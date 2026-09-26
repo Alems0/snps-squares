@@ -4,6 +4,7 @@ import { isAllowedAdmin, signOutAdmin } from '../lib/auth'
 import { useAuth } from '../lib/useAuth'
 import { supabase, type Square, type Game } from '../lib/supabase'
 import ConfigureGameModal from '../components/ConfigureGameModal'
+import { formatVenmoHandle } from '../lib/formatVenmo'
 
 interface ClaimData extends Square {
   name: string
@@ -520,7 +521,7 @@ export default function AdminPanel() {
               </div>
               <div className="flex justify-between items-center py-2 border-b border-[var(--color-border-light)]">
                 <span className="text-sm text-[var(--color-text-muted)]">Venmo handle</span>
-                <span className="text-sm font-semibold text-[var(--color-text)]">@{game?.venmo_handle || 'Not set'}</span>
+                <span className="text-sm font-semibold text-[var(--color-text)]">{formatVenmoHandle(game?.venmo_handle) || 'Not set'}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-[var(--color-border-light)]">
                 <span className="text-sm text-[var(--color-text-muted)]">Join password</span>

@@ -1,3 +1,5 @@
+import { formatVenmoHandle } from '../lib/formatVenmo'
+
 interface ClaimSuccessProps {
   squareCount: number
   totalCost: number
@@ -66,7 +68,7 @@ export default function ClaimSuccess({
                     Send payment to:
                   </p>
                   <p className="font-mono font-bold text-[var(--color-primary)]">
-                    @{venmoHandle}
+                    {formatVenmoHandle(venmoHandle)}
                   </p>
                 </div>
               )}
@@ -81,7 +83,7 @@ export default function ClaimSuccess({
             <ul className="text-xs text-[var(--color-text-muted)] space-y-1">
               <li>• Your squares are now reserved</li>
               {paymentMethod === 'venmo' && venmoHandle && (
-                <li>• Send ${totalCost} to @{venmoHandle} via Venmo</li>
+                <li>• Send ${totalCost} to {formatVenmoHandle(venmoHandle)} via Venmo</li>
               )}
               {paymentMethod === 'cash' && (
                 <li>• Arrange payment with the game host</li>
