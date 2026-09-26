@@ -5,7 +5,7 @@ export default function BoardPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f5f5]">
       {/* Green Header */}
-      <header className="bg-[#16a34a] text-white py-4 px-4 shadow-md">
+      <header className="bg-[#16a34a] text-white py-6 px-4 shadow-md">
         <div className="container mx-auto max-w-7xl flex justify-between items-center">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🏈</span>
@@ -30,8 +30,8 @@ export default function BoardPage() {
       </header>
 
       {/* Three Column Layout */}
-      <main className="flex-1 container mx-auto max-w-7xl px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <main className="flex-1 container mx-auto max-w-7xl px-4 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Panel - Rules */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -88,7 +88,7 @@ export default function BoardPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 py-4 px-4 mt-8">
+      <footer className="bg-white border-t border-gray-200 py-6 px-4 mt-12">
         <div className="container mx-auto max-w-7xl flex justify-center gap-8 text-sm text-[var(--color-text-muted)]">
           <Link to="/" className="hover:text-[var(--color-primary)] transition-colors">
             How to Play

@@ -30,8 +30,8 @@ export default function Board() {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       {/* Board container */}
-      <div className="p-6">
-        <div className="flex gap-2">
+      <div className="p-8">
+        <div className="flex gap-4">
           {/* Left AFC label (vertical) */}
           <div className="flex items-center justify-center">
             <div 
@@ -48,13 +48,13 @@ export default function Board() {
           {/* Main grid with NFC header */}
           <div className="flex-1">
             {/* NFC header with numbers */}
-            <div className="mb-2">
+            <div className="mb-3">
               <div 
-                className="font-bold text-white text-center py-1.5 rounded-t mb-2 bg-[var(--color-primary)]"
+                className="font-bold text-white text-center py-2 rounded-t mb-3 bg-[var(--color-primary)]"
               >
                 NFC
               </div>
-              <div className="grid grid-cols-11 gap-1">
+              <div className="grid grid-cols-11 gap-1.5">
                 {/* Empty corner cell */}
                 <div className="w-10 h-10"></div>
                 {/* NFC numbers */}
@@ -70,7 +70,7 @@ export default function Board() {
             </div>
 
             {/* Grid with AFC numbers and squares */}
-            <div className="grid grid-cols-11 gap-1">
+            <div className="grid grid-cols-11 gap-1.5">
               {Array.from({ length: 10 }, (_, row) => {
                 return (
                   <React.Fragment key={`row-${row}`}>
@@ -116,7 +116,7 @@ export default function Board() {
         </div>
 
         {/* Legend */}
-        <div className="mt-4 flex justify-center gap-6 text-xs text-[var(--color-text-muted)]">
+        <div className="mt-6 flex justify-center gap-6 text-xs text-[var(--color-text-muted)]">
           <div className="flex items-center gap-1.5">
             <div className="w-4 h-4 border border-gray-300 bg-white flex items-center justify-center text-green-500 text-xs">+</div>
             <span>Available</span>
