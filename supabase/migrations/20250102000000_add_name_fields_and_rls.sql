@@ -38,22 +38,12 @@ CREATE POLICY "Anyone can view squares for active games"
     game_id IN (SELECT id FROM games WHERE status = 'active')
   );
 
--- Public can claim (insert/update) unclaimed squares
+-- Public can claim (update) unclaimed or pending squares
 CREATE POLICY "Anyone can claim available squares"
-  ON squares FOR INSERT
-  WITH CHECK (
-    game_id IN (SELECT id FROM games WHERE status = 'active') AND
-    claimed_by_email IS NOT NULL AND
-    first_name IS NOT NULL AND
-    last_name IS NOT NULL AND
-    payment_method IS NOT NULL
-  );
-
-CREATE POLICY "Anyone can update their pending claims"
   ON squares FOR UPDATE
   USING (
     game_id IN (SELECT id FROM games WHERE status = 'active') AND
-    payment_status = 'unpaid'
+    (claimed_by_email IS NULL OR payment_status IN ('released', 'unpaid'))
   )
   WITH CHECK (
     claimed_by_email IS NOT NULL AND
