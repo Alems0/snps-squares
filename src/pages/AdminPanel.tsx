@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { isAllowedAdmin, signOutAdmin } from '../lib/auth'
-import { useAuth } from '../lib/AuthProvider'
+import { useAuth } from '../lib/useAuth'
 
 export default function AdminPanel() {
   const navigate = useNavigate()

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useEffect, useState, ReactNode } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 
@@ -11,10 +11,6 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
 })
-
-export function useAuth() {
-  return useContext(AuthContext)
-}
 
 interface AuthProviderProps {
   children: ReactNode
@@ -47,3 +43,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     </AuthContext.Provider>
   )
 }
+
+// Export hook separately to satisfy fast-refresh
+export { AuthContext }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signInWithGoogle, isAllowedAdmin, signOutAdmin } from '../lib/auth'
-import { useAuth } from '../lib/AuthProvider'
+import { useAuth } from '../lib/useAuth'
 
 export default function AdminSignIn() {
   const navigate = useNavigate()
