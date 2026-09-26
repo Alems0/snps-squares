@@ -1,4 +1,5 @@
 import { useState, FormEvent } from 'react'
+import { formatVenmoHandle } from '../lib/formatVenmo'
 
 interface ClaimModalProps {
   selectedSquares: number[]
@@ -219,7 +220,7 @@ export default function ClaimModal({
                     <div className="font-semibold text-[var(--color-text)]">Venmo</div>
                     {venmoHandle ? (
                       <div className="text-xs text-[var(--color-text-muted)]">
-                        Send to: <span className="font-mono font-semibold">@{venmoHandle}</span>
+                        Send to: <span className="font-mono font-semibold">{formatVenmoHandle(venmoHandle)}</span>
                       </div>
                     ) : (
                       <div className="text-xs text-[var(--color-text-muted)]">
