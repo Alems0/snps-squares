@@ -28,14 +28,21 @@ export default function Board() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
       {/* Board container */}
-      <div className="p-8">
-        <div className="flex gap-4">
-          {/* Left AFC label (vertical) */}
-          <div className="flex items-center justify-center">
+      <div className="p-4 sm:p-8">
+        {/* NFC header - full width bar */}
+        <div className="mb-4">
+          <div className="font-bold text-white text-center py-3 rounded-lg bg-[var(--color-primary)] shadow-md">
+            NFC
+          </div>
+        </div>
+
+        <div className="flex gap-2 sm:gap-4">
+          {/* Left AFC label (vertical full-height bar) */}
+          <div className="flex flex-col">
             <div 
-              className="font-bold text-white text-lg px-3 py-8 rounded-lg whitespace-nowrap bg-[var(--color-secondary)]"
+              className="font-bold text-white text-base px-3 py-4 rounded-lg whitespace-nowrap bg-[var(--color-secondary)] shadow-md flex-1 flex items-center justify-center"
               style={{ 
                 writingMode: 'vertical-rl',
                 textOrientation: 'mixed'
@@ -45,23 +52,18 @@ export default function Board() {
             </div>
           </div>
 
-          {/* Main grid with NFC header */}
-          <div className="flex-1">
-            {/* NFC header with numbers */}
+          {/* Main grid with numbers */}
+          <div className="flex-1 overflow-x-auto">
+            {/* NFC numbers row */}
             <div className="mb-3">
-              <div 
-                className="font-bold text-white text-center py-2.5 rounded-lg mb-3 bg-[var(--color-primary)] text-lg"
-              >
-                NFC
-              </div>
-              <div className="grid grid-cols-11 gap-2">
+              <div className="grid grid-cols-11 gap-1 sm:gap-1.5 min-w-max">
                 {/* Empty corner cell */}
-                <div className="w-12 h-12"></div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10"></div>
                 {/* NFC numbers */}
                 {nfcNumbers.map((num, i) => (
                   <div
                     key={`nfc-${i}`}
-                    className="w-12 h-12 flex items-center justify-center font-bold text-base bg-[#4a5568] text-white rounded"
+                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center font-bold text-xs sm:text-sm bg-[#4a5568] text-white rounded shadow-sm"
                   >
                     {num}
                   </div>
@@ -70,13 +72,13 @@ export default function Board() {
             </div>
 
             {/* Grid with AFC numbers and squares */}
-            <div className="grid grid-cols-11 gap-2">
+            <div className="grid grid-cols-11 gap-1 sm:gap-1.5 min-w-max">
               {Array.from({ length: 10 }, (_, row) => {
                 return (
                   <React.Fragment key={`row-${row}`}>
                     {/* AFC number for this row */}
                     <div
-                      className="w-12 h-12 flex items-center justify-center font-bold text-base bg-[var(--color-secondary)] text-white rounded"
+                      className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center font-bold text-xs sm:text-sm bg-[var(--color-secondary)] text-white rounded shadow-sm"
                     >
                       {afcNumbers[row]}
                     </div>
@@ -99,7 +101,7 @@ export default function Board() {
                         <button
                           key={square.id}
                           onClick={() => handleSquareClick(index)}
-                          className={`w-12 h-12 border-2 border-gray-300 text-lg font-medium hover:border-[var(--color-primary)] hover:shadow-md transition-all rounded ${bgColor} ${textColor} flex items-center justify-center`}
+                          className={`w-8 h-8 sm:w-10 sm:h-10 border border-gray-300 rounded text-sm sm:text-lg font-medium hover:border-[var(--color-primary)] hover:border-2 hover:shadow-md transition-all ${bgColor} ${textColor} flex items-center justify-center active:scale-95`}
                           title={square.claimed ? `Claimed by ${square.claimedBy}` : 'Available'}
                         >
                           {square.claimed && square.claimedBy 
@@ -116,18 +118,18 @@ export default function Board() {
         </div>
 
         {/* Legend */}
-        <div className="mt-6 flex justify-center gap-8 text-sm text-[var(--color-text-muted)]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 border-2 border-gray-300 bg-white flex items-center justify-center text-green-500 text-sm font-medium rounded">+</div>
-            <span className="font-medium">Available</span>
+        <div className="mt-8 pt-6 border-t border-gray-200 flex flex-wrap justify-center gap-4 sm:gap-8 text-xs font-medium text-[var(--color-text-muted)]">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 border border-gray-300 bg-white flex items-center justify-center text-green-500 text-xs rounded shadow-sm">+</div>
+            <span>Available</span>
           </div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 border-2 border-gray-300 bg-yellow-100 rounded"></div>
-            <span className="font-medium">Selected</span>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 border border-gray-300 bg-yellow-100 rounded shadow-sm"></div>
+            <span>Selected</span>
           </div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 border-2 border-gray-300 bg-gray-200 rounded"></div>
-            <span className="font-medium">Claimed</span>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 border border-gray-300 bg-gray-200 rounded shadow-sm"></div>
+            <span>Claimed</span>
           </div>
         </div>
       </div>
