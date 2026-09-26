@@ -38,41 +38,43 @@ export default function Board() {
           </div>
         </div>
 
-        <div className="flex gap-2 sm:gap-4">
-          {/* Left AFC label (vertical full-height bar) */}
-          <div className="flex flex-col">
-            <div 
-              className="font-bold text-white text-base px-3 py-4 rounded-lg whitespace-nowrap bg-[var(--color-secondary)] shadow-md flex-1 flex items-center justify-center"
-              style={{ 
-                writingMode: 'vertical-rl',
-                textOrientation: 'mixed'
-              }}
-            >
-              AFC
-            </div>
-          </div>
-
-          {/* Main grid with numbers */}
-          <div className="flex-1 overflow-x-auto">
-            {/* NFC numbers row */}
-            <div className="mb-3">
-              <div className="grid grid-cols-11 gap-1 sm:gap-1.5 min-w-max">
-                {/* Empty corner cell */}
-                <div className="w-8 h-8 sm:w-10 sm:h-10"></div>
-                {/* NFC numbers */}
-                {nfcNumbers.map((num, i) => (
-                  <div
-                    key={`nfc-${i}`}
-                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center font-bold text-xs sm:text-sm bg-[#4a5568] text-white rounded shadow-sm"
-                  >
-                    {num}
-                  </div>
-                ))}
+        {/* Scrollable board wrapper - prevents page overflow on mobile */}
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="flex gap-2 sm:gap-4 min-w-max">
+            {/* Left AFC label (vertical full-height bar) */}
+            <div className="flex flex-col">
+              <div 
+                className="font-bold text-white text-base px-3 py-4 rounded-lg whitespace-nowrap bg-[var(--color-secondary)] shadow-md flex-1 flex items-center justify-center"
+                style={{ 
+                  writingMode: 'vertical-rl',
+                  textOrientation: 'mixed'
+                }}
+              >
+                AFC
               </div>
             </div>
 
-            {/* Grid with AFC numbers and squares */}
-            <div className="grid grid-cols-11 gap-1 sm:gap-1.5 min-w-max">
+            {/* Main grid with numbers */}
+            <div className="flex-1">
+              {/* NFC numbers row */}
+              <div className="mb-3">
+                <div className="grid grid-cols-11 gap-1 sm:gap-1.5">
+                  {/* Empty corner cell */}
+                  <div className="w-8 h-8 sm:w-10 sm:h-10"></div>
+                  {/* NFC numbers */}
+                  {nfcNumbers.map((num, i) => (
+                    <div
+                      key={`nfc-${i}`}
+                      className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center font-bold text-xs sm:text-sm bg-[#4a5568] text-white rounded shadow-sm"
+                    >
+                      {num}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Grid with AFC numbers and squares */}
+              <div className="grid grid-cols-11 gap-1 sm:gap-1.5">
               {Array.from({ length: 10 }, (_, row) => {
                 return (
                   <React.Fragment key={`row-${row}`}>
@@ -113,6 +115,7 @@ export default function Board() {
                   </React.Fragment>
                 )
               })}
+              </div>
             </div>
           </div>
         </div>

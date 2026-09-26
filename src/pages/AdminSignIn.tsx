@@ -61,15 +61,15 @@ export default function AdminSignIn() {
       </header>
 
       <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="bg-white rounded-lg shadow-lg p-10 sm:p-12 w-full max-w-md">
-          <h1 className="text-3xl font-bold mb-3 text-center">Admin Sign In</h1>
+        <div className="bg-white rounded-lg shadow-lg px-8 py-14 sm:px-12 sm:py-16 w-full max-w-md">
+          <h1 className="text-3xl font-bold mb-4 text-center">Admin Sign In</h1>
           
-          <p className="text-sm text-center text-[var(--color-text-muted)] mb-8">
+          <p className="text-sm text-center text-[var(--color-text-muted)] mb-10">
             Only authorized administrators can access this area.
           </p>
           
           {error && (
-            <div className="bg-[var(--color-danger)] bg-opacity-10 border border-[var(--color-danger)] text-[var(--color-danger)] rounded-lg p-4 mb-6 text-sm">
+            <div className="bg-[var(--color-danger)] bg-opacity-10 border border-[var(--color-danger)] text-[var(--color-danger)] rounded-lg p-4 mb-8 text-sm">
               {error}
             </div>
           )}
