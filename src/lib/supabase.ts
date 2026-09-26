@@ -55,6 +55,8 @@ export interface Square {
   id: string
   game_id: string
   position: number
+  first_name?: string
+  last_name?: string
   claimed_by_name?: string
   claimed_by_email?: string
   claimed_at?: string
