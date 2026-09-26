@@ -5,8 +5,28 @@ This document provides step-by-step testing instructions for the multi-square cl
 
 ## Prerequisites
 
-### 1. Supabase Setup
-Before testing, ensure your Supabase project is configured:
+### 1. Production Supabase Configuration
+
+**For Production Testing (Project: axkxwguwquuxbjyntjeq):**
+
+The production project is already configured with:
+- ✅ First name and last name columns
+- ✅ Sync trigger for `claimed_by_name`
+- ✅ RLS policies (`squares_claim_anon`, `games_select_public`, etc.)
+- ✅ Active game with 100 squares (all `payment_status = 'unpaid'`, `claimed_by_email IS NULL`)
+- ✅ Venmo handle: `@Don-Stecher`
+- ✅ Google OAuth enabled
+
+**Environment variables (.env):**
+```env
+VITE_SUPABASE_URL=https://axkxwguwquuxbjyntjeq.supabase.co
+VITE_SUPABASE_ANON_KEY=<your-anon-key>
+VITE_ADMIN_EMAIL=stecher2789@gmail.com
+```
+
+### 2. For New/Development Installations
+
+If setting up a new development environment:
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com)
 
@@ -34,30 +54,41 @@ Before testing, ensure your Supabase project is configured:
    - Set Site URL to your deployment URL or `http://localhost:5173` for local testing
    - Add redirect URLs
 
-### 2. Create a Test Game
+5. **Create an active game with 100 unclaimed squares**:
+   ```sql
+   -- Create game
+   INSERT INTO games (season, afc_team, nfc_team, cost_per_square, charity_percentage, venmo_handle, status)
+   VALUES (2027, 'Kansas City Chiefs', 'Philadelphia Eagles', 10, 10, 'your-venmo-handle', 'active');
+   
+   -- Initialize 100 squares as unclaimed (payment_status = 'unpaid', claimed_by_email = NULL)
+   INSERT INTO squares (game_id, position, payment_status)
+   SELECT 
+     (SELECT id FROM games WHERE status = 'active' LIMIT 1),
+     generate_series(0, 99),
+     'unpaid'
+   ON CONFLICT DO NOTHING;
+   ```
 
-The app requires at least one active game. Use the admin panel or SQL Editor:
+**IMPORTANT**: Unclaimed squares MUST have `payment_status = 'unpaid'` (not 'released') and `claimed_by_email IS NULL` to match the existing RLS policy.
+
+### 3. Verify Production Schema
+
+Check that squares are properly initialized:
 
 ```sql
-INSERT INTO games (season, afc_team, nfc_team, cost_per_square, charity_percentage, venmo_handle, status)
-VALUES (
-  2027,
-  'Kansas City Chiefs',
-  'Philadelphia Eagles', 
-  10,
-  10,
-  'testvenmo',
-  'active'
-);
-```
+-- Should return 100 unclaimed squares
+SELECT COUNT(*) FROM squares 
+WHERE game_id = (SELECT id FROM games WHERE status = 'active' LIMIT 1)
+  AND payment_status = 'unpaid'
+  AND claimed_by_email IS NULL;
+-- Expected: 100
 
-**Note:** The trigger `auto_create_squares_trigger` will automatically create 100 squares (positions 0-99) for this game.
-
-### 3. Verify Squares Exist
-
-```sql
-SELECT COUNT(*) FROM squares WHERE game_id = (SELECT id FROM games WHERE status = 'active' LIMIT 1);
--- Should return 100
+-- Verify columns exist
+SELECT first_name, last_name, claimed_by_name, claimed_by_email, payment_method, payment_status
+FROM squares 
+WHERE game_id = (SELECT id FROM games WHERE status = 'active' LIMIT 1)
+LIMIT 1;
+-- Should show all columns exist (all NULL for unclaimed square)
 ```
 
 ## Testing Scenarios

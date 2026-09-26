@@ -2,76 +2,75 @@
 
 ## Migration: 20250102000000_add_name_fields_and_rls.sql
 
-### New Columns Added to `squares` Table
+**IMPORTANT**: This migration is designed to be idempotent and safe to run on the production Supabase project `axkxwguwquuxbjyntjeq`, which already has:
+- `first_name` and `last_name` columns
+- `sync_claimed_by_name` trigger
+- RLS policies (`squares_claim_anon`, `games_select_public`, etc.)
+- 100 squares per game with `payment_status = 'unpaid'` and `claimed_by_email IS NULL`
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `first_name` | TEXT | Yes | First name of the person claiming the square |
-| `last_name` | TEXT | Yes | Last name of the person claiming the square |
+### What This Migration Does
 
-### Constraints Added
+1. **Adds columns if they don't exist** (idempotent via DO block)
+   - `first_name` TEXT (nullable)
+   - `last_name` TEXT (nullable)
 
-- `valid_first_name`: Ensures first_name is either NULL or 1-100 characters after trimming
-- `valid_last_name`: Ensures last_name is either NULL or 1-100 characters after trimming
+2. **Adds constraints if they don't exist** (idempotent via DO block)
+   - `valid_first_name`: 1-100 characters after trimming
+   - `valid_last_name`: 1-100 characters after trimming
 
-### Triggers Created
+3. **Creates/replaces trigger function**
+   - `sync_claimed_by_name()`: Auto-computes `claimed_by_name = first_name || ' ' || last_name`
+   - Drops and recreates trigger to ensure it's up to date
 
-1. **sync_claimed_by_name_trigger**
-   - Automatically sets `claimed_by_name = first_name || ' ' || last_name`
-   - Runs BEFORE INSERT OR UPDATE on squares
-   - Ensures consistency between name fields
+### What This Migration Does NOT Do
 
-2. **auto_create_squares_trigger**
-   - Automatically creates 100 squares (positions 0-99) when a new game is inserted
-   - Runs AFTER INSERT on games
-   - Initial squares have `payment_status = 'released'` (available)
+- ❌ Does NOT create RLS policies (production already has them)
+- ❌ Does NOT enable RLS (already enabled on production)
+- ❌ Does NOT initialize squares (production seeds them manually)
+- ❌ Does NOT change `payment_status` values
 
-### Functions Created
 
-1. **sync_claimed_by_name()**
-   - Concatenates first_name and last_name
-   - Used by trigger to maintain claimed_by_name field
+## Production Alignment
 
-2. **initialize_game_squares(p_game_id UUID)**
-   - Creates 100 squares for a given game ID
-   - Uses ON CONFLICT to avoid duplicates
-   - Marked SECURITY DEFINER to allow admin-level operations
+### Existing Production Schema (Project: axkxwguwquuxbjyntjeq)
 
-3. **create_squares_for_new_game()**
-   - Wrapper function for trigger
-   - Calls initialize_game_squares() with new game ID
+**RLS Policies Already Present:**
+- `squares_claim_anon`: Allows anonymous users to claim squares
+- `games_select_public`: Allows public to read active games
+- `is_admin()` function: Admin authorization helper
+- Other policies for admin operations
 
-### Row Level Security (RLS) Policies
+**Existing Claim Logic:**
+- Unclaimed squares have `payment_status = 'unpaid'` AND `claimed_by_email IS NULL`
+- Frontend UPDATE checks `.is('claimed_by_email', null)` to prevent double-claims
+- Payment status CHECK constraint: `unpaid | paid | released`
 
-#### Games Table
-- **"Anyone can view active games"** (SELECT)
-  - Public can read games where status = 'active'
-  
-- **"Only admins can manage games"** (ALL)
-  - Only authenticated admins can create/update/delete games
+**Active Game Configuration:**
+- Game seeded with 100 squares (positions 0-99)
+- Venmo handle: `@Don-Stecher`
+- Squares pre-initialized as `payment_status = 'unpaid'` with null email
 
-#### Squares Table
-- **"Anyone can view squares for active games"** (SELECT)
-  - Public can read all squares for active games
-  
-- **"Anyone can claim available squares"** (UPDATE)
-  - USING: game is active AND (square unclaimed OR status is released/unpaid)
-  - WITH CHECK: first_name, last_name, email, and payment_method must all be NOT NULL
-  - Prevents claiming already-paid squares
-  
-- **"Only admins can delete squares"** (DELETE)
-  - Only authenticated admins can delete squares
+### Application Claim Flow
 
-#### Scores Table
-- **"Anyone can view scores"** (SELECT)
-  - Public can read all scores
-  
-- **"Only admins can manage scores"** (ALL)
-  - Only authenticated admins can create/update/delete scores
+The app performs UPDATE (not INSERT or UPSERT):
 
-#### Admins Table
-- **"Only admins can view admins"** (SELECT)
-  - Only authenticated admins can read the admins table
+```typescript
+supabase
+  .from('squares')
+  .update({
+    first_name: data.firstName,
+    last_name: data.lastName,
+    claimed_by_email: data.email,
+    payment_method: data.paymentMethod,
+    payment_status: 'unpaid',
+    claimed_at: new Date().toISOString(),
+  })
+  .eq('game_id', game.id)
+  .eq('position', position)
+  .is('claimed_by_email', null) // Race condition protection
+```
+
+This aligns with production's existing RLS policy that checks `claimed_by_email IS NULL AND payment_status = 'unpaid'`.
 
 ## Backward Compatibility
 
@@ -83,55 +82,31 @@
 
 ## Application to Existing Database
 
-This migration is safe to apply to existing databases:
+This migration is **safe and idempotent** for production:
 
-1. **ALTER TABLE ADD COLUMN** is non-destructive
-2. New columns are nullable, won't break existing data
-3. Triggers only affect new inserts/updates
-4. RLS policies are additive (enable security where it didn't exist before)
+1. **Columns**: Uses `IF NOT EXISTS` check before adding columns
+2. **Constraints**: Uses `IF NOT EXISTS` check before adding constraints  
+3. **Trigger**: Uses `CREATE OR REPLACE` and `DROP TRIGGER IF EXISTS`
+4. **No RLS changes**: Respects existing policies, doesn't try to recreate them
+5. **No square initialization**: Doesn't interfere with existing squares
+
+**To apply to production:**
+```bash
+# Using Supabase CLI
+supabase db push
+
+# Or manually via SQL Editor in Supabase Dashboard
+# Copy/paste the migration file contents
+```
+
+**Safe to run multiple times** - all operations are idempotent.
 
 ## Required Manual Steps After Migration
 
-### 1. For New Installations
-No manual steps required. The migration and triggers handle everything automatically.
+### For Production (axkxwguwquuxbjyntjeq)
+✅ **No manual steps required!**
 
-### 2. For Existing Installations (if any data exists)
-
-If you have existing games without squares:
-```sql
--- Initialize squares for existing games
-SELECT initialize_game_squares(id) FROM games;
-```
-
-If you have existing claimed squares (unlikely in Phase 1):
-```sql
--- Parse existing claimed_by_name into first_name and last_name
--- Manual review recommended as name format may vary
--- Example for "First Last" format:
-UPDATE squares 
-SET 
-  first_name = SPLIT_PART(claimed_by_name, ' ', 1),
-  last_name = SPLIT_PART(claimed_by_name, ' ', 2)
-WHERE 
-  claimed_by_name IS NOT NULL 
-  AND first_name IS NULL;
-```
-
-### 3. Test RLS Policies
-
-After applying migration, test that anonymous users can:
-- ✅ Read active games
-- ✅ Read squares
-- ✅ Claim unclaimed squares
-- ❌ Delete squares
-- ❌ Update claimed squares (unless unpaid)
-- ❌ Modify games
-
-Test that only admins can:
-- ✅ Manage games
-- ✅ Manage scores
-- ✅ Delete squares
-- ✅ View admin list
+The migration is designed to be a no-op on production since columns and trigger already exist. It will only ensure the trigger function is up to date.
 
 ## Impact on Application Code
 
@@ -220,43 +195,39 @@ For larger scale (not needed in Phase 1):
 - Consider caching active game (1 second TTL)
 - Consider optimistic updates for claiming UI
 
+## Production Testing Checklist
+
+After deploying to production (`axkxwguwquuxbjyntjeq`):
+
+- [ ] Verify migration applied successfully (check columns exist)
+- [ ] Verify trigger works (insert a test claim, check `claimed_by_name`)
+- [ ] Test claiming flow: select square → fill form → submit → success
+- [ ] Verify claimed squares show initials (e.g., "DS" for Don Stecher)
+- [ ] Test Venmo display shows `@Don-Stecher`
+- [ ] Verify race condition protection (two users same square)
+- [ ] Check existing RLS policies still work
+- [ ] Verify admin auth still functional
+
 ## Rollback Procedure
 
 If you need to rollback this migration:
 
 ```sql
--- 1. Drop triggers first
-DROP TRIGGER IF EXISTS auto_create_squares_trigger ON games;
+-- 1. Drop trigger
 DROP TRIGGER IF EXISTS sync_claimed_by_name_trigger ON squares;
 
--- 2. Drop functions
-DROP FUNCTION IF EXISTS create_squares_for_new_game();
-DROP FUNCTION IF EXISTS initialize_game_squares(UUID);
+-- 2. Drop function
 DROP FUNCTION IF EXISTS sync_claimed_by_name();
 
--- 3. Drop RLS policies
-DROP POLICY IF EXISTS "Anyone can view active games" ON games;
-DROP POLICY IF EXISTS "Only admins can manage games" ON games;
-DROP POLICY IF EXISTS "Anyone can view squares for active games" ON squares;
-DROP POLICY IF EXISTS "Anyone can claim available squares" ON squares;
-DROP POLICY IF EXISTS "Only admins can delete squares" ON squares;
-DROP POLICY IF EXISTS "Anyone can view scores" ON scores;
-DROP POLICY IF EXISTS "Only admins can manage scores" ON scores;
-DROP POLICY IF EXISTS "Only admins can view admins" ON admins;
-
--- 4. Disable RLS (optional, only if needed)
-ALTER TABLE games DISABLE ROW LEVEL SECURITY;
-ALTER TABLE squares DISABLE ROW LEVEL SECURITY;
-ALTER TABLE scores DISABLE ROW LEVEL SECURITY;
-ALTER TABLE admins DISABLE ROW LEVEL SECURITY;
-
--- 5. Remove constraints
+-- 3. Remove constraints (optional)
 ALTER TABLE squares DROP CONSTRAINT IF EXISTS valid_first_name;
 ALTER TABLE squares DROP CONSTRAINT IF EXISTS valid_last_name;
 
--- 6. Remove columns (data loss!)
-ALTER TABLE squares DROP COLUMN IF EXISTS first_name;
-ALTER TABLE squares DROP COLUMN IF EXISTS last_name;
+-- 4. Remove columns (data loss! Only if necessary)
+-- ALTER TABLE squares DROP COLUMN IF EXISTS first_name;
+-- ALTER TABLE squares DROP COLUMN IF EXISTS last_name;
 ```
 
-**WARNING:** Dropping columns will cause data loss. Ensure you have a backup before rolling back.
+**WARNING**: Dropping columns will cause data loss. On production, preserve the columns even if rolling back the feature.
+
+**NOTE**: Do NOT drop RLS policies - they existed before this migration.
