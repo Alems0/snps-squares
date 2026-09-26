@@ -29,7 +29,7 @@ export default function BoardPage() {
       </header>
 
       {/* Three Column Layout */}
-      <main className="flex-1 container mx-auto max-w-7xl px-4 py-8 mt-6">
+      <main className="flex-1 container mx-auto max-w-7xl px-4 py-8 mt-8 sm:mt-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
           {/* Left Panel - Rules */}
           <div className="lg:col-span-3">
@@ -38,7 +38,7 @@ export default function BoardPage() {
                 <h2 className="text-lg font-bold tracking-tight">Game Rules</h2>
               </div>
               <div className="p-6">
-                <p className="text-sm text-[var(--color-text)] leading-relaxed mb-5">
+                <p className="text-sm text-[var(--color-text)] leading-relaxed mb-5 break-words">
                   Each square costs $10. Numbers will be randomly assigned after all squares are filled. Winners are determined by the last digit of each team's score at the end of each quarter.
                 </p>
                 <div className="border-t border-gray-200 pt-5 space-y-4">
