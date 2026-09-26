@@ -28,14 +28,14 @@ export default function Board() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden">
       {/* Board container */}
       <div className="p-8">
         <div className="flex gap-4">
           {/* Left AFC label (vertical) */}
           <div className="flex items-center justify-center">
             <div 
-              className="font-bold text-white text-base px-2 py-6 rounded-lg whitespace-nowrap bg-[var(--color-secondary)] shadow-md"
+              className="font-bold text-white text-lg px-3 py-8 rounded-lg whitespace-nowrap bg-[var(--color-secondary)]"
               style={{ 
                 writingMode: 'vertical-rl',
                 textOrientation: 'mixed'
@@ -50,18 +50,18 @@ export default function Board() {
             {/* NFC header with numbers */}
             <div className="mb-3">
               <div 
-                className="font-bold text-white text-center py-2 rounded-lg mb-3 bg-[var(--color-primary)] shadow-md"
+                className="font-bold text-white text-center py-2.5 rounded-lg mb-3 bg-[var(--color-primary)] text-lg"
               >
                 NFC
               </div>
-              <div className="grid grid-cols-11 gap-1.5">
+              <div className="grid grid-cols-11 gap-2">
                 {/* Empty corner cell */}
-                <div className="w-10 h-10"></div>
+                <div className="w-12 h-12"></div>
                 {/* NFC numbers */}
                 {nfcNumbers.map((num, i) => (
                   <div
                     key={`nfc-${i}`}
-                    className="w-10 h-10 flex items-center justify-center font-bold text-sm bg-[#4a5568] text-white rounded shadow-sm"
+                    className="w-12 h-12 flex items-center justify-center font-bold text-base bg-[#4a5568] text-white rounded"
                   >
                     {num}
                   </div>
@@ -70,13 +70,13 @@ export default function Board() {
             </div>
 
             {/* Grid with AFC numbers and squares */}
-            <div className="grid grid-cols-11 gap-1.5">
+            <div className="grid grid-cols-11 gap-2">
               {Array.from({ length: 10 }, (_, row) => {
                 return (
                   <React.Fragment key={`row-${row}`}>
                     {/* AFC number for this row */}
                     <div
-                      className="w-10 h-10 flex items-center justify-center font-bold text-sm bg-[var(--color-secondary)] text-white rounded shadow-sm"
+                      className="w-12 h-12 flex items-center justify-center font-bold text-base bg-[var(--color-secondary)] text-white rounded"
                     >
                       {afcNumbers[row]}
                     </div>
@@ -99,7 +99,7 @@ export default function Board() {
                         <button
                           key={square.id}
                           onClick={() => handleSquareClick(index)}
-                          className={`w-10 h-10 border border-gray-300 rounded text-lg font-medium hover:border-[var(--color-primary)] hover:border-2 hover:shadow-md transition-all ${bgColor} ${textColor} flex items-center justify-center`}
+                          className={`w-12 h-12 border-2 border-gray-300 text-lg font-medium hover:border-[var(--color-primary)] hover:shadow-md transition-all rounded ${bgColor} ${textColor} flex items-center justify-center`}
                           title={square.claimed ? `Claimed by ${square.claimedBy}` : 'Available'}
                         >
                           {square.claimed && square.claimedBy 
@@ -116,18 +116,18 @@ export default function Board() {
         </div>
 
         {/* Legend */}
-        <div className="mt-6 flex justify-center gap-8 text-xs font-medium text-[var(--color-text-muted)]">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 border border-gray-300 bg-white flex items-center justify-center text-green-500 text-xs rounded shadow-sm">+</div>
-            <span>Available</span>
+        <div className="mt-6 flex justify-center gap-8 text-sm text-[var(--color-text-muted)]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 border-2 border-gray-300 bg-white flex items-center justify-center text-green-500 text-sm font-medium rounded">+</div>
+            <span className="font-medium">Available</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 border border-gray-300 bg-yellow-100 rounded shadow-sm"></div>
-            <span>Selected</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 border-2 border-gray-300 bg-yellow-100 rounded"></div>
+            <span className="font-medium">Selected</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 border border-gray-300 bg-gray-200 rounded shadow-sm"></div>
-            <span>Claimed</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 border-2 border-gray-300 bg-gray-200 rounded"></div>
+            <span className="font-medium">Claimed</span>
           </div>
         </div>
       </div>
