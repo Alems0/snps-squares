@@ -27,7 +27,7 @@ export async function signInWithGoogle() {
 export async function signOutAdmin() {
   const { error } = await supabase.auth.signOut()
   if (error) {
-    throw error
+    console.warn('Sign out error (continuing anyway):', error)
   }
 }
 
