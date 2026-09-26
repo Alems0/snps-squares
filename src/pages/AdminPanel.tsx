@@ -636,6 +636,25 @@ export default function AdminPanel() {
           onSave={handleConfigureGame}
         />
       )}
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 py-6 px-4 mt-12">
+        <div className="container mx-auto max-w-7xl">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-8 text-sm font-medium text-[var(--color-text-muted)] mb-3">
+            <Link to="/privacy" className="hover:text-[var(--color-primary)] transition-colors hover:underline">
+              Privacy Policy
+            </Link>
+            <Link to="/terms" className="hover:text-[var(--color-primary)] transition-colors hover:underline">
+              Terms of Service
+            </Link>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-[var(--color-text-muted)]">
+              © {new Date().getFullYear()} SNPS Squares. Not affiliated with the NFL.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

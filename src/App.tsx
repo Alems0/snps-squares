@@ -3,6 +3,8 @@ import { AuthProvider } from './lib/AuthProvider'
 import BoardPage from './pages/BoardPage'
 import AdminSignIn from './pages/AdminSignIn'
 import AdminPanel from './pages/AdminPanel'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import TermsOfService from './pages/TermsOfService'
 
 function App() {
   return (
@@ -13,6 +15,8 @@ function App() {
           <Route path="/board" element={<Navigate to="/" replace />} />
           <Route path="/admin" element={<AdminSignIn />} />
           <Route path="/admin/panel" element={<AdminPanel />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
