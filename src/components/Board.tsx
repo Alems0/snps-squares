@@ -3,7 +3,11 @@ import { supabase, Square as SquareType, Game } from '../lib/supabase'
 import ClaimModal from './ClaimModal'
 import ClaimSuccess from './ClaimSuccess'
 
-export default function Board() {
+interface BoardProps {
+  onClaimSuccess?: () => void
+}
+
+export default function Board({ onClaimSuccess }: BoardProps = {}) {
   const [squares, setSquares] = useState<SquareType[]>([])
   const [game, setGame] = useState<Game | null>(null)
   const [selectedSquares, setSelectedSquares] = useState<number[]>([])
@@ -32,14 +36,17 @@ export default function Board() {
         .from('games')
         .select('*')
         .eq('status', 'active')
-        .single()
+        .maybeSingle()
 
       if (gameError) {
-        if (gameError.code === 'PGRST116') {
-          setError('No active game found')
-        } else {
-          throw gameError
-        }
+        console.error('Error fetching game:', gameError)
+        setError(`Failed to load game: ${gameError.message || 'Unknown error'}`)
+        setLoading(false)
+        return
+      }
+
+      if (!gameData) {
+        setError('No active game found')
         setLoading(false)
         return
       }
@@ -136,6 +143,11 @@ export default function Board() {
     
     // Refresh squares
     await fetchGameAndSquares()
+    
+    // Notify parent component
+    if (onClaimSuccess) {
+      onClaimSuccess()
+    }
   }
 
   const handleCloseSuccess = () => {

@@ -1,7 +1,85 @@
 import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import Board from '../components/Board'
+import { supabase } from '../lib/supabase'
+
+interface TopBuyer {
+  name: string
+  email: string
+  squareCount: number
+  totalCost: number
+}
 
 export default function BoardPage() {
+  const [topBuyers, setTopBuyers] = useState<TopBuyer[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchTopBuyers()
+  }, [])
+
+  const fetchTopBuyers = async () => {
+    try {
+      setLoading(true)
+
+      const { data: gameData, error: gameError } = await supabase
+        .from('games')
+        .select('id, cost_per_square')
+        .eq('status', 'active')
+        .maybeSingle()
+
+      if (gameError || !gameData) {
+        console.error('Error fetching game for top buyers:', gameError)
+        setLoading(false)
+        return
+      }
+
+      const { data: squaresData, error: squaresError } = await supabase
+        .from('squares')
+        .select('claimed_by_name, claimed_by_email')
+        .eq('game_id', gameData.id)
+        .not('claimed_by_email', 'is', null)
+
+      if (squaresError) {
+        console.error('Error fetching squares for top buyers:', squaresError)
+        setLoading(false)
+        return
+      }
+
+      const buyerMap = new Map<string, { name: string; count: number }>()
+      
+      squaresData?.forEach((square) => {
+        if (square.claimed_by_email) {
+          const existing = buyerMap.get(square.claimed_by_email)
+          if (existing) {
+            existing.count++
+          } else {
+            buyerMap.set(square.claimed_by_email, {
+              name: square.claimed_by_name || 'Unknown',
+              count: 1,
+            })
+          }
+        }
+      })
+
+      const buyers: TopBuyer[] = Array.from(buyerMap.entries())
+        .map(([email, { name, count }]) => ({
+          name,
+          email,
+          squareCount: count,
+          totalCost: count * gameData.cost_per_square,
+        }))
+        .sort((a, b) => b.squareCount - a.squareCount)
+        .slice(0, 5)
+
+      setTopBuyers(buyers)
+      setLoading(false)
+    } catch (err) {
+      console.error('Error in fetchTopBuyers:', err)
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
@@ -61,7 +139,7 @@ export default function BoardPage() {
 
           {/* Center Panel - Board */}
           <div className="lg:col-span-6">
-            <Board />
+            <Board onClaimSuccess={fetchTopBuyers} />
           </div>
 
           {/* Right Panel - Top Buyers */}
@@ -75,15 +153,50 @@ export default function BoardPage() {
                 <span className="text-xs opacity-90 font-semibold uppercase tracking-wider">Most Active</span>
               </div>
               <div className="p-6">
-                <div className="flex flex-col items-center justify-center text-center py-12">
-                  <div className="text-gray-300 mb-4">
-                    <svg className="w-20 h-20 mx-auto" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                    </svg>
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)] mb-3"></div>
+                    <p className="text-xs text-[var(--color-text-muted)]">Loading...</p>
                   </div>
-                  <p className="text-sm font-medium text-[var(--color-text-muted)]">No squares claimed yet</p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-2">Be the first to join!</p>
-                </div>
+                ) : topBuyers.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center text-center py-12">
+                    <div className="text-gray-300 mb-4">
+                      <svg className="w-20 h-20 mx-auto" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium text-[var(--color-text-muted)]">No squares claimed yet</p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-2">Be the first to join!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {topBuyers.map((buyer, index) => (
+                      <div
+                        key={buyer.email}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-[var(--color-primary)] transition-colors"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center font-bold text-sm">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm text-[var(--color-text)] truncate">
+                              {buyer.name}
+                            </div>
+                            <div className="text-xs text-[var(--color-text-muted)] truncate">
+                              {buyer.squareCount} square{buyer.squareCount > 1 ? 's' : ''}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="font-bold text-sm text-[var(--color-success)]">
+                            ${buyer.totalCost}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

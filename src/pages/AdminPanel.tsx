@@ -27,9 +27,10 @@ export default function AdminPanel() {
   const handleSignOut = async () => {
     try {
       await signOutAdmin()
-      navigate('/admin')
     } catch (err) {
       console.error('Error signing out:', err)
+    } finally {
+      navigate('/admin')
     }
   }
 
