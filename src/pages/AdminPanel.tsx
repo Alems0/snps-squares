@@ -325,8 +325,8 @@ export default function AdminPanel() {
 
       if (error) throw error
 
-      alert('Game configuration saved successfully!')
       await fetchGameAndClaims()
+      setShowConfigureModal(false)
     } catch (err) {
       console.error('Error saving game configuration:', err)
       throw err
@@ -416,10 +416,78 @@ export default function AdminPanel() {
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto max-w-7xl px-6 py-12">
-        <h1 className="text-4xl font-bold mb-12">Admin Panel</h1>
+      <main className="flex-1 container mx-auto max-w-7xl px-6 py-8">
+        <h1 className="text-4xl font-bold mb-8">Admin Panel</h1>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        {/* Current Game Settings Summary */}
+        <section className="bg-white rounded-xl shadow-md p-6 mb-8">
+          <h2 className="text-2xl font-bold mb-4 text-[var(--color-text)]">Current Game Settings</h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wide">Pricing</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-[var(--color-text-muted)]">Cost per square:</span>
+                  <span className="font-bold text-[var(--color-primary)] text-lg">${game?.cost_per_square || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-[var(--color-text-muted)]">Charity percentage:</span>
+                  <span className="font-bold text-[var(--color-info)] text-lg">{game?.charity_percentage || 0}%</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wide">Payouts</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-[var(--color-text-muted)]">Q1:</span>
+                  <span className="font-bold text-[var(--color-success)]">${game?.q1_payout || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-[var(--color-text-muted)]">Q2 (Halftime):</span>
+                  <span className="font-bold text-[var(--color-success)]">${game?.q2_payout || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-[var(--color-text-muted)]">Q3:</span>
+                  <span className="font-bold text-[var(--color-success)]">${game?.q3_payout || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-[var(--color-text-muted)]">Final:</span>
+                  <span className="font-bold text-[var(--color-success)]">${game?.final_payout || 0}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wide">Payment & Access</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-[var(--color-text-muted)]">Venmo handle:</span>
+                  <span className="font-bold text-[var(--color-text)]">
+                    {game?.venmo_handle ? `@${game.venmo_handle}` : <span className="text-[var(--color-text-muted)] font-normal">Not set</span>}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-[var(--color-text-muted)]">Join password:</span>
+                  <span className="font-bold text-[var(--color-text)]">
+                    {game?.join_password ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded bg-green-100 text-green-800 text-xs">
+                        🔒 Set
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-1 rounded bg-gray-100 text-gray-600 text-xs">
+                        🔓 Open
+                      </span>
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-md p-6">
             <h3 className="text-sm font-bold mb-3 text-[var(--color-text-muted)] uppercase tracking-wide">Total Squares</h3>
             <p className="text-4xl font-bold text-[var(--color-primary)] mb-3">100</p>
@@ -447,14 +515,14 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
-          <section className="bg-white rounded-xl shadow-md p-8">
-            <h2 className="text-2xl font-bold mb-6 text-[var(--color-text)]">Game Settings</h2>
-            <div className="space-y-4">
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <section className="bg-white rounded-xl shadow-md p-6">
+            <h2 className="text-2xl font-bold mb-5 text-[var(--color-text)]">Game Settings</h2>
+            <div className="space-y-3">
               <button 
                 onClick={() => setShowConfigureModal(true)}
                 disabled={!game}
-                className="w-full bg-[var(--color-primary)] text-white py-3 px-6 rounded-lg hover:opacity-90 transition-all font-semibold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[var(--color-primary)] text-white py-3 px-4 rounded-lg hover:opacity-90 transition-all font-semibold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Edit game cost, payouts, charity %, venmo handle, and join password"
               >
                 ⚙️ Configure Game
@@ -462,7 +530,7 @@ export default function AdminPanel() {
               <button 
                 onClick={handleRandomizeNumbers}
                 disabled={!game}
-                className="w-full bg-[var(--color-secondary)] text-white py-3 px-6 rounded-lg hover:opacity-90 transition-all font-semibold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[var(--color-secondary)] text-white py-3 px-4 rounded-lg hover:opacity-90 transition-all font-semibold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Shuffle AFC and NFC axis numbers (0-9)"
               >
                 🎲 Randomize Numbers
@@ -470,29 +538,29 @@ export default function AdminPanel() {
               <button 
                 onClick={handleLockBoard}
                 disabled={!game}
-                className="w-full bg-[var(--color-warning)] text-white py-3 px-6 rounded-lg hover:opacity-90 transition-all font-semibold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[var(--color-warning)] text-white py-3 px-4 rounded-lg hover:opacity-90 transition-all font-semibold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 title={game?.numbers_locked ? 'Allow number randomization' : 'Prevent number changes'}
               >
                 {game?.numbers_locked ? '🔓 Unlock Board' : '🔒 Lock Board'}
               </button>
               <button 
                 disabled
-                className="w-full bg-gray-400 text-white py-3 px-6 rounded-lg transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gray-400 text-white py-3 px-4 rounded-lg transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Coming soon: Manual score entry for Q1-Final"
               >
                 📊 Update Scores
               </button>
               <button 
                 disabled
-                className="w-full bg-gray-400 text-white py-3 px-6 rounded-lg transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gray-400 text-white py-3 px-4 rounded-lg transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Coming soon: Archive current game and create new season"
               >
                 🔄 Start New Season
               </button>
-              <div className="pt-4 border-t-2 border-gray-200 mt-6">
+              <div className="pt-3 border-t-2 border-gray-200 mt-4">
                 <button 
                   onClick={handleResetBoard}
-                  className="w-full bg-red-600 text-white py-3 px-6 rounded-lg hover:bg-red-700 transition-all font-semibold shadow-sm hover:shadow-md"
+                  className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition-all font-semibold shadow-sm hover:shadow-md"
                   title="Remove all claims from all squares (cannot be undone)"
                 >
                   ⚠️ Reset Board
@@ -501,21 +569,20 @@ export default function AdminPanel() {
             </div>
           </section>
 
-          <section className="bg-white rounded-xl shadow-md p-8">
-            <h2 className="text-2xl font-bold mb-6 text-[var(--color-text)]">Actions</h2>
-            <div className="space-y-4">
+          <section className="bg-white rounded-xl shadow-md p-6">
+            <h2 className="text-2xl font-bold mb-5 text-[var(--color-text)]">Actions</h2>
+            <div className="space-y-3">
               <button 
                 onClick={handleExportCSV}
                 disabled={!game}
-                className="w-full bg-[var(--color-surface)] border-2 border-[var(--color-border)] py-3 px-6 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[var(--color-surface)] border-2 border-[var(--color-border)] py-3 px-4 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Download CSV with all 100 squares and claim details"
               >
                 📥 Export Roster CSV
               </button>
             </div>
             
-            {/* Info Section */}
-            <div className="mt-8 pt-8 border-t-2 border-gray-200">
+            <div className="mt-6 pt-6 border-t-2 border-gray-200">
               <h3 className="text-sm font-bold mb-3 text-[var(--color-text-muted)] uppercase tracking-wide">Quick Stats</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center">
@@ -537,14 +604,14 @@ export default function AdminPanel() {
           </section>
         </div>
 
-        <section className="bg-white rounded-xl shadow-md p-8">
-          <h2 className="text-2xl font-bold mb-6">Recent Claims</h2>
+        <section className="bg-white rounded-xl shadow-md p-6 mt-8">
+          <h2 className="text-2xl font-bold mb-5">Recent Claims</h2>
           {claimsLoading ? (
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)]"></div>
             </div>
           ) : (
-            <div className="overflow-x-auto -mx-8 px-8">
+            <div className="overflow-x-auto -mx-6 px-6">
               <table className="w-full">
                 <thead>
                   <tr className="border-b-2 border-[var(--color-border)]">

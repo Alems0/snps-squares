@@ -82,6 +82,7 @@ export default function ConfigureGameModal({
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save configuration')
+    } finally {
       setIsSubmitting(false)
     }
   }
