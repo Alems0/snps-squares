@@ -313,7 +313,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
           </div>
 
           {/* Main grid container with horizontal scroll on mobile */}
-          <div className="flex-1 min-w-0 w-full max-w-full overflow-x-auto">
+          <div className="min-w-0 w-full max-w-full overflow-x-auto">
             <div className="min-w-[440px]">
               {/* NFC numbers row */}
               <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: 'auto repeat(10, minmax(32px, 1fr))' }}>
