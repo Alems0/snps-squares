@@ -724,8 +724,8 @@ export default function AdminPanel() {
       <footer className="border-t border-[var(--color-border)] bg-white mt-auto shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-wrap justify-between items-center gap-4 text-sm text-[var(--color-text-secondary)]">
           <div className="flex items-center gap-8">
-            <a href="#" className="hover:text-[var(--color-primary)] transition-colors font-medium">Privacy Policy</a>
-            <a href="#" className="hover:text-[var(--color-primary)] transition-colors font-medium">Terms of Service</a>
+            <Link to="/privacy" className="hover:text-[var(--color-primary)] transition-colors font-medium">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-[var(--color-primary)] transition-colors font-medium">Terms of Service</Link>
           </div>
           <p className="text-sm text-[var(--color-text-muted)]">© {new Date().getFullYear()} SNPS Squares. Not affiliated with the NFL.</p>
         </div>
