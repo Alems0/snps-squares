@@ -252,17 +252,17 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
             </div>
           </div>
 
-          {/* Main grid container */}
-          <div className="flex-1 min-w-0">
+          {/* Main grid container with horizontal scroll on mobile */}
+          <div className="flex-1 min-w-0 overflow-x-auto">
             {/* NFC numbers row */}
-            <div className="grid grid-cols-11 gap-2 mb-4">
+            <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: 'auto repeat(10, minmax(32px, 1fr))' }}>
               {/* Empty corner cell */}
-              <div className="w-10 h-10"></div>
+              <div className="aspect-square"></div>
               {/* NFC numbers */}
               {nfcNumbers.map((num, i) => (
                 <div
                   key={`nfc-${i}`}
-                  className="w-10 h-10 flex items-center justify-center font-bold text-sm bg-[var(--color-nfc)] text-white rounded shadow-sm"
+                  className="aspect-square w-full flex items-center justify-center font-bold text-sm bg-[var(--color-nfc)] text-white rounded shadow-sm"
                 >
                   {num === -1 ? '?' : num}
                 </div>
@@ -270,13 +270,13 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
             </div>
 
             {/* Grid with AFC numbers and squares */}
-            <div className="grid grid-cols-11 gap-2">
+            <div className="grid gap-2" style={{ gridTemplateColumns: 'auto repeat(10, minmax(32px, 1fr))' }}>
               {Array.from({ length: 10 }, (_, row) => {
                 return (
                   <React.Fragment key={`row-${row}`}>
                     {/* AFC number for this row */}
                     <div
-                      className="w-10 h-10 flex items-center justify-center font-bold text-sm bg-[var(--color-afc)] text-white rounded shadow-sm"
+                      className="aspect-square w-full flex items-center justify-center font-bold text-sm bg-[var(--color-afc)] text-white rounded shadow-sm"
                     >
                       {afcNumbers[row] === -1 ? '?' : afcNumbers[row]}
                     </div>
@@ -317,7 +317,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                           key={position}
                           onClick={() => handleSquareClick(position)}
                           disabled={isClaimed}
-                          className={`w-10 h-10 border-2 ${borderColor} rounded text-sm font-semibold transition-all ${bgColor} ${textColor} flex items-center justify-center ${cursorStyle} ${hoverClass}`}
+                          className={`aspect-square w-full border-2 ${borderColor} rounded text-sm font-semibold transition-all ${bgColor} ${textColor} flex items-center justify-center ${cursorStyle} ${hoverClass}`}
                           title={
                             isClaimed
                               ? `Claimed by ${square?.claimed_by_name}`
