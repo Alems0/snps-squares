@@ -1,14 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  /* NFL Primary Colors - custom variables only */
-  --color-primary: #013369;
-  --color-secondary: #D50A0A;
-  --color-nfc: #013369;
-  --color-afc: #D50A0A;
+  /* Saint Nicholas Patriotic Society Theme */
+  --color-primary: #3B3E81;
+  --color-secondary: #D92020;
+  --color-nfc: #3B3E81;
+  --color-afc: #D92020;
+  --color-cream: #F4F6EA;
   
   /* Custom semantic colors */
-  --color-background: #e2e8f0;
+  --color-background: #F4F6EA;
   --color-surface: #ffffff;
   --color-border: #cbd5e1;
   --color-border-light: #e2e8f0;
@@ -20,6 +21,7 @@
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
   --color-info: #3b82f6;
+  --color-paid: #059669;
 }
 
 @layer base {

@@ -369,7 +369,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                       
                       if (isClaimed) {
                         bgColor = 'bg-slate-100'
-                        borderColor = isPaid ? 'border-emerald-600' : 'border-[var(--color-border)]'
+                        borderColor = isPaid ? 'border-[var(--color-paid)]' : 'border-[var(--color-border)]'
                         textColor = 'text-[var(--color-text-secondary)]'
                         cursorStyle = 'cursor-not-allowed'
                         hoverClass = ''
@@ -427,7 +427,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
             <span>Claimed</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 border-[3px] border-emerald-600 bg-slate-100 rounded shadow-sm"></div>
+            <div className="w-6 h-6 border-[3px] border-[var(--color-paid)] bg-slate-100 rounded shadow-sm"></div>
             <span>Paid</span>
           </div>
         </div>
