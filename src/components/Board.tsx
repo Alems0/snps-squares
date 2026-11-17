@@ -161,10 +161,10 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 p-8">
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)] mb-4"></div>
-          <p className="text-[var(--color-text-muted)]">Loading game...</p>
+      <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[var(--color-border)] p-10">
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[var(--color-primary)] mb-5"></div>
+          <p className="text-base font-medium text-[var(--color-text-secondary)]">Loading game...</p>
         </div>
       </div>
     )
@@ -172,10 +172,10 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 p-8">
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="text-red-500 text-4xl mb-4">⚠️</div>
-          <p className="text-[var(--color-text-muted)]">{error}</p>
+      <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[var(--color-border)] p-10">
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="text-red-500 text-5xl mb-5">⚠️</div>
+          <p className="text-base font-medium text-[var(--color-text-secondary)]">{error}</p>
         </div>
       </div>
     )
@@ -183,9 +183,9 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
   if (!game) {
     return (
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 p-8">
-        <div className="flex flex-col items-center justify-center py-12">
-          <p className="text-[var(--color-text-muted)]">No active game</p>
+      <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[var(--color-border)] p-10">
+        <div className="flex flex-col items-center justify-center py-16">
+          <p className="text-base font-medium text-[var(--color-text-secondary)]">No active game</p>
         </div>
       </div>
     )
@@ -195,31 +195,31 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
     <>
       {/* Selection Panel */}
       {selectedSquares.length > 0 && (
-        <div className="bg-[var(--color-primary)] text-white rounded-xl shadow-lg mb-4 p-4">
+        <div className="bg-[var(--color-primary)] text-white rounded-xl shadow-lg mb-6 p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-white text-[var(--color-primary)] rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg flex-shrink-0">
+            <div className="flex items-center gap-4">
+              <div className="bg-white text-[var(--color-primary)] rounded-full w-12 h-12 flex items-center justify-center font-bold text-xl flex-shrink-0">
                 {selectedSquares.length}
               </div>
               <div>
-                <div className="font-bold text-base">
+                <div className="font-bold text-lg">
                   {selectedSquares.length} square{selectedSquares.length > 1 ? 's' : ''} selected
                 </div>
-                <div className="text-sm opacity-90">
+                <div className="text-sm opacity-90 mt-0.5">
                   Total: ${selectedSquares.length * game.cost_per_square}
                 </div>
               </div>
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex gap-3 w-full sm:w-auto">
               <button
                 onClick={handleCancelSelection}
-                className="flex-1 sm:flex-initial px-4 py-2 bg-white border-2 border-white text-[var(--color-primary)] rounded-lg font-semibold hover:shadow-lg transition-all"
+                className="flex-1 sm:flex-initial px-5 py-2.5 bg-transparent border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:text-[var(--color-primary)] transition-all"
               >
                 Clear
               </button>
               <button
                 onClick={handleProceedToClaim}
-                className="flex-1 sm:flex-initial px-4 py-2 bg-white text-[var(--color-primary)] rounded-lg font-semibold hover:shadow-lg transition-all"
+                className="flex-1 sm:flex-initial px-5 py-2.5 bg-white text-[var(--color-primary)] rounded-lg font-semibold hover:bg-opacity-90 shadow-md transition-all"
               >
                 Claim Now
               </button>
@@ -228,14 +228,14 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+      <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[var(--color-border)]">
       {/* Board container */}
-      <div className="p-4 md:p-8">
-        <div className="flex gap-2 md:gap-4">
+      <div className="p-6 md:p-10">
+        <div className="flex gap-3 md:gap-4">
           {/* Left AFC label (vertical) */}
           <div className="flex items-center justify-center">
             <div 
-              className="font-bold text-white text-sm md:text-base px-1.5 md:px-2 py-4 md:py-6 rounded-lg whitespace-nowrap bg-[var(--color-secondary)] shadow-md"
+              className="font-bold text-white text-base md:text-lg px-3 py-6 md:py-8 rounded-lg whitespace-nowrap bg-[var(--color-afc)] shadow-sm"
               style={{ 
                 writingMode: 'vertical-rl',
                 textOrientation: 'mixed'
@@ -248,20 +248,20 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
           {/* Main grid with NFC header */}
           <div className="flex-1 overflow-x-auto">
             {/* NFC header with numbers */}
-            <div className="mb-2 md:mb-3">
+            <div className="mb-3 md:mb-4">
               <div 
-                className="font-bold text-white text-center text-sm md:text-base py-1.5 md:py-2 rounded-lg mb-2 md:mb-3 bg-[var(--color-primary)] shadow-md"
+                className="font-bold text-white text-center text-base md:text-lg py-2 md:py-3 px-4 rounded-lg mb-3 md:mb-4 bg-[var(--color-nfc)] shadow-sm"
               >
                 NFC
               </div>
-              <div className="grid grid-cols-11 gap-1 md:gap-1.5">
+              <div className="grid grid-cols-11 gap-1.5 md:gap-2">
                 {/* Empty corner cell */}
-                <div className="w-8 h-8 md:w-10 md:h-10"></div>
+                <div className="w-10 h-10 md:w-12 md:h-12"></div>
                 {/* NFC numbers */}
                 {nfcNumbers.map((num, i) => (
                   <div
                     key={`nfc-${i}`}
-                    className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center font-bold text-xs md:text-sm bg-[var(--color-primary)] text-white rounded shadow-sm"
+                    className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center font-bold text-sm md:text-base bg-[var(--color-nfc)] text-white rounded-md shadow-sm"
                   >
                     {num === -1 ? '?' : num}
                   </div>
@@ -270,13 +270,13 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
             </div>
 
             {/* Grid with AFC numbers and squares */}
-            <div className="grid grid-cols-11 gap-1 md:gap-1.5">
+            <div className="grid grid-cols-11 gap-1.5 md:gap-2">
               {Array.from({ length: 10 }, (_, row) => {
                 return (
                   <React.Fragment key={`row-${row}`}>
                     {/* AFC number for this row */}
                     <div
-                      className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center font-bold text-xs md:text-sm bg-[var(--color-secondary)] text-white rounded shadow-sm"
+                      className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center font-bold text-sm md:text-base bg-[var(--color-afc)] text-white rounded-md shadow-sm"
                     >
                       {afcNumbers[row] === -1 ? '?' : afcNumbers[row]}
                     </div>
@@ -288,18 +288,22 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                       const isSelected = selectedSquares.includes(position)
                       
                       let bgColor = 'bg-white'
-                      let borderColor = 'border-gray-300'
-                      let textColor = 'text-green-500'
+                      let borderColor = 'border-[var(--color-border-light)]'
+                      let textColor = 'text-[var(--color-text-muted)]'
                       let cursorStyle = 'cursor-pointer'
+                      let hoverClass = 'hover:border-[var(--color-primary)] hover:shadow-md hover:bg-slate-50'
                       
                       if (isClaimed) {
-                        bgColor = 'bg-gray-200'
-                        textColor = 'text-gray-700'
+                        bgColor = 'bg-slate-100'
+                        borderColor = 'border-[var(--color-border)]'
+                        textColor = 'text-[var(--color-text-secondary)]'
                         cursorStyle = 'cursor-not-allowed'
+                        hoverClass = ''
                       } else if (isSelected) {
-                        bgColor = 'bg-yellow-100'
+                        bgColor = 'bg-[var(--color-primary)]'
                         borderColor = 'border-[var(--color-primary)]'
-                        textColor = 'text-[var(--color-primary)]'
+                        textColor = 'text-white'
+                        hoverClass = 'hover:bg-opacity-90'
                       }
 
                       const displayText = isClaimed && square?.claimed_by_name
@@ -313,7 +317,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                           key={position}
                           onClick={() => handleSquareClick(position)}
                           disabled={isClaimed}
-                          className={`w-8 h-8 md:w-10 md:h-10 border-2 ${borderColor} rounded text-sm md:text-lg font-medium hover:border-[var(--color-primary)] hover:shadow-md transition-all ${bgColor} ${textColor} flex items-center justify-center ${cursorStyle} disabled:hover:border-gray-300 disabled:hover:shadow-none`}
+                          className={`w-10 h-10 md:w-12 md:h-12 border-2 ${borderColor} rounded-md text-sm md:text-base font-semibold transition-all ${bgColor} ${textColor} flex items-center justify-center ${cursorStyle} ${hoverClass}`}
                           title={
                             isClaimed
                               ? `Claimed by ${square?.claimed_by_name}`
@@ -334,17 +338,17 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
         </div>
 
         {/* Legend */}
-        <div className="mt-4 md:mt-6 flex flex-wrap justify-center gap-4 md:gap-8 text-xs font-medium text-[var(--color-text-muted)]">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 border border-gray-300 bg-white flex items-center justify-center text-green-500 text-xs rounded shadow-sm">+</div>
+        <div className="mt-6 md:mt-8 pt-6 border-t border-[var(--color-border-light)] flex flex-wrap justify-center gap-6 md:gap-10 text-sm font-medium text-[var(--color-text-muted)]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 border-2 border-[var(--color-border-light)] bg-white flex items-center justify-center text-[var(--color-text-muted)] text-xs rounded-md shadow-sm">+</div>
             <span>Available</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 border-2 border-[var(--color-primary)] bg-yellow-100 flex items-center justify-center text-[var(--color-primary)] text-xs rounded shadow-sm">✓</div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 border-2 border-[var(--color-primary)] bg-[var(--color-primary)] flex items-center justify-center text-white text-xs rounded-md shadow-sm ring-2 ring-[var(--color-primary)] ring-offset-2">✓</div>
             <span>Selected</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 border border-gray-300 bg-gray-200 rounded shadow-sm"></div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 border-2 border-[var(--color-border)] bg-slate-100 rounded-md shadow-sm"></div>
             <span>Claimed</span>
           </div>
         </div>
