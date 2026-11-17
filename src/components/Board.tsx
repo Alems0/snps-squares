@@ -110,20 +110,32 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       updated_at: new Date().toISOString()
     })
 
+    const mockNames = [
+      'Sarah Johnson', 'Michael Chen', 'Emily Rodriguez', 'James Smith',
+      'Maria Garcia', 'David Kim', 'Jennifer Martinez', 'Christopher Lee',
+      'Jessica Anderson', 'Matthew Taylor', 'Ashley Thompson', 'Joshua White',
+      'Amanda Brown', 'Daniel Williams', 'Samantha Davis', 'Andrew Miller',
+      'Elizabeth Wilson', 'Ryan Moore', 'Nicole Jackson', 'Brandon Martin',
+      'Rebecca Lee', 'Justin Harris', 'Stephanie Clark', 'Kevin Lewis',
+      'Lauren Walker'
+    ]
+
     const mockSquares = Array.from({ length: 100 }, (_, i) => {
-      const isClaimed = i % 4 === 0
+      const isClaimed = i % 3 === 0
+      const isPaid = isClaimed && i % 6 !== 0
+      const nameIndex = Math.floor(i / 4) % mockNames.length
       return {
         id: `mock-${i}`,
         game_id: 'mock',
         position: i,
-        first_name: isClaimed ? 'Test' : null,
-        last_name: isClaimed ? 'User' : null,
-        claimed_by_name: isClaimed ? `User ${Math.floor(i / 4)}` : null,
+        first_name: isClaimed ? mockNames[nameIndex].split(' ')[0] : null,
+        last_name: isClaimed ? mockNames[nameIndex].split(' ')[1] : null,
+        claimed_by_name: isClaimed ? mockNames[nameIndex] : null,
         claimed_by_email: isClaimed ? `user${i}@test.com` : null,
         claimed_at: isClaimed ? new Date().toISOString() : null,
-        payment_status: isClaimed ? 'paid' : 'unpaid',
-        payment_method: isClaimed ? 'venmo' : null,
-        paid_at: isClaimed ? new Date().toISOString() : null
+        payment_status: isPaid ? 'paid' : 'unpaid',
+        payment_method: isPaid ? 'venmo' : null,
+        paid_at: isPaid ? new Date().toISOString() : null
       } as Square
     })
 
@@ -316,7 +328,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
           <div className="flex-1 min-w-0 overflow-x-auto">
             <div className="min-w-[440px]">
               {/* NFC numbers row */}
-              <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: 'auto repeat(10, minmax(32px, 1fr))' }}>
+              <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: 'auto repeat(10, minmax(56px, 1fr))' }}>
                 {/* Empty corner cell */}
                 <div className="aspect-square"></div>
                 {/* NFC numbers */}
@@ -331,7 +343,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
               </div>
 
               {/* Grid with AFC numbers and squares */}
-              <div className="grid gap-2" style={{ gridTemplateColumns: 'auto repeat(10, minmax(32px, 1fr))' }}>
+              <div className="grid gap-2" style={{ gridTemplateColumns: 'auto repeat(10, minmax(56px, 1fr))' }}>
               {Array.from({ length: 10 }, (_, row) => {
                 return (
                   <React.Fragment key={`row-${row}`}>
@@ -346,6 +358,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                       const position = row * 10 + col
                       const square = squares.find((s) => s.position === position)
                       const isClaimed = Boolean(square?.claimed_by_email)
+                      const isPaid = isClaimed && square?.payment_status === 'paid'
                       const isSelected = selectedSquares.includes(position)
                       
                       let bgColor = 'bg-white'
@@ -356,7 +369,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                       
                       if (isClaimed) {
                         bgColor = 'bg-slate-100'
-                        borderColor = 'border-[var(--color-border)]'
+                        borderColor = isPaid ? 'border-emerald-600' : 'border-[var(--color-border)]'
                         textColor = 'text-[var(--color-text-secondary)]'
                         cursorStyle = 'cursor-not-allowed'
                         hoverClass = ''
@@ -368,7 +381,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                       }
 
                       const displayText = isClaimed && square?.claimed_by_name
-                        ? square.claimed_by_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+                        ? square.claimed_by_name
                         : isSelected
                         ? '✓'
                         : '+'
@@ -378,16 +391,16 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                           key={position}
                           onClick={() => handleSquareClick(position)}
                           disabled={isClaimed}
-                          className={`aspect-square w-full border-2 ${borderColor} rounded text-sm font-semibold transition-all ${bgColor} ${textColor} flex items-center justify-center ${cursorStyle} ${hoverClass}`}
+                          className={`aspect-square w-full ${isPaid ? 'border-[3px]' : 'border-2'} ${borderColor} rounded text-[10px] font-semibold leading-tight transition-all ${bgColor} ${textColor} flex items-center justify-center p-0.5 ${cursorStyle} ${hoverClass}`}
                           title={
                             isClaimed
-                              ? `Claimed by ${square?.claimed_by_name}`
+                              ? `${square?.claimed_by_name}${isPaid ? ' (Paid)' : ' (Unpaid)'}`
                               : isSelected
                               ? 'Selected - Click to deselect'
                               : 'Available - Click to select'
                           }
                         >
-                          {displayText}
+                          <span className="break-words text-center line-clamp-2 w-full">{displayText}</span>
                         </button>
                       )
                     })}
@@ -400,7 +413,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       </div>
 
         {/* Legend */}
-        <div className="mt-6 pt-6 border-t border-[var(--color-border-light)] flex flex-wrap justify-center gap-8 text-sm font-medium text-[var(--color-text-secondary)]">
+        <div className="mt-6 pt-6 border-t border-[var(--color-border-light)] flex flex-wrap justify-center gap-6 text-sm font-medium text-[var(--color-text-secondary)]">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 border-2 border-[var(--color-border-light)] bg-white flex items-center justify-center text-[var(--color-text-muted)] text-xs rounded shadow-sm">+</div>
             <span>Available</span>
@@ -412,6 +425,10 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 border-2 border-[var(--color-border)] bg-slate-100 rounded shadow-sm"></div>
             <span>Claimed</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 border-[3px] border-emerald-600 bg-slate-100 rounded shadow-sm"></div>
+            <span>Paid</span>
           </div>
         </div>
       </div>
