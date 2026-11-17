@@ -123,8 +123,8 @@ export default function BoardPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[var(--color-background)]">
       {/* Header */}
-      <header className="bg-[var(--color-primary)] text-white shadow-md sticky top-0 z-50">
-        <div className="container mx-auto max-w-7xl px-6 py-6">
+      <header className="bg-[var(--color-primary)] text-white shadow-md">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-wrap justify-between items-center gap-4">
             <div className="flex items-center gap-4">
               <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -153,7 +153,7 @@ export default function BoardPage() {
 
       {/* How It Works Section */}
       <section className="bg-white border-b border-[var(--color-border)] shadow-sm">
-        <div className="container mx-auto max-w-7xl px-6 py-12 sm:py-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
           <h2 className="text-3xl sm:text-4xl font-bold text-center text-[var(--color-text)] mb-12">How It Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
             <div className="flex flex-col items-center text-center">
@@ -176,12 +176,12 @@ export default function BoardPage() {
       </section>
 
       {/* Main Board Section */}
-      <main className="flex-1 container mx-auto max-w-7xl px-6 py-12">
+      <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Board and Sidebar Layout */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 mb-8">
           {/* Left Panel - Rules */}
-          <div className="xl:col-span-3 order-2 xl:order-1">
-            <div className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden sticky top-24">
+          <div className="lg:col-span-3 order-2 lg:order-1">
+            <div className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden">
               <div className="px-6 py-5 border-b border-[var(--color-border)] bg-slate-50">
                 <h2 className="text-lg font-bold text-[var(--color-text)]">Game Rules</h2>
               </div>
@@ -210,13 +210,13 @@ export default function BoardPage() {
           </div>
 
           {/* Center Panel - Board (Hero) */}
-          <div className="xl:col-span-6 order-1 xl:order-2">
+          <div className="lg:col-span-6 order-1 lg:order-2">
             <Board onClaimSuccess={fetchTopBuyers} />
           </div>
 
           {/* Right Panel - Top Buyers */}
-          <div className="xl:col-span-3 order-3">
-            <div className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden sticky top-24">
+          <div className="lg:col-span-3 order-3">
+            <div className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden">
               <div className="px-6 py-5 border-b border-[var(--color-border)] bg-slate-50 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <svg className="w-5 h-5 text-[var(--color-primary)]" fill="currentColor" viewBox="0 0 20 20">
@@ -286,7 +286,7 @@ export default function BoardPage() {
               <div key={index} className="group">
                 <button
                   onClick={() => setOpenFAQ(openFAQ === index ? null : index)}
-                  className="w-full text-left py-6 px-6 flex justify-between items-center hover:bg-slate-50 transition-colors"
+                  className="w-full text-left py-5 px-6 flex justify-between items-center hover:bg-slate-50 transition-colors"
                 >
                   <span className="font-bold text-base text-[var(--color-text)] pr-6">
                     {item.question}
@@ -303,7 +303,7 @@ export default function BoardPage() {
                   </svg>
                 </button>
                 {openFAQ === index && (
-                  <div className="px-6 pb-6 text-base text-[var(--color-text-secondary)] leading-relaxed">
+                  <div className="px-6 pb-5 pt-2 text-base text-[var(--color-text-secondary)] leading-relaxed">
                     {item.answer}
                   </div>
                 )}
@@ -314,8 +314,8 @@ export default function BoardPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-[var(--color-border)] py-8 px-6 mt-auto shadow-sm">
-        <div className="container mx-auto max-w-7xl">
+      <footer className="bg-white border-t border-[var(--color-border)] mt-auto shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-wrap justify-between items-center gap-4 text-sm text-[var(--color-text-secondary)]">
             <div className="flex items-center gap-8">
               <button

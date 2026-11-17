@@ -230,12 +230,19 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
       <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[var(--color-border)]">
       {/* Board container */}
-      <div className="p-6 md:p-10">
-        <div className="flex gap-3 md:gap-4">
-          {/* Left AFC label (vertical) */}
-          <div className="flex items-center justify-center">
+      <div className="p-6">
+        {/* NFC header - full width bar */}
+        <div className="mb-4">
+          <div className="font-bold text-white text-center text-lg py-3 px-4 rounded-lg bg-[var(--color-nfc)] shadow-sm">
+            NFC
+          </div>
+        </div>
+
+        <div className="flex gap-4">
+          {/* Left AFC label - full height vertical bar */}
+          <div className="flex items-stretch">
             <div 
-              className="font-bold text-white text-base md:text-lg px-3 py-6 md:py-8 rounded-lg whitespace-nowrap bg-[var(--color-afc)] shadow-sm"
+              className="font-bold text-white text-lg px-4 py-3 rounded-lg bg-[var(--color-afc)] shadow-sm flex items-center justify-center"
               style={{ 
                 writingMode: 'vertical-rl',
                 textOrientation: 'mixed'
@@ -245,38 +252,31 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
             </div>
           </div>
 
-          {/* Main grid with NFC header */}
-          <div className="flex-1 overflow-x-auto">
-            {/* NFC header with numbers */}
-            <div className="mb-3 md:mb-4">
-              <div 
-                className="font-bold text-white text-center text-base md:text-lg py-2 md:py-3 px-4 rounded-lg mb-3 md:mb-4 bg-[var(--color-nfc)] shadow-sm"
-              >
-                NFC
-              </div>
-              <div className="grid grid-cols-11 gap-1.5 md:gap-2">
-                {/* Empty corner cell */}
-                <div className="w-10 h-10 md:w-12 md:h-12"></div>
-                {/* NFC numbers */}
-                {nfcNumbers.map((num, i) => (
-                  <div
-                    key={`nfc-${i}`}
-                    className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center font-bold text-sm md:text-base bg-[var(--color-nfc)] text-white rounded-md shadow-sm"
-                  >
-                    {num === -1 ? '?' : num}
-                  </div>
-                ))}
-              </div>
+          {/* Main grid container */}
+          <div className="flex-1 min-w-0">
+            {/* NFC numbers row */}
+            <div className="grid grid-cols-11 gap-2 mb-4">
+              {/* Empty corner cell */}
+              <div className="w-10 h-10"></div>
+              {/* NFC numbers */}
+              {nfcNumbers.map((num, i) => (
+                <div
+                  key={`nfc-${i}`}
+                  className="w-10 h-10 flex items-center justify-center font-bold text-sm bg-[var(--color-nfc)] text-white rounded shadow-sm"
+                >
+                  {num === -1 ? '?' : num}
+                </div>
+              ))}
             </div>
 
             {/* Grid with AFC numbers and squares */}
-            <div className="grid grid-cols-11 gap-1.5 md:gap-2">
+            <div className="grid grid-cols-11 gap-2">
               {Array.from({ length: 10 }, (_, row) => {
                 return (
                   <React.Fragment key={`row-${row}`}>
                     {/* AFC number for this row */}
                     <div
-                      className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center font-bold text-sm md:text-base bg-[var(--color-afc)] text-white rounded-md shadow-sm"
+                      className="w-10 h-10 flex items-center justify-center font-bold text-sm bg-[var(--color-afc)] text-white rounded shadow-sm"
                     >
                       {afcNumbers[row] === -1 ? '?' : afcNumbers[row]}
                     </div>
@@ -317,7 +317,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                           key={position}
                           onClick={() => handleSquareClick(position)}
                           disabled={isClaimed}
-                          className={`w-10 h-10 md:w-12 md:h-12 border-2 ${borderColor} rounded-md text-sm md:text-base font-semibold transition-all ${bgColor} ${textColor} flex items-center justify-center ${cursorStyle} ${hoverClass}`}
+                          className={`w-10 h-10 border-2 ${borderColor} rounded text-sm font-semibold transition-all ${bgColor} ${textColor} flex items-center justify-center ${cursorStyle} ${hoverClass}`}
                           title={
                             isClaimed
                               ? `Claimed by ${square?.claimed_by_name}`
@@ -338,17 +338,17 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
         </div>
 
         {/* Legend */}
-        <div className="mt-6 md:mt-8 pt-6 border-t border-[var(--color-border-light)] flex flex-wrap justify-center gap-6 md:gap-10 text-sm font-medium text-[var(--color-text-muted)]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 border-2 border-[var(--color-border-light)] bg-white flex items-center justify-center text-[var(--color-text-muted)] text-xs rounded-md shadow-sm">+</div>
+        <div className="mt-6 pt-6 border-t border-[var(--color-border-light)] flex flex-wrap justify-center gap-8 text-sm font-medium text-[var(--color-text-secondary)]">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 border-2 border-[var(--color-border-light)] bg-white flex items-center justify-center text-[var(--color-text-muted)] text-xs rounded shadow-sm">+</div>
             <span>Available</span>
           </div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 border-2 border-[var(--color-primary)] bg-[var(--color-primary)] flex items-center justify-center text-white text-xs rounded-md shadow-sm ring-2 ring-[var(--color-primary)] ring-offset-2">✓</div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 border-2 border-[var(--color-primary)] bg-[var(--color-primary)] flex items-center justify-center text-white text-xs rounded shadow-sm">✓</div>
             <span>Selected</span>
           </div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 border-2 border-[var(--color-border)] bg-slate-100 rounded-md shadow-sm"></div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 border-2 border-[var(--color-border)] bg-slate-100 rounded shadow-sm"></div>
             <span>Claimed</span>
           </div>
         </div>

@@ -400,7 +400,7 @@ export default function AdminPanel() {
   return (
     <div className="min-h-screen flex flex-col bg-[var(--color-background)]">
       <header className="bg-white border-b border-[var(--color-border)] sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto max-w-7xl px-6 py-5">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-8">
               <Link to="/" className="text-2xl font-bold text-[var(--color-primary)] hover:opacity-90 transition-opacity">
@@ -428,7 +428,7 @@ export default function AdminPanel() {
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto max-w-7xl px-6 py-10">
+      <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="mb-10">
           <h1 className="text-4xl font-bold text-[var(--color-text)] mb-3">Dashboard</h1>
           <p className="text-base text-[var(--color-text-secondary)]">Manage your Super Bowl squares game</p>
@@ -721,8 +721,8 @@ export default function AdminPanel() {
         </section>
       </main>
 
-      <footer className="border-t border-[var(--color-border)] bg-white py-8 px-6 mt-auto shadow-sm">
-        <div className="container mx-auto max-w-7xl flex flex-wrap justify-between items-center gap-4 text-sm text-[var(--color-text-secondary)]">
+      <footer className="border-t border-[var(--color-border)] bg-white mt-auto shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-wrap justify-between items-center gap-4 text-sm text-[var(--color-text-secondary)]">
           <div className="flex items-center gap-8">
             <a href="#" className="hover:text-[var(--color-primary)] transition-colors font-medium">Privacy Policy</a>
             <a href="#" className="hover:text-[var(--color-primary)] transition-colors font-medium">Terms of Service</a>
