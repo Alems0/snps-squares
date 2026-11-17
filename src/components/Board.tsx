@@ -315,7 +315,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
           {/* Main grid container with horizontal scroll on mobile */}
           <div className="flex-1 min-w-0 overflow-x-auto max-w-full">
             {/* NFC numbers row */}
-            <div className="grid gap-1 sm:gap-2 mb-3 sm:mb-4" style={{ gridTemplateColumns: 'auto repeat(10, minmax(28px, 1fr))' }}>
+            <div className="grid gap-1 sm:gap-2 mb-3 sm:mb-4" style={{ gridTemplateColumns: 'auto repeat(10, minmax(24px, 1fr))' }}>
               {/* Empty corner cell */}
               <div className="aspect-square"></div>
               {/* NFC numbers */}
@@ -330,7 +330,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
             </div>
 
             {/* Grid with AFC numbers and squares */}
-            <div className="grid gap-1 sm:gap-2" style={{ gridTemplateColumns: 'auto repeat(10, minmax(28px, 1fr))' }}>
+            <div className="grid gap-1 sm:gap-2" style={{ gridTemplateColumns: 'auto repeat(10, minmax(24px, 1fr))' }}>
               {Array.from({ length: 10 }, (_, row) => {
                 return (
                   <React.Fragment key={`row-${row}`}>
