@@ -4,6 +4,7 @@ import { isAllowedAdmin, signOutAdmin } from '../lib/auth'
 import { useAuth } from '../lib/useAuth'
 import { supabase, type Square, type Game } from '../lib/supabase'
 import ConfigureGameModal from '../components/ConfigureGameModal'
+import ConfirmationModal from '../components/ConfirmationModal'
 import { formatVenmoHandle } from '../lib/formatVenmo'
 
 interface ClaimData extends Square {
@@ -24,6 +25,12 @@ export default function AdminPanel() {
     charity: 0
   })
   const [showConfigureModal, setShowConfigureModal] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<{
+    title: string
+    description: string
+    onConfirm: () => void
+    variant?: 'default' | 'destructive'
+  } | null>(null)
 
   useEffect(() => {
     if (loading) return
@@ -226,84 +233,107 @@ export default function AdminPanel() {
     }
   }
 
-  const handleRandomizeNumbers = async () => {
-    if (!game) {
-      alert('No active game found.')
-      return
-    }
+  const handleClearNumbers = () => {
+    if (!game) return
+    
+    setConfirmAction({
+      title: 'Are you sure?',
+      description: 'This will reset all NFC and AFC numbers back to unassigned (?). This action cannot be undone.',
+      onConfirm: async () => {
+        setConfirmAction(null)
+        try {
+          const { error } = await supabase
+            .from('games')
+            .update({
+              afc_numbers: [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+              nfc_numbers: [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+            })
+            .eq('id', game.id)
 
-    if (game.numbers_locked) {
-      alert('Numbers are locked. Please unlock the board first.')
-      return
-    }
+          if (error) throw error
 
-    const hasNumbers = game.afc_numbers.some(n => n !== -1) || game.nfc_numbers.some(n => n !== -1)
-    if (hasNumbers) {
-      const confirmed = window.confirm(
-        'Numbers have already been set. Are you sure you want to randomize them again?'
-      )
-      if (!confirmed) return
-    }
-
-    try {
-      // Fisher-Yates shuffle
-      const shuffle = (array: number[]) => {
-        const arr = [...array]
-        for (let i = arr.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1))
-          ;[arr[i], arr[j]] = [arr[j], arr[i]]
+          alert('Numbers cleared successfully!')
+          await fetchGameAndClaims()
+        } catch (err) {
+          console.error('Error clearing numbers:', err)
+          alert('Failed to clear numbers. Please try again.')
         }
-        return arr
-      }
-
-      const afcNumbers = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-      const nfcNumbers = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-
-      const { error } = await supabase
-        .from('games')
-        .update({
-          afc_numbers: afcNumbers,
-          nfc_numbers: nfcNumbers
-        })
-        .eq('id', game.id)
-
-      if (error) throw error
-
-      alert('Numbers randomized successfully!')
-      await fetchGameAndClaims()
-    } catch (err) {
-      console.error('Error randomizing numbers:', err)
-      alert('Failed to randomize numbers. Please try again.')
-    }
+      },
+      variant: 'destructive'
+    })
   }
 
-  const handleLockBoard = async () => {
-    if (!game) {
-      alert('No active game found.')
-      return
-    }
+  const handleRandomizeNumbers = () => {
+    if (!game) return
+
+    setConfirmAction({
+      title: 'Are you sure?',
+      description: 'This will shuffle the AFC and NFC axis numbers (0-9) randomly.',
+      onConfirm: async () => {
+        setConfirmAction(null)
+        try {
+          // Fisher-Yates shuffle
+          const shuffle = (array: number[]) => {
+            const arr = [...array]
+            for (let i = arr.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1))
+              ;[arr[i], arr[j]] = [arr[j], arr[i]]
+            }
+            return arr
+          }
+
+          const afcNumbers = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+          const nfcNumbers = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+          const { error } = await supabase
+            .from('games')
+            .update({
+              afc_numbers: afcNumbers,
+              nfc_numbers: nfcNumbers
+            })
+            .eq('id', game.id)
+
+          if (error) throw error
+
+          alert('Numbers randomized successfully!')
+          await fetchGameAndClaims()
+        } catch (err) {
+          console.error('Error randomizing numbers:', err)
+          alert('Failed to randomize numbers. Please try again.')
+        }
+      }
+    })
+  }
+
+  const handleLockBoard = () => {
+    if (!game) return
 
     const newLockState = !game.numbers_locked
     const action = newLockState ? 'lock' : 'unlock'
-    const confirmed = window.confirm(
-      `Are you sure you want to ${action} the board?${newLockState ? ' Locked boards prevent number randomization.' : ''}`
-    )
-    if (!confirmed) return
+    
+    setConfirmAction({
+      title: 'Are you sure?',
+      description: newLockState 
+        ? 'This will lock the numbers and prevent randomization or clearing until unlocked.'
+        : 'This will unlock the numbers and allow randomization and clearing.',
+      onConfirm: async () => {
+        setConfirmAction(null)
+        try {
+          const { error } = await supabase
+            .from('games')
+            .update({ numbers_locked: newLockState })
+            .eq('id', game.id)
 
-    try {
-      const { error } = await supabase
-        .from('games')
-        .update({ numbers_locked: newLockState })
-        .eq('id', game.id)
+          if (error) throw error
 
-      if (error) throw error
-
-      alert(`Board ${action}ed successfully!`)
-      await fetchGameAndClaims()
-    } catch (err) {
-      console.error(`Error ${action}ing board:`, err)
-      alert(`Failed to ${action} board. Please try again.`)
-    }
+          alert(`Board ${action}ed successfully!`)
+          await fetchGameAndClaims()
+        } catch (err) {
+          console.error(`Error ${action}ing board:`, err)
+          alert(`Failed to ${action} board. Please try again.`)
+        }
+      }
+    })
   }
 
   const handleConfigureGame = async (updates: {
@@ -555,9 +585,9 @@ export default function AdminPanel() {
               </button>
               <button 
                 onClick={handleRandomizeNumbers}
-                disabled={!game}
+                disabled={!game || game.numbers_locked}
                 className="w-full border-2 border-[var(--color-border)] text-[var(--color-text)] py-3 px-4 rounded-lg hover:bg-slate-50 hover:border-[var(--color-text-muted)] transition-all text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
-                title="Shuffle AFC and NFC axis numbers (0-9)"
+                title={game?.numbers_locked ? 'Numbers are locked' : 'Shuffle AFC and NFC axis numbers (0-9)'}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -565,10 +595,26 @@ export default function AdminPanel() {
                 Randomize Numbers
               </button>
               <button 
-                onClick={handleLockBoard}
-                disabled={!game}
+                onClick={handleClearNumbers}
+                disabled={!game || game.numbers_locked}
                 className="w-full border-2 border-[var(--color-border)] text-[var(--color-text)] py-3 px-4 rounded-lg hover:bg-slate-50 hover:border-[var(--color-text-muted)] transition-all text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
-                title={game?.numbers_locked ? 'Allow number randomization' : 'Prevent number changes'}
+                title={game?.numbers_locked ? 'Numbers are locked' : 'Reset all numbers back to unassigned (?)'}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Clear Numbers
+              </button>
+              <button 
+                onClick={handleLockBoard}
+                disabled={!game || (!game.numbers_locked && (game.afc_numbers.every(n => n === -1) || game.nfc_numbers.every(n => n === -1)))}
+                className="w-full border-2 border-[var(--color-border)] text-[var(--color-text)] py-3 px-4 rounded-lg hover:bg-slate-50 hover:border-[var(--color-text-muted)] transition-all text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
+                title={
+                  !game ? 'No game' :
+                  game.numbers_locked ? 'Allow number randomization and clearing' :
+                  (game.afc_numbers.every(n => n === -1) || game.nfc_numbers.every(n => n === -1)) ? 'Assign numbers first' :
+                  'Prevent number changes'
+                }
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {game?.numbers_locked ? (
@@ -577,7 +623,7 @@ export default function AdminPanel() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   )}
                 </svg>
-                {game?.numbers_locked ? 'Unlock Board' : 'Lock Board'}
+                {game?.numbers_locked ? 'Unlock Numbers' : 'Lock Numbers'}
               </button>
               <button 
                 onClick={handleExportCSV}
@@ -737,6 +783,17 @@ export default function AdminPanel() {
           game={game}
           onClose={() => setShowConfigureModal(false)}
           onSave={handleConfigureGame}
+        />
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmAction && (
+        <ConfirmationModal
+          title={confirmAction.title}
+          description={confirmAction.description}
+          onConfirm={confirmAction.onConfirm}
+          onCancel={() => setConfirmAction(null)}
+          variant={confirmAction.variant}
         />
       )}
     </div>
