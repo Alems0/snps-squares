@@ -288,7 +288,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[var(--color-border)] min-w-0 w-full">
+      <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[var(--color-border)] min-w-0 w-full max-w-full">
       {/* Board container */}
       <div className="p-6 min-w-0">
         {/* NFC header - full width bar */}
