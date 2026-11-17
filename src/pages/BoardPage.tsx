@@ -151,27 +151,40 @@ export default function BoardPage() {
         </div>
       </header>
 
-      {/* How It Works Section */}
+      {/* Top Buyers Section - Full Width Compact */}
       <section className="bg-white border-b border-[var(--color-border)] shadow-sm">
-        <div className="max-w-6xl mx-auto px-6 py-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center text-[var(--color-text)] mb-12">How It Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center text-2xl font-bold mb-5 shadow-md">1</div>
-              <h3 className="text-xl font-bold text-[var(--color-text)] mb-3">Claim Your Square</h3>
-              <p className="text-base text-[var(--color-text-secondary)] leading-relaxed">Click any open square on the board below. No account needed!</p>
-            </div>
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center text-2xl font-bold mb-5 shadow-md">2</div>
-              <h3 className="text-xl font-bold text-[var(--color-text)] mb-3">Pay the Admin</h3>
-              <p className="text-base text-[var(--color-text-secondary)] leading-relaxed">Send payment via Venmo or cash. Numbers are assigned randomly after all squares fill.</p>
-            </div>
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center text-2xl font-bold mb-5 shadow-md">3</div>
-              <h3 className="text-xl font-bold text-[var(--color-text)] mb-3">Win by Quarter</h3>
-              <p className="text-base text-[var(--color-text-secondary)] leading-relaxed">Match the last digit of each team's score at the end of any quarter to win!</p>
+        <div className="max-w-6xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-[var(--color-primary)]" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <h2 className="text-xl font-bold text-[var(--color-text)]">Top Buyers</h2>
             </div>
           </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-6">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)]"></div>
+            </div>
+          ) : topBuyers.length === 0 ? (
+            <p className="text-center text-[var(--color-text-muted)] py-6">No squares claimed yet</p>
+          ) : (
+            <div className="flex flex-wrap gap-6">
+              {topBuyers.map((buyer, index) => (
+                <div key={buyer.email} className="flex items-center gap-3">
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white ${
+                    index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-orange-600' : 'bg-[var(--color-primary)]'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-base text-[var(--color-text)]">{buyer.name}</div>
+                    <div className="text-sm text-[var(--color-text-muted)]">{buyer.squareCount} square{buyer.squareCount > 1 ? 's' : ''}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -182,97 +195,41 @@ export default function BoardPage() {
           <Board onClaimSuccess={fetchTopBuyers} />
         </div>
 
-        {/* Game Rules and Top Buyers - Side by Side Below Board */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 min-w-0">
-          {/* Game Rules */}
-          <div className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden min-w-0">
-            <div className="px-6 py-5 border-b border-[var(--color-border)] bg-slate-50">
-              <h2 className="text-lg font-bold text-[var(--color-text)]">Game Rules</h2>
-            </div>
-            <div className="p-6 space-y-6">
-              <div>
-                <p className="text-base text-[var(--color-text-secondary)] leading-relaxed">
-                  Each square costs ${game?.cost_per_square || 10}. Numbers will be randomly assigned after all squares fill. Winners are determined by the last digit of each team's score at the end of each quarter.
-                </p>
-              </div>
-              <div className="pt-5 border-t border-[var(--color-border-light)] space-y-5">
-                <div>
-                  <div className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
-                    Cost per Square
-                  </div>
-                  <div className="text-3xl font-bold text-[var(--color-primary)]">${game?.cost_per_square || 10}</div>
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
-                    Charity Donation
-                  </div>
-                  <div className="text-lg font-bold text-[var(--color-text)]">{game?.charity_percentage || 0}% to Community Charity</div>
-                </div>
-              </div>
-            </div>
+        {/* Game Rules - Full Width Below Board */}
+        <div className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden min-w-0 mb-8">
+          <div className="px-6 py-5 border-b border-[var(--color-border)] bg-slate-50">
+            <h2 className="text-2xl font-bold text-[var(--color-text)]">Game Rules</h2>
           </div>
-
-          {/* Top Buyers */}
-          <div className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden min-w-0">
-            <div className="px-6 py-5 border-b border-[var(--color-border)] bg-slate-50 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <svg className="w-5 h-5 text-[var(--color-primary)]" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-                <h2 className="text-lg font-bold text-[var(--color-text)]">Top Buyers</h2>
-              </div>
-              <span className="text-xs text-[var(--color-text-muted)] font-semibold uppercase tracking-wider">Most Active</span>
+          <div className="p-6 space-y-6">
+            <div>
+              <p className="text-base text-[var(--color-text-secondary)] leading-relaxed">
+                Each square costs ${game?.cost_per_square || 10}. Numbers will be randomly assigned after all squares fill. Winners are determined by the last digit of each team's score at the end of each quarter.
+              </p>
             </div>
-            <div className="p-6">
-              {loading ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--color-primary)] mb-3"></div>
-                  <p className="text-sm text-[var(--color-text-muted)]">Loading...</p>
+            <div className="pt-5 border-t border-[var(--color-border-light)] grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div>
+                <div className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
+                  Cost per Square
                 </div>
-              ) : topBuyers.length === 0 ? (
-                <div className="flex flex-col items-center justify-center text-center py-12">
-                  <svg className="w-16 h-16 text-[var(--color-text-light)] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  <p className="text-base font-semibold text-[var(--color-text-muted)]">No squares claimed yet</p>
-                  <p className="text-sm text-[var(--color-text-light)] mt-2">Be the first to join!</p>
+                <div className="text-3xl font-bold text-[var(--color-primary)]">${game?.cost_per_square || 10}</div>
+              </div>
+              <div>
+                <div className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
+                  Charity Donation
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {topBuyers.map((buyer, index) => (
-                    <div
-                      key={buyer.email}
-                      className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-[var(--color-border-light)] hover:border-[var(--color-primary)] hover:shadow-sm transition-all"
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white ${
-                          index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-orange-600' : 'bg-[var(--color-primary)]'
-                        }`}>
-                          {index + 1}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-base text-[var(--color-text)] truncate">
-                            {buyer.name}
-                          </div>
-                          <div className="text-sm text-[var(--color-text-muted)] truncate">
-                            {buyer.squareCount} square{buyer.squareCount > 1 ? 's' : ''}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="font-bold text-base text-[var(--color-text)]">
-                          ${buyer.totalCost}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <div className="text-2xl font-bold text-[var(--color-text)]">{game?.charity_percentage || 0}% to Charity</div>
+              </div>
+              <div>
+                <div className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
+                  Total Prize Pool
                 </div>
-              )}
+                <div className="text-3xl font-bold text-[var(--color-primary)]">${prizePot.toFixed(0)}</div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* FAQ Section - Full Width Below Board */}
+        {/* FAQ Section - Full Width Below Game Rules */}
         <section className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden">
           <div className="px-6 py-5 border-b border-[var(--color-border)] bg-slate-50">
             <h2 className="text-2xl font-bold text-[var(--color-text)]">Frequently Asked Questions</h2>
@@ -312,19 +269,7 @@ export default function BoardPage() {
       {/* Footer */}
       <footer className="bg-white border-t border-[var(--color-border)] mt-auto shadow-sm">
         <div className="max-w-6xl mx-auto px-6 py-8">
-          <div className="flex flex-wrap justify-between items-center gap-4 text-sm text-[var(--color-text-secondary)]">
-            <div className="flex items-center gap-8">
-              <button
-                onClick={() => {
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
-                }}
-                className="hover:text-[var(--color-primary)] transition-colors font-medium"
-              >
-                How to Play
-              </button>
-              <a href="#" className="hover:text-[var(--color-primary)] transition-colors font-medium">Privacy Policy</a>
-              <a href="#" className="hover:text-[var(--color-primary)] transition-colors font-medium">Terms of Service</a>
-            </div>
+          <div className="flex justify-center items-center">
             <p className="text-sm text-[var(--color-text-muted)]">
               © {new Date().getFullYear()} SNPS Squares. Not affiliated with the NFL.
             </p>
