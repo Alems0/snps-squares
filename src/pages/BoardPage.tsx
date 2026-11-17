@@ -176,7 +176,7 @@ export default function BoardPage() {
       </section>
 
       {/* Main Board Section */}
-      <main className="flex-1 max-w-6xl mx-auto px-6 py-12 min-w-0">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-12 min-w-0">
         {/* Board - Full Width Hero */}
         <div className="mb-8 min-w-0 w-full">
           <Board onClaimSuccess={fetchTopBuyers} />
