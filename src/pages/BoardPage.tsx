@@ -176,14 +176,14 @@ export default function BoardPage() {
       </section>
 
       {/* Main Board Section */}
-      <main className="flex-1 max-w-6xl mx-auto px-6 py-12">
+      <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-6 py-8 sm:py-12 min-w-0">
         {/* Board - Full Width Hero */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8 min-w-0">
           <Board onClaimSuccess={fetchTopBuyers} />
         </div>
 
         {/* Game Rules and Top Buyers - Side by Side Below Board */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8 min-w-0">
           {/* Game Rules */}
           <div className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden">
             <div className="px-6 py-5 border-b border-[var(--color-border)] bg-slate-50">

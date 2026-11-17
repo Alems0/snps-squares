@@ -24,6 +24,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
   // Fetch active game and squares
   useEffect(() => {
     fetchGameAndSquares()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchGameAndSquares = async () => {
@@ -40,15 +41,22 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
       if (gameError) {
         console.error('Error fetching game:', gameError)
-        // Use mock data for testing if API fails
-        console.log('Using mock data for testing')
-        useMockData()
+        
+        // Only use mock data in dev mode with explicit flag
+        if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true') {
+          console.log('Using mock data (dev mode)')
+          loadMockData()
+          return
+        }
+        
+        setError('Board unavailable. Please refresh the page.')
+        setLoading(false)
         return
       }
 
       if (!gameData) {
-        console.log('No active game, using mock data')
-        useMockData()
+        setError('No active game found.')
+        setLoading(false)
         return
       }
 
@@ -67,11 +75,20 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       setLoading(false)
     } catch (err) {
       console.error('Error fetching game data:', err)
-      useMockData()
+      
+      // Only use mock data in dev mode with explicit flag
+      if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true') {
+        console.log('Using mock data (dev mode)')
+        loadMockData()
+        return
+      }
+      
+      setError('Failed to load game data. Please refresh the page.')
+      setLoading(false)
     }
   }
 
-  const useMockData = () => {
+  const loadMockData = () => {
     setGame({
       id: 'mock',
       season: 2026,
@@ -271,21 +288,21 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[var(--color-border)]">
+      <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[var(--color-border)] min-w-0">
       {/* Board container */}
-      <div className="p-6">
+      <div className="p-3 sm:p-6 min-w-0">
         {/* NFC header - full width bar */}
-        <div className="mb-4">
-          <div className="font-bold text-white text-center text-lg py-3 px-4 rounded-lg bg-[var(--color-nfc)] shadow-sm">
+        <div className="mb-3 sm:mb-4 min-w-0">
+          <div className="font-bold text-white text-center text-base sm:text-lg py-2 sm:py-3 px-3 sm:px-4 rounded-lg bg-[var(--color-nfc)] shadow-sm">
             NFC
           </div>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex gap-2 sm:gap-4 min-w-0">
           {/* Left AFC label - full height vertical bar */}
-          <div className="flex items-stretch">
+          <div className="flex items-stretch flex-shrink-0">
             <div 
-              className="font-bold text-white text-lg px-4 py-3 rounded-lg bg-[var(--color-afc)] shadow-sm flex items-center justify-center"
+              className="font-bold text-white text-base sm:text-lg px-2 sm:px-4 py-2 sm:py-3 rounded-lg bg-[var(--color-afc)] shadow-sm flex items-center justify-center"
               style={{ 
                 writingMode: 'vertical-rl',
                 textOrientation: 'mixed'
@@ -296,16 +313,16 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
           </div>
 
           {/* Main grid container with horizontal scroll on mobile */}
-          <div className="flex-1 min-w-0 overflow-x-auto">
+          <div className="flex-1 min-w-0 overflow-x-auto max-w-full">
             {/* NFC numbers row */}
-            <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: 'auto repeat(10, minmax(32px, 1fr))' }}>
+            <div className="grid gap-1 sm:gap-2 mb-3 sm:mb-4" style={{ gridTemplateColumns: 'auto repeat(10, minmax(28px, 1fr))' }}>
               {/* Empty corner cell */}
               <div className="aspect-square"></div>
               {/* NFC numbers */}
               {nfcNumbers.map((num, i) => (
                 <div
                   key={`nfc-${i}`}
-                  className="aspect-square w-full flex items-center justify-center font-bold text-sm bg-[var(--color-nfc)] text-white rounded shadow-sm"
+                  className="aspect-square w-full flex items-center justify-center font-bold text-xs sm:text-sm bg-[var(--color-nfc)] text-white rounded shadow-sm"
                 >
                   {num === -1 ? '?' : num}
                 </div>
@@ -313,13 +330,13 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
             </div>
 
             {/* Grid with AFC numbers and squares */}
-            <div className="grid gap-2" style={{ gridTemplateColumns: 'auto repeat(10, minmax(32px, 1fr))' }}>
+            <div className="grid gap-1 sm:gap-2" style={{ gridTemplateColumns: 'auto repeat(10, minmax(28px, 1fr))' }}>
               {Array.from({ length: 10 }, (_, row) => {
                 return (
                   <React.Fragment key={`row-${row}`}>
                     {/* AFC number for this row */}
                     <div
-                      className="aspect-square w-full flex items-center justify-center font-bold text-sm bg-[var(--color-afc)] text-white rounded shadow-sm"
+                      className="aspect-square w-full flex items-center justify-center font-bold text-xs sm:text-sm bg-[var(--color-afc)] text-white rounded shadow-sm"
                     >
                       {afcNumbers[row] === -1 ? '?' : afcNumbers[row]}
                     </div>
@@ -360,7 +377,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                           key={position}
                           onClick={() => handleSquareClick(position)}
                           disabled={isClaimed}
-                          className={`aspect-square w-full border-2 ${borderColor} rounded text-sm font-semibold transition-all ${bgColor} ${textColor} flex items-center justify-center ${cursorStyle} ${hoverClass}`}
+                          className={`aspect-square w-full border-2 ${borderColor} rounded text-xs sm:text-sm font-semibold transition-all ${bgColor} ${textColor} flex items-center justify-center ${cursorStyle} ${hoverClass}`}
                           title={
                             isClaimed
                               ? `Claimed by ${square?.claimed_by_name}`
