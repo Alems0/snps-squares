@@ -314,29 +314,30 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
           {/* Main grid container with horizontal scroll on mobile */}
           <div className="flex-1 min-w-0 overflow-x-auto max-w-full">
-            {/* NFC numbers row */}
-            <div className="grid gap-1 sm:gap-2 mb-3 sm:mb-4" style={{ gridTemplateColumns: 'auto repeat(10, minmax(24px, 1fr))' }}>
-              {/* Empty corner cell */}
-              <div className="aspect-square"></div>
-              {/* NFC numbers */}
-              {nfcNumbers.map((num, i) => (
-                <div
-                  key={`nfc-${i}`}
-                  className="aspect-square w-full flex items-center justify-center font-bold text-xs sm:text-sm bg-[var(--color-nfc)] text-white rounded shadow-sm"
-                >
-                  {num === -1 ? '?' : num}
-                </div>
-              ))}
-            </div>
+            <div className="inline-block min-w-full sm:min-w-0">
+              {/* NFC numbers row */}
+              <div className="grid gap-1 sm:gap-2 mb-3 sm:mb-4" style={{ gridTemplateColumns: 'auto repeat(10, 1fr)' }}>
+                {/* Empty corner cell */}
+                <div className="w-6 sm:w-8 aspect-square"></div>
+                {/* NFC numbers */}
+                {nfcNumbers.map((num, i) => (
+                  <div
+                    key={`nfc-${i}`}
+                    className="w-6 sm:w-auto aspect-square flex items-center justify-center font-bold text-xs sm:text-sm bg-[var(--color-nfc)] text-white rounded shadow-sm"
+                  >
+                    {num === -1 ? '?' : num}
+                  </div>
+                ))}
+              </div>
 
-            {/* Grid with AFC numbers and squares */}
-            <div className="grid gap-1 sm:gap-2" style={{ gridTemplateColumns: 'auto repeat(10, minmax(24px, 1fr))' }}>
+              {/* Grid with AFC numbers and squares */}
+              <div className="grid gap-1 sm:gap-2" style={{ gridTemplateColumns: 'auto repeat(10, 1fr)' }}>
               {Array.from({ length: 10 }, (_, row) => {
                 return (
                   <React.Fragment key={`row-${row}`}>
                     {/* AFC number for this row */}
                     <div
-                      className="aspect-square w-full flex items-center justify-center font-bold text-xs sm:text-sm bg-[var(--color-afc)] text-white rounded shadow-sm"
+                      className="w-6 sm:w-8 aspect-square flex items-center justify-center font-bold text-xs sm:text-sm bg-[var(--color-afc)] text-white rounded shadow-sm"
                     >
                       {afcNumbers[row] === -1 ? '?' : afcNumbers[row]}
                     </div>
@@ -377,7 +378,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                           key={position}
                           onClick={() => handleSquareClick(position)}
                           disabled={isClaimed}
-                          className={`aspect-square w-full border-2 ${borderColor} rounded text-xs sm:text-sm font-semibold transition-all ${bgColor} ${textColor} flex items-center justify-center ${cursorStyle} ${hoverClass}`}
+                          className={`w-6 sm:w-auto aspect-square border-2 ${borderColor} rounded text-xs sm:text-sm font-semibold transition-all ${bgColor} ${textColor} flex items-center justify-center ${cursorStyle} ${hoverClass}`}
                           title={
                             isClaimed
                               ? `Claimed by ${square?.claimed_by_name}`
@@ -393,6 +394,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                   </React.Fragment>
                 )
               })}
+            </div>
             </div>
           </div>
         </div>
