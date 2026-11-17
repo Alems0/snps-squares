@@ -124,7 +124,7 @@ export default function BoardPage() {
     <div className="min-h-screen flex flex-col bg-[var(--color-background)]">
       {/* Header */}
       <header className="bg-[var(--color-primary)] text-white shadow-md">
-        <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="max-w-6xl mx-auto px-6 py-6">
           <div className="flex flex-wrap justify-between items-center gap-4">
             <div className="flex items-center gap-4">
               <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -153,7 +153,7 @@ export default function BoardPage() {
 
       {/* How It Works Section */}
       <section className="bg-white border-b border-[var(--color-border)] shadow-sm">
-        <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-16">
+        <div className="max-w-6xl mx-auto px-6 py-12">
           <h2 className="text-3xl sm:text-4xl font-bold text-center text-[var(--color-text)] mb-12">How It Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
             <div className="flex flex-col items-center text-center">
@@ -176,20 +176,20 @@ export default function BoardPage() {
       </section>
 
       {/* Main Board Section */}
-      <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-6 py-8 sm:py-12 min-w-0">
+      <main className="flex-1 max-w-6xl mx-auto px-6 py-12 min-w-0">
         {/* Board - Full Width Hero */}
-        <div className="mb-6 sm:mb-8 min-w-0">
+        <div className="mb-8 min-w-0 w-full">
           <Board onClaimSuccess={fetchTopBuyers} />
         </div>
 
         {/* Game Rules and Top Buyers - Side by Side Below Board */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8 min-w-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 min-w-0">
           {/* Game Rules */}
           <div className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden min-w-0">
-            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-[var(--color-border)] bg-slate-50">
-              <h2 className="text-base sm:text-lg font-bold text-[var(--color-text)]">Game Rules</h2>
+            <div className="px-6 py-5 border-b border-[var(--color-border)] bg-slate-50">
+              <h2 className="text-lg font-bold text-[var(--color-text)]">Game Rules</h2>
             </div>
-            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+            <div className="p-6 space-y-6">
               <div>
                 <p className="text-base text-[var(--color-text-secondary)] leading-relaxed">
                   Each square costs ${game?.cost_per_square || 10}. Numbers will be randomly assigned after all squares fill. Winners are determined by the last digit of each team's score at the end of each quarter.
@@ -214,16 +214,16 @@ export default function BoardPage() {
 
           {/* Top Buyers */}
           <div className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden min-w-0">
-            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-[var(--color-border)] bg-slate-50 flex items-center justify-between">
+            <div className="px-6 py-5 border-b border-[var(--color-border)] bg-slate-50 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <svg className="w-5 h-5 text-[var(--color-primary)]" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
-                <h2 className="text-base sm:text-lg font-bold text-[var(--color-text)]">Top Buyers</h2>
+                <h2 className="text-lg font-bold text-[var(--color-text)]">Top Buyers</h2>
               </div>
-              <span className="text-xs text-[var(--color-text-muted)] font-semibold uppercase tracking-wider hidden sm:inline">Most Active</span>
+              <span className="text-xs text-[var(--color-text-muted)] font-semibold uppercase tracking-wider">Most Active</span>
             </div>
-            <div className="p-4 sm:p-6">
+            <div className="p-6">
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--color-primary)] mb-3"></div>
@@ -311,7 +311,7 @@ export default function BoardPage() {
 
       {/* Footer */}
       <footer className="bg-white border-t border-[var(--color-border)] mt-auto shadow-sm">
-        <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="flex flex-wrap justify-between items-center gap-4 text-sm text-[var(--color-text-secondary)]">
             <div className="flex items-center gap-8">
               <button
