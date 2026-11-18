@@ -1,7 +1,10 @@
--- Past Players database + privacy hardening for anon
+-- Migration A: Past Players table + RPCs (no privilege revokes on games/squares)
 -- Project: snps-squares (axkxwguwquuxbjyntjeq)
--- Apply manually AFTER merging the app PR (do not auto-apply).
--- Deploy order: 1) merge app  2) apply this migration immediately.
+-- Safe to apply while current main is live (select('*') + direct anon UPDATE on squares).
+-- Deploy order:
+--   1) Merge app PR
+--   2) Apply THIS migration (A) immediately
+--   3) Apply 20261118150100_privacy_grants.sql (B) after A is live
 
 -- ---------------------------------------------------------------------------
 -- 1. Players table
@@ -166,7 +169,7 @@ REVOKE ALL ON FUNCTION public.search_player_names(TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.search_player_names(TEXT) TO anon, authenticated;
 
 -- ---------------------------------------------------------------------------
--- 4a. Claim squares for a known player (email resolved server-side)
+-- 4a. Claim squares for a known player (email resolved server-side; name-only client)
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.claim_squares_for_player(
   p_player_id UUID,
@@ -258,7 +261,7 @@ GRANT EXECUTE ON FUNCTION public.claim_squares_for_player(UUID, UUID, INTEGER[],
 
 -- ---------------------------------------------------------------------------
 -- 4b. Guest claim (typed email) — SECURITY DEFINER so anon need not SELECT
---     claimed_by_email for the RLS UPDATE filter.
+--     claimed_by_email for the RLS UPDATE filter (required after Migration B).
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.claim_squares_as_guest(
   p_game_id UUID,
@@ -300,6 +303,10 @@ BEGIN
 
   IF v_first = '' OR v_last = '' THEN
     RAISE EXCEPTION 'First and last name are required';
+  END IF;
+
+  IF length(v_first) > 100 OR length(v_last) > 100 THEN
+    RAISE EXCEPTION 'Name too long (max 100 characters)';
   END IF;
 
   IF v_email = '' OR v_email !~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' THEN
@@ -395,7 +402,50 @@ REVOKE ALL ON FUNCTION public.get_top_buyers(UUID, INTEGER) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_top_buyers(UUID, INTEGER) TO anon, authenticated;
 
 -- ---------------------------------------------------------------------------
--- 6. Admin CSV bulk upsert helper
+-- 6. Public board / prize pot helper
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_public_game_stats(p_game_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_game public.games%ROWTYPE;
+  v_claimed INTEGER;
+  v_paid INTEGER;
+BEGIN
+  SELECT * INTO v_game
+  FROM public.games
+  WHERE id = p_game_id
+    AND status IN ('active', 'completed');
+
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT
+    COUNT(*) FILTER (WHERE claimed_by_email IS NOT NULL),
+    COUNT(*) FILTER (WHERE payment_status = 'paid')
+  INTO v_claimed, v_paid
+  FROM public.squares
+  WHERE game_id = p_game_id;
+
+  RETURN jsonb_build_object(
+    'claimed', v_claimed,
+    'paid', v_paid,
+    'cost_per_square', v_game.cost_per_square,
+    'charity_percentage', v_game.charity_percentage,
+    'prize_pot', (v_paid * v_game.cost_per_square) - ((v_paid * v_game.cost_per_square) * v_game.charity_percentage / 100.0)
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_public_game_stats(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_public_game_stats(UUID) TO anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 7. Admin CSV bulk upsert helper
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.admin_upsert_players(
   p_rows JSONB
@@ -475,94 +525,3 @@ $$;
 
 REVOKE ALL ON FUNCTION public.admin_upsert_players(JSONB) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.admin_upsert_players(JSONB) TO authenticated;
-
--- ---------------------------------------------------------------------------
--- 7. Privacy: column-level GRANT (not REVOKE-after-table-SELECT).
---    Anon gets only safe columns. Authenticated keeps full table SELECT.
---    Verified against live schema (axkxwguwquuxbjyntjeq).
--- ---------------------------------------------------------------------------
-
--- Games: revoke table SELECT from anon, grant safe columns only
-REVOKE SELECT ON public.games FROM anon;
-GRANT SELECT (
-  id,
-  season,
-  afc_team,
-  nfc_team,
-  cost_per_square,
-  charity_percentage,
-  q1_payout,
-  q2_payout,
-  q3_payout,
-  final_payout,
-  venmo_handle,
-  numbers_locked,
-  afc_numbers,
-  nfc_numbers,
-  status,
-  created_at,
-  updated_at
-) ON public.games TO anon;
-GRANT SELECT ON public.games TO authenticated;
-
--- Squares: revoke table SELECT from anon, grant safe columns only (no claimed_by_email)
-REVOKE SELECT ON public.squares FROM anon;
-GRANT SELECT (
-  id,
-  game_id,
-  position,
-  first_name,
-  last_name,
-  claimed_by_name,
-  claimed_at,
-  payment_status,
-  payment_method,
-  paid_at
-) ON public.squares TO anon;
-GRANT SELECT ON public.squares TO authenticated;
-
--- Anon no longer needs direct UPDATE on squares (claims go through SECURITY DEFINER RPCs).
--- Authenticated admins keep UPDATE via existing squares_all_admin RLS policy.
-REVOKE UPDATE ON public.squares FROM anon;
-GRANT UPDATE ON public.squares TO authenticated;
-
--- Public board / prize pot helper
-CREATE OR REPLACE FUNCTION public.get_public_game_stats(p_game_id UUID)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_game public.games%ROWTYPE;
-  v_claimed INTEGER;
-  v_paid INTEGER;
-BEGIN
-  SELECT * INTO v_game
-  FROM public.games
-  WHERE id = p_game_id
-    AND status IN ('active', 'completed');
-
-  IF NOT FOUND THEN
-    RETURN NULL;
-  END IF;
-
-  SELECT
-    COUNT(*) FILTER (WHERE claimed_by_email IS NOT NULL),
-    COUNT(*) FILTER (WHERE payment_status = 'paid')
-  INTO v_claimed, v_paid
-  FROM public.squares
-  WHERE game_id = p_game_id;
-
-  RETURN jsonb_build_object(
-    'claimed', v_claimed,
-    'paid', v_paid,
-    'cost_per_square', v_game.cost_per_square,
-    'charity_percentage', v_game.charity_percentage,
-    'prize_pot', (v_paid * v_game.cost_per_square) - ((v_paid * v_game.cost_per_square) * v_game.charity_percentage / 100.0)
-  );
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.get_public_game_stats(UUID) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.get_public_game_stats(UUID) TO anon, authenticated;
