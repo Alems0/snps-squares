@@ -1,9 +1,4 @@
--- Hardening for 20261118180000_players_phone.sql
--- Public (anon) claim RPCs may only FILL a missing players.phone; only admins may
--- replace an existing phone. Prevents anyone who sees a player id via
--- search_player_names from overwriting a saved player's number.
--- Also explicitly revokes anon EXECUTE on normalize_phone and admin_upsert_players
--- (Supabase default privileges grant anon directly, not via PUBLIC).
+-- Hardening for 20261118180000_players_phone.sql: public (anon) claim RPCs may only FILL a missing players.phone; only admins may replace an existing phone. Also revokes anon EXECUTE on normalize_phone and admin_upsert_players.
 
 CREATE OR REPLACE FUNCTION public.claim_squares_as_guest(
   p_game_id UUID,
@@ -98,8 +93,7 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- Trigger upserts players from claim; attach phone only on players (never squares).
-  -- Public callers may only fill a missing phone; only admins may replace one.
+  -- Trigger upserts players from claim; attach phone only on players (never squares)
   IF v_updated > 0 AND v_phone IS NOT NULL THEN
     UPDATE public.players
     SET phone = v_phone, updated_at = NOW()
@@ -199,7 +193,6 @@ BEGIN
     UPDATE public.players
     SET
       last_claimed_at = NOW(),
-      -- Public callers may only fill a missing phone; only admins may replace one.
       phone = CASE
         WHEN public.is_admin() THEN COALESCE(v_phone, phone)
         ELSE COALESCE(phone, v_phone)
@@ -222,7 +215,6 @@ $$;
 
 REVOKE ALL ON FUNCTION public.claim_squares_for_player(UUID, UUID, INTEGER[], TEXT, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.claim_squares_for_player(UUID, UUID, INTEGER[], TEXT, TEXT) TO anon, authenticated;
-
 
 REVOKE ALL ON FUNCTION public.normalize_phone(TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.normalize_phone(TEXT) FROM anon;
