@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { supabase, type Square, type Game } from '../lib/supabase'
-import ClaimModal from './ClaimModal'
+import ClaimPopover from './ClaimPopover'
 import ClaimSuccess from './ClaimSuccess'
 
 interface BoardProps {
@@ -20,6 +20,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
   } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const boardRef = useRef<HTMLDivElement>(null)
 
   // Fetch active game and squares
   useEffect(() => {
@@ -156,16 +157,26 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
     // Toggle selection
     setSelectedSquares((prev) => {
-      if (prev.includes(position)) {
-        return prev.filter((p) => p !== position)
-      } else {
-        return [...prev, position]
+      const newSelection = prev.includes(position)
+        ? prev.filter((p) => p !== position)
+        : [...prev, position]
+      
+      // Close popover if all squares deselected
+      if (newSelection.length === 0 && showClaimModal) {
+        setShowClaimModal(false)
       }
+      
+      return newSelection
     })
   }
 
   const handleProceedToClaim = () => {
     if (selectedSquares.length === 0) return
+    // Scroll first selected square into view before opening popover
+    const first = boardRef.current?.querySelector(
+      `button[data-position="${selectedSquares[0]}"]`
+    ) as HTMLElement | null
+    first?.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' })
     setShowClaimModal(true)
   }
 
@@ -229,6 +240,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
   const handleCancelSelection = () => {
     setSelectedSquares([])
+    setShowClaimModal(false)
   }
 
   if (loading) {
@@ -265,9 +277,9 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
   return (
     <>
-      {/* Selection Panel */}
+      {/* Selection Panel — z-50 so Clear/Claim stay clickable above popover backdrop */}
       {selectedSquares.length > 0 && (
-        <div className="bg-[var(--color-primary)] text-white rounded-xl shadow-lg mb-6 p-6">
+        <div className="relative z-50 bg-[var(--color-primary)] text-white rounded-xl shadow-lg mb-6 p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="bg-white text-[var(--color-primary)] rounded-full w-12 h-12 flex items-center justify-center font-bold text-xl flex-shrink-0">
@@ -300,7 +312,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-md overflow-hidden border border-[var(--color-border)] min-w-0 w-full max-w-full">
+      <div ref={boardRef} className="bg-white rounded-xl shadow-md overflow-hidden border border-[var(--color-border)] min-w-0 w-full max-w-full">
       {/* Board container */}
       <div className="p-6 min-w-0">
         {/* NFC header - full width bar */}
@@ -389,6 +401,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                       return (
                         <button
                           key={position}
+                          data-position={position}
                           onClick={() => handleSquareClick(position)}
                           disabled={isClaimed}
                           className={`aspect-square w-full ${isPaid ? 'border-[3px]' : 'border-2'} ${borderColor} rounded text-[10px] font-semibold leading-tight transition-all ${bgColor} ${textColor} flex items-center justify-center p-0.5 ${cursorStyle} ${hoverClass}`}
@@ -436,12 +449,13 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
       {/* Modals */}
       {showClaimModal && (
-        <ClaimModal
+        <ClaimPopover
           selectedSquares={selectedSquares}
           costPerSquare={game.cost_per_square}
           venmoHandle={game.venmo_handle}
           onClose={() => setShowClaimModal(false)}
           onSubmit={handleClaimSubmit}
+          boardRef={boardRef}
         />
       )}
 
