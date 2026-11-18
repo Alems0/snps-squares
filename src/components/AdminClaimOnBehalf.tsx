@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react'
-import { supabase, type Game, type Player, EMAIL_REGEX } from '../lib/supabase'
+import { supabase, type Game, type Player, EMAIL_REGEX, normalizePhone } from '../lib/supabase'
 
 interface AdminClaimOnBehalfProps {
   game: Game | null
@@ -14,6 +14,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'venmo'>('venmo')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -30,9 +31,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
       const { data } = await supabase
         .from('players')
         .select('*')
-        .or(
-          `first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`
-        )
+        .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`)
         .order('last_name')
         .limit(8)
       setSuggestions((data as Player[]) || [])
@@ -46,6 +45,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
     setFirstName(p.first_name)
     setLastName(p.last_name)
     setEmail(p.email)
+    setPhone(p.phone || '')
     setSuggestions([])
   }
 
@@ -88,42 +88,60 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
       setError('Please enter a valid email address')
       return
     }
+    let normalizedPhone: string | undefined
+    if (phone.trim()) {
+      const n = normalizePhone(phone)
+      if (!n) {
+        setError('Please enter a valid phone number')
+        return
+      }
+      normalizedPhone = n
+    }
 
     setBusy(true)
     try {
       if (selected) {
-        const { data, error: err } = await supabase.rpc('claim_squares_for_player', {
+        const args: {
+          p_player_id: string
+          p_game_id: string
+          p_positions: number[]
+          p_payment_method: string
+          p_phone?: string
+        } = {
           p_player_id: selected.id,
           p_game_id: game.id,
           p_positions: positions,
           p_payment_method: paymentMethod,
-        })
+        }
+        if (normalizedPhone) args.p_phone = normalizedPhone
+        const { data, error: err } = await supabase.rpc('claim_squares_for_player', args)
         if (err) throw err
         const claimed = (data as { claimed?: number })?.claimed ?? 0
         setMessage(`Claimed ${claimed} square(s) for ${fn} ${ln}`)
       } else {
-        const results = await Promise.all(
-          positions.map((position) =>
-            supabase
-              .from('squares')
-              .update({
-                first_name: fn,
-                last_name: ln,
-                claimed_by_email: em,
-                payment_method: paymentMethod,
-                payment_status: 'unpaid' as const,
-                claimed_at: new Date().toISOString(),
-              })
-              .eq('game_id', game.id)
-              .eq('position', position)
-              .is('claimed_by_email', null)
-          )
-        )
-        const failed = results.filter((r) => r.error)
-        if (failed.length === positions.length) {
-          throw new Error(failed[0].error?.message || 'Failed to claim squares')
+        // Guest path via RPC so phone lands on players only
+        const args: {
+          p_game_id: string
+          p_positions: number[]
+          p_first: string
+          p_last: string
+          p_email: string
+          p_payment_method: string
+          p_phone?: string
+        } = {
+          p_game_id: game.id,
+          p_positions: positions,
+          p_first: fn,
+          p_last: ln,
+          p_email: em,
+          p_payment_method: paymentMethod,
         }
-        setMessage(`Claimed ${positions.length - failed.length} square(s) for ${fn} ${ln}`)
+        if (normalizedPhone) args.p_phone = normalizedPhone
+        const { data, error: err } = await supabase.rpc('claim_squares_as_guest', args)
+        if (err) throw err
+        const claimed = (data as { claimed?: number })?.claimed ?? 0
+        if (claimed === 0) throw new Error('Those squares are no longer available')
+        setMessage(`Claimed ${claimed} square(s) for ${fn} ${ln}`)
       }
       setPositionsRaw('')
       setQuery('')
@@ -131,6 +149,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
       setFirstName('')
       setLastName('')
       setEmail('')
+      setPhone('')
       onDone()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Claim failed')
@@ -197,7 +216,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
           )}
         </div>
 
-        <div className="grid sm:grid-cols-3 gap-3">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
             <label className="block text-xs font-semibold mb-1">First name</label>
             <input
@@ -219,6 +238,18 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold mb-1">
+              Phone <span className="text-[var(--color-text-muted)] font-normal">(optional)</span>
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="(555) 123-4567"
               className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm"
             />
           </div>

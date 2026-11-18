@@ -186,29 +186,50 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
     email: string
     paymentMethod: 'cash' | 'venmo'
     playerId?: string
+    phone?: string
   }) => {
     if (!game) throw new Error('No active game')
 
     if (data.playerId) {
-      const { data: result, error } = await supabase.rpc('claim_squares_for_player', {
+      // Returning-player path stays name-only publicly; phone only if provided (admin)
+      const playerArgs: {
+        p_player_id: string
+        p_game_id: string
+        p_positions: number[]
+        p_payment_method: string
+        p_phone?: string
+      } = {
         p_player_id: data.playerId,
         p_game_id: game.id,
         p_positions: selectedSquares,
         p_payment_method: data.paymentMethod,
-      })
+      }
+      if (data.phone) playerArgs.p_phone = data.phone
+      const { data: result, error } = await supabase.rpc('claim_squares_for_player', playerArgs)
       if (error) throw new Error(error.message || 'Failed to claim squares')
       const claimed = (result as { claimed?: number })?.claimed ?? 0
       if (claimed === 0) throw new Error('Those squares are no longer available')
     } else {
       // Guest typed path: SECURITY DEFINER RPC (anon cannot SELECT claimed_by_email)
-      const { data: result, error } = await supabase.rpc('claim_squares_as_guest', {
+      // Optional phone is stored on players only — never on squares / anon columns
+      const guestArgs: {
+        p_game_id: string
+        p_positions: number[]
+        p_first: string
+        p_last: string
+        p_email: string
+        p_payment_method: string
+        p_phone?: string
+      } = {
         p_game_id: game.id,
         p_positions: selectedSquares,
         p_first: data.firstName.trim(),
         p_last: data.lastName.trim(),
         p_email: data.email.trim().toLowerCase(),
         p_payment_method: data.paymentMethod,
-      })
+      }
+      if (data.phone) guestArgs.p_phone = data.phone
+      const { data: result, error } = await supabase.rpc('claim_squares_as_guest', guestArgs)
       if (error) throw new Error(error.message || 'Failed to claim squares')
       const claimed = (result as { claimed?: number })?.claimed ?? 0
       if (claimed === 0) throw new Error('Those squares are no longer available')

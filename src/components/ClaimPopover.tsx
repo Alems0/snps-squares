@@ -1,6 +1,6 @@
 import { useState, FormEvent, useEffect, useRef, useCallback } from 'react'
 import { formatVenmoHandle } from '../lib/formatVenmo'
-import { supabase, EMAIL_REGEX, type PlayerNameSuggestion } from '../lib/supabase'
+import { supabase, EMAIL_REGEX, normalizePhone, type PlayerNameSuggestion } from '../lib/supabase'
 
 interface ClaimPopoverProps {
   selectedSquares: number[]
@@ -13,6 +13,7 @@ interface ClaimPopoverProps {
     email: string
     paymentMethod: 'cash' | 'venmo'
     playerId?: string
+    phone?: string
   }) => Promise<void>
   boardRef: React.RefObject<HTMLDivElement | null>
 }
@@ -44,6 +45,7 @@ export default function ClaimPopover({
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'venmo' | ''>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -313,6 +315,7 @@ export default function ClaimPopover({
       setError('Last name is required')
       return
     }
+    let normalizedPhone: string | undefined
     if (!selectedPlayerId) {
       const normalizedEmail = email.trim().toLowerCase()
       if (!normalizedEmail) {
@@ -322,6 +325,14 @@ export default function ClaimPopover({
       if (!EMAIL_REGEX.test(normalizedEmail)) {
         setError('Please enter a valid email address')
         return
+      }
+      if (phone.trim()) {
+        const n = normalizePhone(phone)
+        if (!n) {
+          setError('Please enter a valid phone number')
+          return
+        }
+        normalizedPhone = n
       }
     }
     if (!paymentMethod) {
@@ -337,6 +348,7 @@ export default function ClaimPopover({
         email: selectedPlayerId ? '' : email.trim().toLowerCase(),
         paymentMethod,
         playerId: selectedPlayerId || undefined,
+        phone: normalizedPhone,
       })
     } catch {
       setError('Failed to claim squares. Please try again.')
@@ -480,20 +492,37 @@ export default function ClaimPopover({
               </div>
 
               {!selectedPlayerId && (
-                <div>
-                  <label htmlFor="email" className="block text-xs font-semibold text-[var(--color-text)] mb-1">
-                    Email Address <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
-                    required
-                    disabled={isSubmitting}
-                  />
-                </div>
+                <>
+                  <div>
+                    <label htmlFor="email" className="block text-xs font-semibold text-[var(--color-text)] mb-1">
+                      Email Address <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
+                      required
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="phone" className="block text-xs font-semibold text-[var(--color-text)] mb-1">
+                      Phone <span className="text-[var(--color-text-muted)] font-normal">(optional)</span>
+                    </label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="(555) 123-4567"
+                      className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
+                      disabled={isSubmitting}
+                      autoComplete="tel"
+                    />
+                  </div>
+                </>
               )}
 
               <div>
