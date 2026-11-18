@@ -30,12 +30,24 @@ export default function ClaimPopover({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [position, setPosition] = useState<{ top: number; left: number; placement: string } | null>(null)
+  const [measured, setMeasured] = useState(false)
   const popoverRef = useRef<HTMLDivElement>(null)
 
   const totalCost = selectedSquares.length * costPerSquare
 
+  // Initial measurement to get popover dimensions
+  useEffect(() => {
+    if (popoverRef.current && !measured) {
+      // Force a reflow to get dimensions
+      popoverRef.current.getBoundingClientRect()
+      setMeasured(true)
+    }
+  }, [measured])
+
   // Calculate popover position based on selected squares
   useEffect(() => {
+    if (!measured) return
+
     const calculatePosition = () => {
       if (!boardRef.current || !popoverRef.current || selectedSquares.length === 0) return
 
@@ -142,7 +154,7 @@ export default function ClaimPopover({
       window.removeEventListener('resize', calculatePosition)
       window.removeEventListener('scroll', calculatePosition, true)
     }
-  }, [selectedSquares, boardRef])
+  }, [selectedSquares, boardRef, measured])
 
   // Handle escape key
   useEffect(() => {
@@ -209,13 +221,15 @@ export default function ClaimPopover({
     position: 'fixed' as const,
     top: `${position.top}px`,
     left: `${position.left}px`,
-    zIndex: 50
+    zIndex: 50,
+    opacity: 1
   } : {
     position: 'fixed' as const,
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    zIndex: 50
+    zIndex: 50,
+    opacity: measured ? 1 : 0
   }
 
   return (

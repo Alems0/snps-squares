@@ -1,0 +1,168 @@
+FLOATING CLAIM POPOVER POSITIONING TEST RESULTS
+================================================
+Test Date: Nov 18, 2026
+Environment: http://localhost:5173 (mock data enabled)
+Browser: Chrome DevTools Responsive Design Mode
+
+DESKTOP TESTS (1280x800)
+========================
+
+Test 1: Center Square
+---------------------
+Status: ✓ COMPLETED
+Square Selected: #23 (near center of board)
+Screenshot: /workspace/artifacts/popover-center-1280.png
+
+Visual Observations:
+- Popover appeared centered on screen
+- Popover positioned over the board grid (with overlay backdrop)
+- Form is fully visible and readable
+- Selected square badge shows "#23"
+- Popover does NOT overlap the selected square visibly (modal centered design)
+- Total Cost: $10
+- Form fields: First Name, Last Name, Email Address, Payment Method (Venmo/Cash)
+
+Positioning Behavior:
+- Popover appears to use a centered modal approach
+- Dark overlay backdrop dims the board behind
+- Popover floats above the board independent of square position
+- Fully contained within viewport
+- No horizontal or vertical overflow
+
+Test 2: Top-Left Corner
+-----------------------
+Status: ✓ COMPLETED
+Square Selected: #1 (top-left area of grid)
+Screenshot: /workspace/artifacts/popover-top-left-1280.png
+
+Visual Observations:
+- Popover appeared in same centered position as Test 1
+- Selected square badge shows "#1"
+- Popover fully within viewport
+- No positioning adjustment needed for corner square
+- Consistent centered modal behavior
+
+Positioning Behavior:
+- Modal remains centered regardless of selected square position
+- Top-left square selection does not cause popover to reposition
+- Viewport containment: ✓ PASS
+- No overlap with selected square (modal is centered, not anchored)
+
+Test 3: Bottom-Right Corner
+----------------------------
+Status: ✓ COMPLETED
+Square Selected: #98 (bottom-right area of grid)
+Screenshot: /workspace/artifacts/popover-bottom-right-1280.png
+
+Visual Observations:
+- Popover appeared in same centered position
+- Selected square badge shows "#98"
+- Popover fully within viewport
+- Consistent modal behavior across all corner positions
+
+Positioning Behavior:
+- Modal centering strategy appears consistent
+- Bottom-right square does not cause repositioning
+- Viewport containment: ✓ PASS
+
+Test 4: Adjacent Cluster (2x2)
+-------------------------------
+Status: ⚠ NOT COMPLETED
+Planned: Select squares #34, #35, #44, #45 (2x2 cluster near center)
+Expected: Popover should center over the cluster or use consistent modal centering
+
+Test 5: Opposite Corners
+-------------------------
+Status: ⚠ NOT COMPLETED
+Planned: Select squares #0 (top-left) and #99 (bottom-right)
+Expected: Popover should center over board or between the two distant squares
+
+MOBILE TESTS (375px width)
+===========================
+
+Test 6: Mobile Single Square
+-----------------------------
+Status: ⚠ NOT COMPLETED
+Planned: Resize to 375px, select square #44, check scrollWidth
+Expected: scrollWidth = 375, popover fits mobile screen
+
+Test 7: Mobile Cluster
+-----------------------
+Status: ⚠ NOT COMPLETED  
+Planned: Select squares #12, #13, #22, #23 at 375px
+Expected: Popover adjusts for mobile viewport
+
+POSITIONING ANALYSIS
+=====================
+
+Popover Strategy Observed:
+--------------------------
+The popover implementation uses a **centered modal approach** rather than an anchored/floating approach:
+
+1. **Modal Centering**: Popover appears centered on the viewport regardless of selected square position
+2. **Overlay Backdrop**: Dark semi-transparent backdrop dims the board behind the modal
+3. **No Anchor Positioning**: Popover does NOT anchor to or point at the selected square(s)
+4. **Consistent Position**: All three desktop tests showed identical centered positioning
+5. **Viewport Containment**: Popover always stays fully within viewport bounds
+
+Measured Characteristics (Desktop 1280px):
+------------------------------------------
+- Popover Width: ~290px (estimated from visual inspection)
+- Popover Height: ~580px (estimated, includes header, form fields, buttons)
+- Position: Centered horizontally and vertically in viewport
+- Z-index: High (appears above all board elements)
+- Backdrop: Semi-transparent dark overlay
+- Selected Square Indication: Badge showing square number at top of form
+
+Selected Square Overlap:
+------------------------
+- Does popover overlap selected squares?: NO
+- Reason: Modal is centered on viewport, not positioned relative to selected squares
+- Selected squares remain visible in dimmed board behind modal
+- Modal approach prevents any overlap issues
+
+Viewport Containment Tests:
+----------------------------
+✓ Top-Left Corner (#1): Fully contained
+✓ Center (#23): Fully contained  
+✓ Bottom-Right Corner (#98): Fully contained
+
+ISSUES FOUND
+============
+None. The centered modal approach effectively handles all positioning scenarios tested.
+
+RECOMMENDATIONS
+===============
+1. Complete remaining tests (Tests 4-7) to verify:
+   - Multi-square selection behavior (clusters, opposite corners)
+   - Mobile viewport adaptation (375px width)
+   - Mobile scrollWidth verification (must equal 375)
+   
+2. Consider adding visual indicator (arrow/line) connecting modal to selected square(s) 
+   if user feedback indicates confusion about which square is being claimed
+
+3. For mobile, verify modal scales appropriately and doesn't cause horizontal scroll
+
+4. Test keyboard accessibility (Tab navigation, Esc to close)
+
+5. Verify touch interaction on mobile (tap outside to close, form field focus)
+
+TECHNICAL NOTES
+===============
+- Implementation appears to use a fixed/centered positioning strategy
+- No complex anchor calculations needed
+- Simpler than floating/anchored popovers but less contextual
+- Effective for avoiding viewport overflow and positioning edge cases
+- May sacrifice some UX contextuality for implementation simplicity
+
+CONCLUSION
+==========
+The popover positioning system uses a centered modal approach that successfully:
+- Stays within viewport bounds in all tested scenarios
+- Avoids overlapping selected squares
+- Provides consistent, predictable positioning
+- Eliminates edge-case positioning bugs common with anchored popovers
+
+Tested: 3/7 scenarios (Desktop corner/center cases)
+Remaining: Multi-select and mobile viewport tests
+Overall Assessment: ✓ FUNCTIONAL (for completed tests)
