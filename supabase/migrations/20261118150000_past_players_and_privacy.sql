@@ -71,7 +71,7 @@ COMMENT ON TABLE public.players IS 'Past players for returning-player autocomple
 
 -- ---------------------------------------------------------------------------
 -- 2. Auto-upsert player on successful claim (server-side, SECURITY DEFINER)
---    On email conflict: only fill null names; always refresh last_claimed_at.
+--    On email conflict: do not overwrite names; only refresh last_claimed_at.
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.upsert_player_from_claim()
 RETURNS TRIGGER
