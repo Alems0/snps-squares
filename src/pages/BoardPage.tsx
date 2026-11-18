@@ -14,12 +14,37 @@ interface FAQItem {
   answer: string
 }
 
+interface PayoutChip {
+  key: string
+  label: string
+  shortLabel: string
+  amount: number
+}
+
+function formatCurrency(amount: number): string {
+  return `$${Math.round(amount).toLocaleString('en-US')}`
+}
+
+function getConfiguredPayouts(game: Game | null): PayoutChip[] {
+  if (!game) return []
+  const chips: PayoutChip[] = [
+    { key: 'q1', label: 'Q1', shortLabel: 'Q1', amount: Number(game.q1_payout) || 0 },
+    { key: 'q2', label: 'Q2 / Halftime', shortLabel: 'Q2/HT', amount: Number(game.q2_payout) || 0 },
+    { key: 'q3', label: 'Q3', shortLabel: 'Q3', amount: Number(game.q3_payout) || 0 },
+    { key: 'final', label: 'Final', shortLabel: 'Final', amount: Number(game.final_payout) || 0 },
+  ]
+  // Hide the row when no payouts are configured
+  if (!chips.some((c) => c.amount > 0)) return []
+  return chips
+}
+
 export default function BoardPage() {
   const [topBuyers, setTopBuyers] = useState<TopBuyer[]>([])
   const [game, setGame] = useState<Game | null>(null)
   const [loading, setLoading] = useState(true)
   const [prizePot, setPrizePot] = useState(0)
   const [openFAQ, setOpenFAQ] = useState<number | null>(null)
+  const payoutChips = getConfiguredPayouts(game)
 
   const faqItems: FAQItem[] = [
     {
@@ -46,11 +71,43 @@ export default function BoardPage() {
 
   useEffect(() => {
     fetchTopBuyers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const loadMockHeaderGame = () => {
+    setGame({
+      id: 'mock',
+      season: 2026,
+      afc_team: 'Kansas City Chiefs',
+      nfc_team: 'San Francisco 49ers',
+      cost_per_square: 10,
+      charity_percentage: 10,
+      q1_payout: 100,
+      q2_payout: 100,
+      q3_payout: 100,
+      final_payout: 600,
+      venmo_handle: '@snps-squares',
+      numbers_locked: true,
+      afc_numbers: [3, 7, 0, 6, 1, 4, 9, 2, 8, 5],
+      nfc_numbers: [2, 5, 8, 1, 9, 3, 6, 0, 7, 4],
+      status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    setPrizePot(900)
+    setTopBuyers([])
+    setLoading(false)
+  }
 
   const fetchTopBuyers = async () => {
     try {
       setLoading(true)
+
+      // Dev mock: skip network so header payouts render without Supabase
+      if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true') {
+        loadMockHeaderGame()
+        return
+      }
 
       const { data: gameData, error: gameError } = await supabase
         .from('games')
@@ -107,30 +164,52 @@ export default function BoardPage() {
     <div className="min-h-screen flex flex-col bg-[var(--color-background)]">
       {/* Header */}
       <header className="bg-[var(--color-primary)] text-white shadow-md">
-        <div className="max-w-6xl mx-auto px-6 py-6">
-          <div className="flex flex-wrap justify-between items-center gap-4">
-            <div className="flex items-center gap-4">
-              <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 sm:py-6">
+          <div className="flex flex-wrap justify-between items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+              <svg className="w-9 h-9 sm:w-10 sm:h-10 text-white shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm0 2v12h16V6H4zm2 2h12v8H6V8z"/>
               </svg>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold leading-tight">SNPS Squares</h1>
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold leading-tight truncate">SNPS Squares</h1>
                 <p className="text-sm text-white/90 font-medium mt-0.5">Super Bowl Charity Fundraiser</p>
               </div>
             </div>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 sm:gap-6">
               <div className="text-right">
                 <div className="text-xs uppercase tracking-wider text-white/80 font-semibold mb-1">Prize Pot</div>
-                <div className="text-3xl sm:text-4xl font-bold tabular-nums">${prizePot.toFixed(0)}</div>
+                <div className="text-2xl sm:text-4xl font-bold tabular-nums">{formatCurrency(prizePot)}</div>
               </div>
               <Link
                 to="/admin"
-                className="bg-white text-[var(--color-primary)] px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-white/95 transition-all shadow-md whitespace-nowrap"
+                className="bg-white text-[var(--color-primary)] px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg text-sm font-semibold hover:bg-white/95 transition-all shadow-md whitespace-nowrap"
               >
                 Admin Login
               </Link>
             </div>
           </div>
+
+          {payoutChips.length > 0 && (
+            <div
+              className="mt-4 pt-3 border-t border-white/15 flex flex-wrap gap-1.5 sm:gap-2"
+              aria-label="Quarter payouts"
+            >
+              {payoutChips.map((chip) => (
+                <div
+                  key={chip.key}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-cream)]/15 ring-1 ring-white/20 px-2.5 py-1 max-w-full"
+                >
+                  <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-white/80 whitespace-nowrap">
+                    <span className="sm:hidden">{chip.shortLabel}</span>
+                    <span className="hidden sm:inline">{chip.label}</span>
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold tabular-nums text-white whitespace-nowrap">
+                    {formatCurrency(chip.amount)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </header>
 
