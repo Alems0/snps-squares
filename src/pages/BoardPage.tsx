@@ -1,11 +1,10 @@
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Board from '../components/Board'
-import { supabase, type Game } from '../lib/supabase'
+import { supabase, type Game, GAMES_PUBLIC_COLUMNS } from '../lib/supabase'
 
 interface TopBuyer {
   name: string
-  email: string
   squareCount: number
   totalCost: number
 }
@@ -55,7 +54,7 @@ export default function BoardPage() {
 
       const { data: gameData, error: gameError } = await supabase
         .from('games')
-        .select('*')
+        .select(GAMES_PUBLIC_COLUMNS)
         .eq('status', 'active')
         .maybeSingle()
 
@@ -67,50 +66,34 @@ export default function BoardPage() {
 
       setGame(gameData)
 
-      const { data: squaresData, error: squaresError } = await supabase
-        .from('squares')
-        .select('claimed_by_name, claimed_by_email, payment_status')
-        .eq('game_id', gameData.id)
-        .not('claimed_by_email', 'is', null)
+      // Prize pot via SECURITY DEFINER (avoids reading emails as anon)
+      const { data: stats } = await supabase.rpc('get_public_game_stats', {
+        p_game_id: gameData.id,
+      })
+      if (stats && typeof stats === 'object' && 'prize_pot' in stats) {
+        setPrizePot(Number((stats as { prize_pot: number }).prize_pot) || 0)
+      }
 
-      if (squaresError) {
-        console.error('Error fetching squares for top buyers:', squaresError)
+      const { data: buyersData, error: buyersError } = await supabase.rpc('get_top_buyers', {
+        p_game_id: gameData.id,
+        p_limit: 5,
+      })
+
+      if (buyersError) {
+        console.error('Error fetching top buyers:', buyersError)
+        // Fallback for pre-migration / mock: empty list
+        setTopBuyers([])
         setLoading(false)
         return
       }
 
-      // Calculate prize pot from paid squares only
-      const paidSquares = squaresData?.filter(s => s.payment_status === 'paid').length || 0
-      const totalRevenue = paidSquares * gameData.cost_per_square
-      const charityAmount = totalRevenue * (gameData.charity_percentage / 100)
-      const pot = totalRevenue - charityAmount
-      setPrizePot(pot)
-
-      const buyerMap = new Map<string, { name: string; count: number }>()
-      
-      squaresData?.forEach((square) => {
-        if (square.claimed_by_email) {
-          const existing = buyerMap.get(square.claimed_by_email)
-          if (existing) {
-            existing.count++
-          } else {
-            buyerMap.set(square.claimed_by_email, {
-              name: square.claimed_by_name || 'Unknown',
-              count: 1,
-            })
-          }
-        }
-      })
-
-      const buyers: TopBuyer[] = Array.from(buyerMap.entries())
-        .map(([email, { name, count }]) => ({
-          name,
-          email,
-          squareCount: count,
-          totalCost: count * gameData.cost_per_square,
-        }))
-        .sort((a, b) => b.squareCount - a.squareCount)
-        .slice(0, 5)
+      const buyers: TopBuyer[] = (buyersData || []).map(
+        (b: { name: string; square_count: number; total_cost: number }) => ({
+          name: b.name,
+          squareCount: b.square_count,
+          totalCost: b.total_cost,
+        })
+      )
 
       setTopBuyers(buyers)
       setLoading(false)
@@ -171,7 +154,7 @@ export default function BoardPage() {
           ) : (
             <div className="flex flex-wrap gap-6">
               {topBuyers.map((buyer, index) => (
-                <div key={buyer.email} className="flex items-center gap-3">
+                <div key={`${buyer.name}-${index}`} className="flex items-center gap-3">
                   <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white ${
                     index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-orange-600' : 'bg-[var(--color-primary)]'
                   }`}>

@@ -1,5 +1,6 @@
 import { useState, FormEvent, useEffect, useRef, useCallback } from 'react'
 import { formatVenmoHandle } from '../lib/formatVenmo'
+import { supabase, EMAIL_REGEX, type PlayerNameSuggestion } from '../lib/supabase'
 
 interface ClaimPopoverProps {
   selectedSquares: number[]
@@ -11,6 +12,7 @@ interface ClaimPopoverProps {
     lastName: string
     email: string
     paymentMethod: 'cash' | 'venmo'
+    playerId?: string
   }) => Promise<void>
   boardRef: React.RefObject<HTMLDivElement | null>
 }
@@ -45,6 +47,10 @@ export default function ClaimPopover({
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'venmo' | ''>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [nameQuery, setNameQuery] = useState('')
+  const [suggestions, setSuggestions] = useState<PlayerNameSuggestion[]>([])
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [style, setStyle] = useState<React.CSSProperties>({
     position: 'fixed',
     top: 0,
@@ -258,6 +264,43 @@ export default function ClaimPopover({
     firstInput?.focus()
   }, [])
 
+  // Public name autocomplete (names only — never emails)
+  useEffect(() => {
+    if (selectedPlayerId) return
+    const q = nameQuery.trim()
+    if (q.length < 2) {
+      setSuggestions([])
+      return
+    }
+    const t = setTimeout(async () => {
+      const { data, error: err } = await supabase.rpc('search_player_names', { q })
+      if (err) {
+        setSuggestions([])
+        return
+      }
+      setSuggestions((data as PlayerNameSuggestion[]) || [])
+      setShowSuggestions(true)
+    }, 200)
+    return () => clearTimeout(t)
+  }, [nameQuery, selectedPlayerId])
+
+  const pickSuggestion = (s: PlayerNameSuggestion) => {
+    const parts = s.display_name.trim().split(/\s+/)
+    const first = parts[0] || ''
+    const last = parts.slice(1).join(' ') || first
+    setFirstName(first)
+    setLastName(last)
+    setNameQuery(s.display_name)
+    setSelectedPlayerId(s.id)
+    setEmail('') // email resolved server-side
+    setSuggestions([])
+    setShowSuggestions(false)
+  }
+
+  const clearSelectedPlayer = () => {
+    setSelectedPlayerId(null)
+  }
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
@@ -270,14 +313,16 @@ export default function ClaimPopover({
       setError('Last name is required')
       return
     }
-    if (!email.trim()) {
-      setError('Email is required')
-      return
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address')
-      return
+    if (!selectedPlayerId) {
+      const normalizedEmail = email.trim().toLowerCase()
+      if (!normalizedEmail) {
+        setError('Email is required')
+        return
+      }
+      if (!EMAIL_REGEX.test(normalizedEmail)) {
+        setError('Please enter a valid email address')
+        return
+      }
     }
     if (!paymentMethod) {
       setError('Please select a payment method')
@@ -289,8 +334,9 @@ export default function ClaimPopover({
       await onSubmit({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        email: email.trim(),
-        paymentMethod
+        email: selectedPlayerId ? '' : email.trim().toLowerCase(),
+        paymentMethod,
+        playerId: selectedPlayerId || undefined,
       })
     } catch {
       setError('Failed to claim squares. Please try again.')
@@ -313,10 +359,10 @@ export default function ClaimPopover({
         aria-modal="true"
         aria-labelledby="claim-title"
         style={style}
-        className="bg-white rounded-xl shadow-2xl border border-[var(--color-border)] overflow-y-auto"
+        className="bg-white rounded-xl shadow-2xl border border-[var(--color-border)] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white border-b border-[var(--color-border)] px-4 py-3 flex items-center justify-between z-10">
+        <div className="shrink-0 bg-white border-b border-[var(--color-border)] px-4 py-3 flex items-center justify-between z-10">
           <h2 id="claim-title" className="text-lg font-bold text-[var(--color-text)]">
             Claim Square{selectedSquares.length > 1 ? 's' : ''}
           </h2>
@@ -331,121 +377,172 @@ export default function ClaimPopover({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-3">
-          <div className="bg-slate-50 rounded-lg p-3 border border-[var(--color-border-light)]">
-            <div className="text-xs font-semibold text-[var(--color-text-muted)] mb-1.5">Selected Squares</div>
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {selectedSquares.map(pos => (
-                <span key={pos} className="inline-flex items-center px-2 py-0.5 rounded-md bg-[var(--color-primary)] text-white text-xs font-semibold">
-                  #{pos}
-                </span>
-              ))}
-            </div>
-            <div className="flex justify-between items-center pt-2 border-t border-[var(--color-border-light)]">
-              <span className="text-sm font-medium text-[var(--color-text-secondary)]">Total Cost</span>
-              <span className="text-xl font-bold text-[var(--color-primary)]">${totalCost}</span>
-            </div>
-          </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="firstName" className="block text-xs font-semibold text-[var(--color-text)] mb-1">
-                  First Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="firstName"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
-                  required
-                  disabled={isSubmitting}
-                />
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="bg-slate-50 rounded-lg p-3 border border-[var(--color-border-light)]">
+              <div className="text-xs font-semibold text-[var(--color-text-muted)] mb-1.5">Selected Squares</div>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {selectedSquares.map(pos => (
+                  <span key={pos} className="inline-flex items-center px-2 py-0.5 rounded-md bg-[var(--color-primary)] text-white text-xs font-semibold">
+                    #{pos}
+                  </span>
+                ))}
               </div>
-              <div>
-                <label htmlFor="lastName" className="block text-xs font-semibold text-[var(--color-text)] mb-1">
-                  Last Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="lastName"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
-                  required
-                  disabled={isSubmitting}
-                />
+              <div className="flex justify-between items-center pt-2 border-t border-[var(--color-border-light)]">
+                <span className="text-sm font-medium text-[var(--color-text-secondary)]">Total Cost</span>
+                <span className="text-xl font-bold text-[var(--color-primary)]">${totalCost}</span>
               </div>
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-xs font-semibold text-[var(--color-text)] mb-1">
-                Email Address <span className="text-red-500">*</span>
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="relative">
+              <label htmlFor="returningPlayer" className="block text-xs font-semibold text-[var(--color-text)] mb-1">
+                Returning player? (optional)
               </label>
               <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                id="returningPlayer"
+                value={nameQuery}
+                onChange={(e) => {
+                  setNameQuery(e.target.value)
+                  clearSelectedPlayer()
+                  setShowSuggestions(true)
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                placeholder="Start typing your name…"
                 className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
-                required
                 disabled={isSubmitting}
+                autoComplete="off"
               />
+              {showSuggestions && suggestions.length > 0 && (
+                <ul className="absolute z-30 mt-1 w-full bg-white border border-[var(--color-border)] rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                  {suggestions.map((s) => (
+                    <li key={s.id}>
+                      <button
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-slate-50"
+                        onClick={() => pickSuggestion(s)}
+                      >
+                        {s.display_name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {selectedPlayerId && (
+                <p className="text-xs text-[var(--color-success)] mt-1">
+                  Returning player selected — email filled in securely.
+                </p>
+              )}
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-[var(--color-text)] mb-1.5">
-                Payment Method <span className="text-red-500">*</span>
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <label className="flex items-start gap-2 p-2.5 border-2 border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-primary)] transition-colors">
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="firstName" className="block text-xs font-semibold text-[var(--color-text)] mb-1">
+                    First Name <span className="text-red-500">*</span>
+                  </label>
                   <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="venmo"
-                    checked={paymentMethod === 'venmo'}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'venmo')}
-                    className="mt-0.5"
+                    type="text"
+                    id="firstName"
+                    value={firstName}
+                    onChange={(e) => {
+                      setFirstName(e.target.value)
+                      clearSelectedPlayer()
+                    }}
+                    className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
+                    required
                     disabled={isSubmitting}
                   />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm text-[var(--color-text)]">Venmo</div>
-                    {venmoHandle && (
-                      <div className="text-xs text-[var(--color-text-muted)] mt-0.5 truncate">
-                        {formatVenmoHandle(venmoHandle)}
-                      </div>
-                    )}
-                  </div>
+                </div>
+                <div>
+                  <label htmlFor="lastName" className="block text-xs font-semibold text-[var(--color-text)] mb-1">
+                    Last Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="lastName"
+                    value={lastName}
+                    onChange={(e) => {
+                      setLastName(e.target.value)
+                      clearSelectedPlayer()
+                    }}
+                    className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+
+              {!selectedPlayerId && (
+                <div>
+                  <label htmlFor="email" className="block text-xs font-semibold text-[var(--color-text)] mb-1">
+                    Email Address <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--color-text)] mb-1.5">
+                  Payment Method <span className="text-red-500">*</span>
                 </label>
-                <label className="flex items-start gap-2 p-2.5 border-2 border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-primary)] transition-colors">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="cash"
-                    checked={paymentMethod === 'cash'}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'cash')}
-                    className="mt-0.5"
-                    disabled={isSubmitting}
-                  />
-                  <div className="flex-1">
-                    <div className="font-semibold text-sm text-[var(--color-text)]">Cash</div>
-                    <div className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                      Pay admin
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex items-start gap-2 p-2.5 border-2 border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-primary)] transition-colors">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="venmo"
+                      checked={paymentMethod === 'venmo'}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'venmo')}
+                      className="mt-0.5"
+                      disabled={isSubmitting}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm text-[var(--color-text)]">Venmo</div>
+                      {venmoHandle && (
+                        <div className="text-xs text-[var(--color-text-muted)] mt-0.5 truncate">
+                          {formatVenmoHandle(venmoHandle)}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </label>
+                  </label>
+                  <label className="flex items-start gap-2 p-2.5 border-2 border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-primary)] transition-colors">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="cash"
+                      checked={paymentMethod === 'cash'}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'cash')}
+                      className="mt-0.5"
+                      disabled={isSubmitting}
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-sm text-[var(--color-text)]">Cash</div>
+                      <div className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                        Pay admin
+                      </div>
+                    </div>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="flex gap-2 pt-2">
+          <div className="shrink-0 flex gap-2 p-4 pt-2 border-t border-[var(--color-border-light)] bg-white">
             <button
               type="button"
               onClick={onClose}

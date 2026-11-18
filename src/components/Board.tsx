@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { supabase, type Square, type Game } from '../lib/supabase'
+import { supabase, type Square, type Game, GAMES_PUBLIC_COLUMNS, SQUARES_PUBLIC_COLUMNS } from '../lib/supabase'
 import ClaimPopover from './ClaimPopover'
 import ClaimSuccess from './ClaimSuccess'
 
@@ -33,10 +33,10 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       setLoading(true)
       setError(null)
 
-      // Fetch active game
+      // Fetch active game (public columns — no join_password)
       const { data: gameData, error: gameError } = await supabase
         .from('games')
-        .select('*')
+        .select(GAMES_PUBLIC_COLUMNS)
         .eq('status', 'active')
         .maybeSingle()
 
@@ -63,10 +63,10 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
       setGame(gameData)
 
-      // Fetch squares for this game
+      // Fetch squares (public columns — no claimed_by_email)
       const { data: squaresData, error: squaresError } = await supabase
         .from('squares')
-        .select('*')
+        .select(SQUARES_PUBLIC_COLUMNS)
         .eq('game_id', gameData.id)
         .order('position')
 
@@ -151,7 +151,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
     const square = squares.find((s) => s.position === position)
     
     // If square is already claimed, do nothing
-    if (square?.claimed_by_email) {
+    if (square?.claimed_by_name) {
       return
     }
 
@@ -185,36 +185,45 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
     lastName: string
     email: string
     paymentMethod: 'cash' | 'venmo'
+    playerId?: string
   }) => {
     if (!game) throw new Error('No active game')
 
-    // Update claims for all selected squares
-    // We update each square individually to handle race conditions better
-    const updatePromises = selectedSquares.map((position) =>
-      supabase
-        .from('squares')
-        .update({
-          first_name: data.firstName,
-          last_name: data.lastName,
-          claimed_by_email: data.email,
-          payment_method: data.paymentMethod,
-          payment_status: 'unpaid' as const,
-          claimed_at: new Date().toISOString(),
-        })
-        .eq('game_id', game.id)
-        .eq('position', position)
-        .is('claimed_by_email', null) // Only claim if not already claimed
-    )
+    if (data.playerId) {
+      const { data: result, error } = await supabase.rpc('claim_squares_for_player', {
+        p_player_id: data.playerId,
+        p_game_id: game.id,
+        p_positions: selectedSquares,
+        p_payment_method: data.paymentMethod,
+      })
+      if (error) throw new Error(error.message || 'Failed to claim squares')
+      const claimed = (result as { claimed?: number })?.claimed ?? 0
+      if (claimed === 0) throw new Error('Those squares are no longer available')
+    } else {
+      const email = data.email.trim().toLowerCase()
+      const updatePromises = selectedSquares.map((position) =>
+        supabase
+          .from('squares')
+          .update({
+            first_name: data.firstName,
+            last_name: data.lastName,
+            claimed_by_email: email,
+            payment_method: data.paymentMethod,
+            payment_status: 'unpaid' as const,
+            claimed_at: new Date().toISOString(),
+          })
+          .eq('game_id', game.id)
+          .eq('position', position)
+          .is('claimed_by_email', null)
+      )
 
-    const results = await Promise.all(updatePromises)
-    
-    // Check for errors
-    const errors = results.filter((r) => r.error)
-    if (errors.length > 0) {
-      throw new Error(errors[0].error?.message || 'Failed to claim squares')
+      const results = await Promise.all(updatePromises)
+      const errors = results.filter((r) => r.error)
+      if (errors.length > 0) {
+        throw new Error(errors[0].error?.message || 'Failed to claim squares')
+      }
     }
 
-    // Success!
     setSuccessData({
       squareCount: selectedSquares.length,
       totalCost: selectedSquares.length * game.cost_per_square,
@@ -223,11 +232,9 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
     setShowClaimModal(false)
     setShowSuccess(true)
     setSelectedSquares([])
-    
-    // Refresh squares
+
     await fetchGameAndSquares()
-    
-    // Notify parent component
+
     if (onClaimSuccess) {
       onClaimSuccess()
     }
@@ -369,7 +376,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                     {Array.from({ length: 10 }, (_, col) => {
                       const position = row * 10 + col
                       const square = squares.find((s) => s.position === position)
-                      const isClaimed = Boolean(square?.claimed_by_email)
+                      const isClaimed = Boolean(square?.claimed_by_name)
                       const isPaid = isClaimed && square?.payment_status === 'paid'
                       const isSelected = selectedSquares.includes(position)
                       
