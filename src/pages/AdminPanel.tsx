@@ -5,6 +5,8 @@ import { useAuth } from '../lib/useAuth'
 import { supabase, type Square, type Game } from '../lib/supabase'
 import ConfigureGameModal from '../components/ConfigureGameModal'
 import ConfirmationModal from '../components/ConfirmationModal'
+import PastPlayersSection from '../components/PastPlayersSection'
+import AdminClaimOnBehalf from '../components/AdminClaimOnBehalf'
 import { formatVenmoHandle } from '../lib/formatVenmo'
 
 interface ClaimData extends Square {
@@ -663,6 +665,10 @@ export default function AdminPanel() {
             </div>
           </section>
         </div>
+
+        <PastPlayersSection />
+
+        <AdminClaimOnBehalf game={game} onDone={fetchGameAndClaims} />
 
         <section className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden">
           <div className="px-6 py-5 border-b border-[var(--color-border)] bg-slate-50">

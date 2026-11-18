@@ -80,3 +80,29 @@ export interface Score {
   source: 'manual' | 'api'
   created_at: string
 }
+
+export interface Player {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  source: 'csv' | 'manual' | 'claim'
+  created_at: string
+  updated_at: string
+  last_claimed_at?: string | null
+}
+
+export interface PlayerNameSuggestion {
+  id: string
+  display_name: string
+}
+
+/** Columns safe for anon SELECT (excludes claimed_by_email). */
+export const SQUARES_PUBLIC_COLUMNS =
+  'id, game_id, position, first_name, last_name, claimed_by_name, claimed_at, payment_status, payment_method, paid_at'
+
+/** Columns safe for anon SELECT (excludes join_password). */
+export const GAMES_PUBLIC_COLUMNS =
+  'id, season, afc_team, nfc_team, cost_per_square, charity_percentage, q1_payout, q2_payout, q3_payout, final_payout, venmo_handle, numbers_locked, afc_numbers, nfc_numbers, status, created_at, updated_at'
+
+export const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
