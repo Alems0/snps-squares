@@ -1,4 +1,4 @@
-import { useState, FormEvent, useEffect, useRef } from 'react'
+import { useState, FormEvent, useEffect, useRef, useCallback } from 'react'
 import { formatVenmoHandle } from '../lib/formatVenmo'
 
 interface ClaimPopoverProps {
@@ -12,7 +12,23 @@ interface ClaimPopoverProps {
     email: string
     paymentMethod: 'cash' | 'venmo'
   }) => Promise<void>
-  boardRef: React.RefObject<HTMLDivElement>
+  boardRef: React.RefObject<HTMLDivElement | null>
+}
+
+const MARGIN = 12
+const GAP = 12
+const MAX_POPOVER_H = 560
+
+function rectsOverlap(
+  a: { top: number; left: number; width: number; height: number },
+  b: { top: number; left: number; right: number; bottom: number }
+) {
+  return !(
+    a.left + a.width <= b.left ||
+    a.left >= b.right ||
+    a.top + a.height <= b.top ||
+    a.top >= b.bottom
+  )
 }
 
 export default function ClaimPopover({
@@ -29,164 +45,223 @@ export default function ClaimPopover({
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'venmo' | ''>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [position, setPosition] = useState<{ top: number; left: number; placement: string } | null>(null)
-  const [measured, setMeasured] = useState(false)
+  const [style, setStyle] = useState<React.CSSProperties>({
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: 'min(400px, calc(100vw - 24px))',
+    maxHeight: `min(${MAX_POPOVER_H}px, 80vh)`,
+    opacity: 0,
+    zIndex: 50,
+    pointerEvents: 'none'
+  })
   const popoverRef = useRef<HTMLDivElement>(null)
 
   const totalCost = selectedSquares.length * costPerSquare
 
-  // Initial measurement to get popover dimensions
-  useEffect(() => {
-    if (popoverRef.current && !measured) {
-      // Force a reflow to get dimensions
-      popoverRef.current.getBoundingClientRect()
-      setMeasured(true)
-    }
-  }, [measured])
+  const calculatePosition = useCallback(() => {
+    if (!boardRef.current || !popoverRef.current || selectedSquares.length === 0) return
 
-  // Calculate popover position based on selected squares
-  useEffect(() => {
-    if (!measured) return
+    const squareElements = selectedSquares
+      .map(pos => boardRef.current?.querySelector(`button[data-position="${pos}"]`))
+      .filter(Boolean) as HTMLElement[]
 
-    const calculatePosition = () => {
-      if (!boardRef.current || !popoverRef.current || selectedSquares.length === 0) return
+    if (squareElements.length === 0) return
 
-      const boardRect = boardRef.current.getBoundingClientRect()
-      const popoverRect = popoverRef.current.getBoundingClientRect()
-      
-      // Find all selected square elements
-      const squareElements = selectedSquares.map(pos => {
-        const button = boardRef.current?.querySelector(`button[data-position="${pos}"]`)
-        return button
-      }).filter(Boolean) as HTMLElement[]
+    const vh = window.innerHeight
+    const vw = window.innerWidth
+    const isMobile = vw < 640
 
-      if (squareElements.length === 0) return
-
-      // Calculate bounding box of all selected squares
-      const squareRects = squareElements.map(el => el.getBoundingClientRect())
-      const minX = Math.min(...squareRects.map(r => r.left))
-      const maxX = Math.max(...squareRects.map(r => r.right))
-      const minY = Math.min(...squareRects.map(r => r.top))
-      const maxY = Math.max(...squareRects.map(r => r.bottom))
-      
-      const selectionWidth = maxX - minX
-      const selectionHeight = maxY - minY
-      const selectionCenterX = (minX + maxX) / 2
-      const selectionCenterY = (minY + maxY) / 2
-
-      // Check if selection spans most of the board (far apart squares)
-      const boardWidth = boardRect.width
-      const boardHeight = boardRect.height
-      const spanRatio = Math.max(selectionWidth / boardWidth, selectionHeight / boardHeight)
-      
-      const isMobile = window.innerWidth < 640
-      const viewportWidth = window.innerWidth
-      const viewportHeight = window.innerHeight
-      
-      // Get actual popover dimensions (it should be visible by now)
-      const popoverWidth = popoverRect.width > 0 ? popoverRect.width : 400
-      const popoverHeight = popoverRect.height > 0 ? popoverRect.height : 600
-      
-      // Debug log
-      console.log('Popover dimensions:', { width: popoverWidth, height: popoverHeight, rect: popoverRect })
-      console.log('Selection:', { minX, maxX, minY, maxY, centerX: selectionCenterX, centerY: selectionCenterY })
-      console.log('Span ratio:', spanRatio)
-
-      let finalTop: number
-      let finalLeft: number
-      let placement = 'center'
-
-      if (isMobile || spanRatio > 0.6) {
-        // Mobile or wide selection: center on viewport
-        finalTop = Math.max(20, (viewportHeight - popoverHeight) / 2)
-        finalLeft = Math.max(20, (viewportWidth - popoverWidth) / 2)
-        placement = 'center'
-      } else {
-        // Desktop with localized selection: anchor near squares
-        const gap = 16
-        
-        // Try positions: above, below, right, left
-        const positions = [
-          { top: minY - popoverHeight - gap, left: selectionCenterX - popoverWidth / 2, placement: 'above' },
-          { top: maxY + gap, left: selectionCenterX - popoverWidth / 2, placement: 'below' },
-          { top: selectionCenterY - popoverHeight / 2, left: maxX + gap, placement: 'right' },
-          { top: selectionCenterY - popoverHeight / 2, left: minX - popoverWidth - gap, placement: 'left' }
-        ]
-
-        // Find first position that fits in viewport
-        let bestPosition = positions[0]
-        let bestScore = -1
-
-        for (const pos of positions) {
-          const fitsVertically = pos.top >= 20 && (pos.top + popoverHeight) <= (viewportHeight - 20)
-          const fitsHorizontally = pos.left >= 20 && (pos.left + popoverWidth) <= (viewportWidth - 20)
-          
-          if (fitsVertically && fitsHorizontally) {
-            bestPosition = pos
-            placement = pos.placement
-            break
-          }
-
-          // Score partial fits
-          const verticalOverlap = Math.max(0, 20 - pos.top) + Math.max(0, (pos.top + popoverHeight) - (viewportHeight - 20))
-          const horizontalOverlap = Math.max(0, 20 - pos.left) + Math.max(0, (pos.left + popoverWidth) - (viewportWidth - 20))
-          const score = -(verticalOverlap + horizontalOverlap)
-          
-          if (score > bestScore) {
-            bestScore = score
-            bestPosition = pos
-            placement = pos.placement
-          }
-        }
-
-        finalTop = bestPosition.top
-        finalLeft = bestPosition.left
-
-        // Constrain to viewport
-        finalTop = Math.max(20, Math.min(finalTop, viewportHeight - popoverHeight - 20))
-        finalLeft = Math.max(20, Math.min(finalLeft, viewportWidth - popoverWidth - 20))
+    // Keep selection visible: center on desktop; upper third on mobile (above bottom sheet)
+    const first = squareElements[0]
+    const firstRect = first.getBoundingClientRect()
+    const sheetReserve = isMobile ? Math.min(MAX_POPOVER_H, vh * 0.55) + MARGIN * 2 : 0
+    const needsScroll =
+      firstRect.bottom < 0 ||
+      firstRect.top > vh - sheetReserve ||
+      firstRect.right < 0 ||
+      firstRect.left > vw
+    if (needsScroll || isMobile) {
+      first.scrollIntoView({
+        block: isMobile ? 'start' : 'center',
+        inline: 'nearest',
+        behavior: 'instant'
+      })
+      if (isMobile) {
+        // Nudge so selection sits in the upper portion above the sheet
+        window.scrollBy({ top: -80, behavior: 'instant' })
       }
-
-      setPosition({ top: finalTop, left: finalLeft, placement })
     }
 
-    // Initial calculation
-    calculatePosition()
+    // Re-measure after potential scroll
+    const squareRects = squareElements.map(el => el.getBoundingClientRect())
+    const sel = {
+      left: Math.min(...squareRects.map(r => r.left)),
+      right: Math.max(...squareRects.map(r => r.right)),
+      top: Math.min(...squareRects.map(r => r.top)),
+      bottom: Math.max(...squareRects.map(r => r.bottom))
+    }
+    const selW = sel.right - sel.left
+    const selH = sel.bottom - sel.top
+    const selCX = (sel.left + sel.right) / 2
+    const selCY = (sel.top + sel.bottom) / 2
 
-    // Recalculate on resize/scroll
+    const boardRect = boardRef.current.getBoundingClientRect()
+    const spanRatio = Math.max(selW / boardRect.width, selH / boardRect.height)
+
+    // Measure popover (force max-height so measurement is accurate)
+    const popoverEl = popoverRef.current
+    const maxH = Math.min(MAX_POPOVER_H, isMobile ? vh * 0.52 : vh * 0.8)
+    popoverEl.style.maxHeight = `${maxH}px`
+
+    const popoverRect = popoverEl.getBoundingClientRect()
+    const basePopW = popoverRect.width || Math.min(400, vw - MARGIN * 2)
+    const popH = Math.min(popoverRect.height || 480, maxH)
+
+    // Mobile: bottom sheet, full usable width, clamped; selection scrolled above
+    if (isMobile) {
+      const popW = vw - MARGIN * 2
+      const top = Math.max(MARGIN, vh - popH - MARGIN)
+      setStyle({
+        position: 'fixed',
+        top: `${top}px`,
+        left: `${MARGIN}px`,
+        width: `${popW}px`,
+        maxHeight: `${maxH}px`,
+        zIndex: 50,
+        opacity: 1,
+        pointerEvents: 'auto'
+      })
+      return
+    }
+
+    const popW = basePopW
+
+    // Wide selection spanning most of board: center over board
+    if (spanRatio > 0.6) {
+      const boardCX = boardRect.left + boardRect.width / 2
+      const boardCY = boardRect.top + boardRect.height / 2
+      const centeredLeft = Math.max(MARGIN, Math.min(boardCX - popW / 2, vw - popW - MARGIN))
+      const centeredTop = Math.max(MARGIN, Math.min(boardCY - popH / 2, vh - popH - MARGIN))
+      setStyle({
+        position: 'fixed',
+        top: `${centeredTop}px`,
+        left: `${centeredLeft}px`,
+        width: `${popW}px`,
+        maxHeight: `${maxH}px`,
+        zIndex: 50,
+        opacity: 1,
+        pointerEvents: 'auto'
+      })
+      return
+    }
+
+    // Desktop: pick side with most room that avoids overlapping selection
+    const candidates = [
+      {
+        placement: 'right',
+        left: sel.right + GAP,
+        top: selCY - popH / 2,
+        room: vw - sel.right - MARGIN
+      },
+      {
+        placement: 'left',
+        left: sel.left - popW - GAP,
+        top: selCY - popH / 2,
+        room: sel.left - MARGIN
+      },
+      {
+        placement: 'below',
+        left: selCX - popW / 2,
+        top: sel.bottom + GAP,
+        room: vh - sel.bottom - MARGIN
+      },
+      {
+        placement: 'above',
+        left: selCX - popW / 2,
+        top: sel.top - popH - GAP,
+        room: sel.top - MARGIN
+      }
+    ]
+
+    // Sort by available room (most first)
+    candidates.sort((a, b) => b.room - a.room)
+
+    let best = candidates[0]
+    let bestScore = -Infinity
+
+    for (const c of candidates) {
+      // Clamp to viewport first
+      const clampedLeft = Math.max(MARGIN, Math.min(c.left, vw - popW - MARGIN))
+      const clampedTop = Math.max(MARGIN, Math.min(c.top, vh - popH - MARGIN))
+      const box = { top: clampedTop, left: clampedLeft, width: popW, height: popH }
+
+      const overlapsSelection = rectsOverlap(box, sel)
+      const outOfBounds =
+        Math.max(0, MARGIN - c.left) +
+        Math.max(0, c.left + popW - (vw - MARGIN)) +
+        Math.max(0, MARGIN - c.top) +
+        Math.max(0, c.top + popH - (vh - MARGIN))
+
+      // Prefer no overlap with selection; then prefer more room / less clamping
+      const score =
+        (overlapsSelection ? -100000 : 0) +
+        c.room * 10 -
+        outOfBounds
+
+      if (score > bestScore) {
+        bestScore = score
+        best = { ...c, left: clampedLeft, top: clampedTop, room: c.room }
+      }
+    }
+
+    // Final clamp
+    const finalLeft = Math.max(MARGIN, Math.min(best.left, vw - popW - MARGIN))
+    const finalTop = Math.max(MARGIN, Math.min(best.top, vh - popH - MARGIN))
+
+    setStyle({
+      position: 'fixed',
+      top: `${finalTop}px`,
+      left: `${finalLeft}px`,
+      width: `${popW}px`,
+      maxHeight: `${maxH}px`,
+      zIndex: 50,
+      opacity: 1,
+      pointerEvents: 'auto'
+    })
+  }, [selectedSquares, boardRef])
+
+  useEffect(() => {
+    // Position after paint so dimensions are real
+    const id = requestAnimationFrame(() => {
+      calculatePosition()
+    })
     window.addEventListener('resize', calculatePosition)
     window.addEventListener('scroll', calculatePosition, true)
-    
     return () => {
+      cancelAnimationFrame(id)
       window.removeEventListener('resize', calculatePosition)
       window.removeEventListener('scroll', calculatePosition, true)
     }
-  }, [selectedSquares, boardRef, measured])
+  }, [calculatePosition])
 
-  // Handle escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-      }
+      if (e.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
   }, [onClose])
 
-  // Focus management
   useEffect(() => {
-    if (popoverRef.current) {
-      const firstInput = popoverRef.current.querySelector('input')
-      firstInput?.focus()
-    }
+    const firstInput = popoverRef.current?.querySelector('input')
+    firstInput?.focus()
   }, [])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
 
-    // Validation
     if (!firstName.trim()) {
       setError('First name is required')
       return
@@ -199,7 +274,6 @@ export default function ClaimPopover({
       setError('Email is required')
       return
     }
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       setError('Please enter a valid email address')
@@ -224,42 +298,26 @@ export default function ClaimPopover({
     }
   }
 
-  const positionStyle = position ? {
-    position: 'fixed' as const,
-    top: `${position.top}px`,
-    left: `${position.left}px`,
-    zIndex: 50,
-    opacity: 1
-  } : {
-    position: 'fixed' as const,
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    zIndex: 50,
-    opacity: measured ? 1 : 0
-  }
-
   return (
     <>
-      {/* Backdrop */}
+      {/* Non-blocking dim: squares stay toggleable; close via X / Cancel / Escape / Clear */}
       <div
-        className="fixed inset-0 bg-black/50 z-40"
-        onClick={onClose}
+        className="fixed inset-0 z-40 pointer-events-none"
+        style={{ background: 'rgba(0,0,0,0.2)' }}
         aria-hidden="true"
       />
 
-      {/* Popover */}
       <div
         ref={popoverRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="claim-title"
-        style={positionStyle}
-        className="bg-white rounded-xl shadow-2xl border border-[var(--color-border)] w-full max-w-md max-h-[90vh] overflow-y-auto transition-opacity duration-200"
+        style={style}
+        className="bg-white rounded-xl shadow-2xl border border-[var(--color-border)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white border-b border-[var(--color-border)] px-6 py-4 flex items-center justify-between z-10">
-          <h2 id="claim-title" className="text-xl font-bold text-[var(--color-text)]">
+        <div className="sticky top-0 bg-white border-b border-[var(--color-border)] px-4 py-3 flex items-center justify-between z-10">
+          <h2 id="claim-title" className="text-lg font-bold text-[var(--color-text)]">
             Claim Square{selectedSquares.length > 1 ? 's' : ''}
           </h2>
           <button
@@ -267,68 +325,68 @@ export default function ClaimPopover({
             className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors p-1"
             aria-label="Close"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Selected squares info */}
-          <div className="bg-slate-50 rounded-lg p-4 border border-[var(--color-border-light)]">
-            <div className="text-sm font-semibold text-[var(--color-text-muted)] mb-2">Selected Squares</div>
-            <div className="flex flex-wrap gap-2 mb-3">
+        <form onSubmit={handleSubmit} className="p-4 space-y-3">
+          <div className="bg-slate-50 rounded-lg p-3 border border-[var(--color-border-light)]">
+            <div className="text-xs font-semibold text-[var(--color-text-muted)] mb-1.5">Selected Squares</div>
+            <div className="flex flex-wrap gap-1.5 mb-2">
               {selectedSquares.map(pos => (
-                <span key={pos} className="inline-flex items-center px-2.5 py-1 rounded-md bg-[var(--color-primary)] text-white text-sm font-semibold">
+                <span key={pos} className="inline-flex items-center px-2 py-0.5 rounded-md bg-[var(--color-primary)] text-white text-xs font-semibold">
                   #{pos}
                 </span>
               ))}
             </div>
-            <div className="flex justify-between items-center pt-3 border-t border-[var(--color-border-light)]">
+            <div className="flex justify-between items-center pt-2 border-t border-[var(--color-border-light)]">
               <span className="text-sm font-medium text-[var(--color-text-secondary)]">Total Cost</span>
-              <span className="text-2xl font-bold text-[var(--color-primary)]">${totalCost}</span>
+              <span className="text-xl font-bold text-[var(--color-primary)]">${totalCost}</span>
             </div>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
               {error}
             </div>
           )}
 
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="firstName" className="block text-sm font-semibold text-[var(--color-text)] mb-2">
-                First Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="w-full px-4 py-2.5 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                required
-                disabled={isSubmitting}
-              />
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="firstName" className="block text-xs font-semibold text-[var(--color-text)] mb-1">
+                  First Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="firstName"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
+                  required
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div>
+                <label htmlFor="lastName" className="block text-xs font-semibold text-[var(--color-text)] mb-1">
+                  Last Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="lastName"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
+                  required
+                  disabled={isSubmitting}
+                />
+              </div>
             </div>
 
             <div>
-              <label htmlFor="lastName" className="block text-sm font-semibold text-[var(--color-text)] mb-2">
-                Last Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="w-full px-4 py-2.5 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-[var(--color-text)] mb-2">
+              <label htmlFor="email" className="block text-xs font-semibold text-[var(--color-text)] mb-1">
                 Email Address <span className="text-red-500">*</span>
               </label>
               <input
@@ -336,50 +394,50 @@ export default function ClaimPopover({
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
                 required
                 disabled={isSubmitting}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-[var(--color-text)] mb-3">
+              <label className="block text-xs font-semibold text-[var(--color-text)] mb-1.5">
                 Payment Method <span className="text-red-500">*</span>
               </label>
-              <div className="space-y-3">
-                <label className="flex items-start gap-3 p-4 border-2 border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-primary)] transition-colors">
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex items-start gap-2 p-2.5 border-2 border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-primary)] transition-colors">
                   <input
                     type="radio"
                     name="paymentMethod"
                     value="venmo"
                     checked={paymentMethod === 'venmo'}
                     onChange={(e) => setPaymentMethod(e.target.value as 'venmo')}
-                    className="mt-1"
+                    className="mt-0.5"
                     disabled={isSubmitting}
                   />
-                  <div className="flex-1">
-                    <div className="font-semibold text-[var(--color-text)]">Venmo</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm text-[var(--color-text)]">Venmo</div>
                     {venmoHandle && (
-                      <div className="text-sm text-[var(--color-text-muted)] mt-1">
-                        Send ${totalCost} to {formatVenmoHandle(venmoHandle)}
+                      <div className="text-xs text-[var(--color-text-muted)] mt-0.5 truncate">
+                        {formatVenmoHandle(venmoHandle)}
                       </div>
                     )}
                   </div>
                 </label>
-                <label className="flex items-start gap-3 p-4 border-2 border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-primary)] transition-colors">
+                <label className="flex items-start gap-2 p-2.5 border-2 border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-primary)] transition-colors">
                   <input
                     type="radio"
                     name="paymentMethod"
                     value="cash"
                     checked={paymentMethod === 'cash'}
                     onChange={(e) => setPaymentMethod(e.target.value as 'cash')}
-                    className="mt-1"
+                    className="mt-0.5"
                     disabled={isSubmitting}
                   />
                   <div className="flex-1">
-                    <div className="font-semibold text-[var(--color-text)]">Cash</div>
-                    <div className="text-sm text-[var(--color-text-muted)] mt-1">
-                      Pay the admin directly
+                    <div className="font-semibold text-sm text-[var(--color-text)]">Cash</div>
+                    <div className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                      Pay admin
                     </div>
                   </div>
                 </label>
@@ -387,31 +445,21 @@ export default function ClaimPopover({
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="flex-1 px-6 py-3 border-2 border-[var(--color-border)] text-[var(--color-text)] rounded-lg hover:bg-slate-50 hover:border-[var(--color-text-muted)] transition-all font-semibold disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 border-2 border-[var(--color-border)] text-[var(--color-text)] rounded-lg hover:bg-slate-50 transition-all font-semibold text-sm disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 px-6 py-3 bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90 transition-all font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2.5 bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90 transition-all font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isSubmitting ? (
-                <>
-                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Claiming...
-                </>
-              ) : (
-                `Claim ${selectedSquares.length} Square${selectedSquares.length > 1 ? 's' : ''}`
-              )}
+              {isSubmitting ? 'Claiming...' : `Claim ${selectedSquares.length}`}
             </button>
           </div>
         </form>

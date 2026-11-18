@@ -172,6 +172,11 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
   const handleProceedToClaim = () => {
     if (selectedSquares.length === 0) return
+    // Scroll first selected square into view before opening popover
+    const first = boardRef.current?.querySelector(
+      `button[data-position="${selectedSquares[0]}"]`
+    ) as HTMLElement | null
+    first?.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' })
     setShowClaimModal(true)
   }
 
@@ -235,6 +240,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
   const handleCancelSelection = () => {
     setSelectedSquares([])
+    setShowClaimModal(false)
   }
 
   if (loading) {
@@ -271,9 +277,9 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
   return (
     <>
-      {/* Selection Panel */}
+      {/* Selection Panel — z-50 so Clear/Claim stay clickable above popover backdrop */}
       {selectedSquares.length > 0 && (
-        <div className="bg-[var(--color-primary)] text-white rounded-xl shadow-lg mb-6 p-6">
+        <div className="relative z-50 bg-[var(--color-primary)] text-white rounded-xl shadow-lg mb-6 p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="bg-white text-[var(--color-primary)] rounded-full w-12 h-12 flex items-center justify-center font-bold text-xl flex-shrink-0">
