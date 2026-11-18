@@ -71,11 +71,43 @@ export default function BoardPage() {
 
   useEffect(() => {
     fetchTopBuyers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const loadMockHeaderGame = () => {
+    setGame({
+      id: 'mock',
+      season: 2026,
+      afc_team: 'Kansas City Chiefs',
+      nfc_team: 'San Francisco 49ers',
+      cost_per_square: 10,
+      charity_percentage: 10,
+      q1_payout: 100,
+      q2_payout: 100,
+      q3_payout: 100,
+      final_payout: 600,
+      venmo_handle: '@snps-squares',
+      numbers_locked: true,
+      afc_numbers: [3, 7, 0, 6, 1, 4, 9, 2, 8, 5],
+      nfc_numbers: [2, 5, 8, 1, 9, 3, 6, 0, 7, 4],
+      status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    setPrizePot(900)
+    setTopBuyers([])
+    setLoading(false)
+  }
 
   const fetchTopBuyers = async () => {
     try {
       setLoading(true)
+
+      // Dev mock: skip network so header payouts render without Supabase
+      if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true') {
+        loadMockHeaderGame()
+        return
+      }
 
       const { data: gameData, error: gameError } = await supabase
         .from('games')
