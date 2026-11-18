@@ -200,28 +200,18 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       const claimed = (result as { claimed?: number })?.claimed ?? 0
       if (claimed === 0) throw new Error('Those squares are no longer available')
     } else {
-      const email = data.email.trim().toLowerCase()
-      const updatePromises = selectedSquares.map((position) =>
-        supabase
-          .from('squares')
-          .update({
-            first_name: data.firstName,
-            last_name: data.lastName,
-            claimed_by_email: email,
-            payment_method: data.paymentMethod,
-            payment_status: 'unpaid' as const,
-            claimed_at: new Date().toISOString(),
-          })
-          .eq('game_id', game.id)
-          .eq('position', position)
-          .is('claimed_by_email', null)
-      )
-
-      const results = await Promise.all(updatePromises)
-      const errors = results.filter((r) => r.error)
-      if (errors.length > 0) {
-        throw new Error(errors[0].error?.message || 'Failed to claim squares')
-      }
+      // Guest typed path: SECURITY DEFINER RPC (anon cannot SELECT claimed_by_email)
+      const { data: result, error } = await supabase.rpc('claim_squares_as_guest', {
+        p_game_id: game.id,
+        p_positions: selectedSquares,
+        p_first: data.firstName.trim(),
+        p_last: data.lastName.trim(),
+        p_email: data.email.trim().toLowerCase(),
+        p_payment_method: data.paymentMethod,
+      })
+      if (error) throw new Error(error.message || 'Failed to claim squares')
+      const claimed = (result as { claimed?: number })?.claimed ?? 0
+      if (claimed === 0) throw new Error('Those squares are no longer available')
     }
 
     setSuccessData({
