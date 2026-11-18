@@ -82,8 +82,15 @@ export default function ClaimPopover({
       const isMobile = window.innerWidth < 640
       const viewportWidth = window.innerWidth
       const viewportHeight = window.innerHeight
-      const popoverWidth = popoverRect.width || 400
-      const popoverHeight = popoverRect.height || 500
+      
+      // Get actual popover dimensions (it should be visible by now)
+      const popoverWidth = popoverRect.width > 0 ? popoverRect.width : 400
+      const popoverHeight = popoverRect.height > 0 ? popoverRect.height : 600
+      
+      // Debug log
+      console.log('Popover dimensions:', { width: popoverWidth, height: popoverHeight, rect: popoverRect })
+      console.log('Selection:', { minX, maxX, minY, maxY, centerX: selectionCenterX, centerY: selectionCenterY })
+      console.log('Span ratio:', spanRatio)
 
       let finalTop: number
       let finalLeft: number
@@ -248,7 +255,7 @@ export default function ClaimPopover({
         aria-modal="true"
         aria-labelledby="claim-title"
         style={positionStyle}
-        className="bg-white rounded-xl shadow-2xl border border-[var(--color-border)] w-full max-w-md max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-xl shadow-2xl border border-[var(--color-border)] w-full max-w-md max-h-[90vh] overflow-y-auto transition-opacity duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b border-[var(--color-border)] px-6 py-4 flex items-center justify-between z-10">
