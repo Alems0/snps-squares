@@ -60,8 +60,20 @@ export default function AdminSignIn() {
     <div className="min-h-screen flex flex-col bg-[var(--color-surface)]">
       <header className="bg-[var(--color-primary)] text-white py-6 px-6 shadow-md">
         <div className="container mx-auto max-w-7xl flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold hover:opacity-90 transition-opacity">SNPS</Link>
-          <Link to="/" className="hover:opacity-80 transition-opacity font-medium">Back to Home</Link>
+          <Link
+            to="/"
+            data-testid="signin-snps-link"
+            className="inline-flex items-center min-h-[44px] touch-manipulation py-2 text-2xl font-bold hover:opacity-90 transition-opacity"
+          >
+            SNPS
+          </Link>
+          <Link
+            to="/"
+            data-testid="signin-back-home"
+            className="inline-flex items-center min-h-[44px] touch-manipulation py-2 px-1 hover:opacity-80 transition-opacity font-medium"
+          >
+            Back to Home
+          </Link>
         </div>
       </header>
 
