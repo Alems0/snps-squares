@@ -1457,7 +1457,8 @@ export default function AdminPanel() {
           <section
             ref={restorePreviewRef}
             data-testid="restore-preview"
-            className="mb-10 bg-white rounded-xl border border-[var(--color-border)] shadow-md p-6 scroll-mt-24"
+            className="mb-10 bg-white rounded-xl border border-[var(--color-border)] shadow-md p-6 scroll-mt-24 overflow-y-auto overscroll-contain"
+            style={{ maxHeight: 'min(calc(100dvh - 24px), calc(100vh - 24px))' }}
           >
             <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
               <div>
