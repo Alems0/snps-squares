@@ -1138,9 +1138,10 @@ export default function AdminPanel() {
                 SNPS Admin
               </Link>
               <nav className="hidden md:flex items-center gap-2">
-                <Link 
-                  to="/board" 
-                  className="px-4 py-2.5 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-slate-50 rounded-lg transition-all"
+                <Link
+                  to="/board"
+                  data-testid="admin-view-board"
+                  className="inline-flex items-center min-h-[44px] touch-manipulation px-4 py-2.5 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-slate-50 rounded-lg transition-all"
                 >
                   View Board
                 </Link>

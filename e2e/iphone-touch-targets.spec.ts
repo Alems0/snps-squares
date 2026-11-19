@@ -138,6 +138,23 @@ test.describe('iPhone touch targets & input sizes', () => {
     expect(await minHeightOf(page.getByTestId('confirm-restore'))).toBeGreaterThanOrEqual(43)
   })
 
+  test('admin sign-in SNPS and Back to Home >= 44px @ 390x844', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/admin')
+    await expect(page.getByRole('heading', { name: 'Admin Sign In' })).toBeVisible({
+      timeout: 30_000,
+    })
+    expect(await minHeightOf(page.getByTestId('signin-snps-link'))).toBeGreaterThanOrEqual(43)
+    expect(await minHeightOf(page.getByTestId('signin-back-home'))).toBeGreaterThanOrEqual(43)
+
+    // View Board is md+ only; assert CSS min-height regardless of visibility
+    await gotoAdmin(page)
+    const viewBoardMinH = await page.getByTestId('admin-view-board').evaluate((el) =>
+      parseFloat(getComputedStyle(el).minHeight)
+    )
+    expect(viewBoardMinH).toBeGreaterThanOrEqual(44)
+  })
+
   test('public Admin Login, footer, and Terms inline Privacy >= 44px @ 390x844', async ({
     page,
   }) => {
