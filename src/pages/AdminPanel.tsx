@@ -22,6 +22,8 @@ import PastPlayersSection from '../components/PastPlayersSection'
 import AdminClaimOnBehalf from '../components/AdminClaimOnBehalf'
 import { formatVenmoHandle } from '../lib/formatVenmo'
 import { displaySquareNumber, formatSquareLabel } from '../lib/displaySquareNumber'
+import { formatEasternDateTime } from '../lib/formatEasternDateTime'
+import { earliestClaimedAt } from '../lib/publicBuyers'
 
 interface ClaimData extends Square {
   name: string
@@ -51,6 +53,8 @@ interface GroupedClaim {
   positions: number[]
   unpaidCount: number
   amountDue: number
+  /** Earliest claimed_at across the group's squares */
+  firstClaimedAt: string | null
 }
 
 export default function AdminPanel() {
@@ -153,7 +157,7 @@ export default function AdminPanel() {
         last_name: 'Johnson',
         claimed_by_name: 'Sarah Johnson',
         claimed_by_email: 'sarah@test.com',
-        claimed_at: new Date().toISOString(),
+        claimed_at: '2026-11-17T14:00:00.000Z',
         payment_status: 'unpaid',
         payment_method: 'venmo',
         claim_order_id: orderId,
@@ -167,7 +171,7 @@ export default function AdminPanel() {
         last_name: 'Johnson',
         claimed_by_name: 'Sarah Johnson',
         claimed_by_email: 'sarah@test.com',
-        claimed_at: new Date().toISOString(),
+        claimed_at: '2026-11-17T15:30:00.000Z',
         payment_status: 'unpaid',
         payment_method: 'venmo',
         claim_order_id: orderId,
@@ -181,10 +185,10 @@ export default function AdminPanel() {
         last_name: 'Chen',
         claimed_by_name: 'Michael Chen',
         claimed_by_email: 'michael@test.com',
-        claimed_at: new Date().toISOString(),
+        claimed_at: '2026-11-19T18:46:00.000Z',
         payment_status: 'paid',
         payment_method: 'cash',
-        paid_at: new Date().toISOString(),
+        paid_at: '2026-11-19T19:00:00.000Z',
         name: 'Michael Chen',
       },
     ]
@@ -369,6 +373,7 @@ export default function AdminPanel() {
           positions: [],
           unpaidCount: 0,
           amountDue: 0,
+          firstClaimedAt: null,
         }
         groups.set(key, group)
       }
@@ -384,6 +389,7 @@ export default function AdminPanel() {
     for (const group of groups.values()) {
       group.positions.sort((a, b) => a - b)
       group.squares.sort((a, b) => a.position - b.position)
+      group.firstClaimedAt = earliestClaimedAt(group.squares)
 
       const unpaidSquares = group.squares.filter(s => s.payment_status !== 'paid')
       const squareDue = unpaidSquares.length * game.cost_per_square
@@ -418,6 +424,16 @@ export default function AdminPanel() {
       a.name.localeCompare(b.name) || a.email.localeCompare(b.email)
     )
   }, [claims, claimOrders, game])
+
+  const recentClaims = useMemo(() => {
+    return [...claims]
+      .filter((c) => c.claimed_at)
+      .sort(
+        (a, b) =>
+          new Date(b.claimed_at!).getTime() - new Date(a.claimed_at!).getTime()
+      )
+      .slice(0, 25)
+  }, [claims])
 
   const handleSignOut = async () => {
     try {
@@ -1557,6 +1573,7 @@ export default function AdminPanel() {
                     <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Email</th>
                     <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Squares</th>
                     <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Positions</th>
+                    <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Bought</th>
                     <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Amount due</th>
                     <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Actions</th>
                   </tr>
@@ -1564,7 +1581,7 @@ export default function AdminPanel() {
                 <tbody className="divide-y divide-[var(--color-border-light)]">
                   {groupedClaims.length === 0 ? (
                     <tr>
-                      <td className="py-16 px-6 text-center" colSpan={6}>
+                      <td className="py-16 px-6 text-center" colSpan={7}>
                         <div className="flex flex-col items-center">
                           <svg className="w-16 h-16 text-[var(--color-text-light)] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
@@ -1608,6 +1625,9 @@ export default function AdminPanel() {
                             <td className="py-5 px-6 text-sm text-[var(--color-text-secondary)]">
                               {group.positions.map(p => formatSquareLabel(p)).join(', ')}
                             </td>
+                            <td className="py-5 px-6 text-sm text-[var(--color-text-secondary)] whitespace-nowrap tabular-nums">
+                              {formatEasternDateTime(group.firstClaimedAt)}
+                            </td>
                             <td className="py-5 px-6 text-sm font-bold text-[var(--color-text)]">
                               ${group.amountDue.toFixed(2)}
                             </td>
@@ -1645,6 +1665,9 @@ export default function AdminPanel() {
                                       ({claim.payment_method})
                                     </span>
                                   ) : null}
+                                  <div className="mt-0.5 text-xs text-[var(--color-text-muted)] tabular-nums">
+                                    Bought {formatEasternDateTime(claim.claimed_at)}
+                                  </div>
                                 </td>
                                 <td className="py-3 px-6" colSpan={2}>
                                   <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold ${
@@ -1655,7 +1678,7 @@ export default function AdminPanel() {
                                     {claim.payment_status}
                                   </span>
                                 </td>
-                                <td className="py-3 px-6" colSpan={2}>
+                                <td className="py-3 px-6" colSpan={3}>
                                   <div className="flex items-center gap-2">
                                     {claim.payment_status !== 'paid' && (
                                       <>
@@ -1687,6 +1710,54 @@ export default function AdminPanel() {
                 </tbody>
               </table>
             </div>
+          )}
+        </section>
+
+        <section
+          className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden mt-10"
+          data-testid="admin-recent-claims"
+        >
+          <div className="px-6 py-5 border-b border-[var(--color-border)] bg-slate-50">
+            <h2 className="text-xl font-bold text-[var(--color-text)]">Recent Claims</h2>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+              Newest first · times shown in Eastern (ET)
+            </p>
+          </div>
+          {claimsLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--color-primary)]" />
+            </div>
+          ) : recentClaims.length === 0 ? (
+            <p className="text-center text-[var(--color-text-muted)] py-10 px-4">No claims yet</p>
+          ) : (
+            <ul className="divide-y divide-[var(--color-border-light)]">
+              {recentClaims.map((claim) => (
+                <li
+                  key={claim.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-4 px-4 sm:px-6 py-3.5"
+                >
+                  <div className="min-w-0">
+                    <div className="font-semibold text-sm text-[var(--color-text)] truncate">
+                      {claim.name}
+                    </div>
+                    <div className="text-sm text-[var(--color-text-secondary)]">
+                      Square {formatSquareLabel(claim.position)}
+                      {claim.payment_method ? (
+                        <span className="ml-2 capitalize text-xs font-semibold text-blue-700">
+                          ({claim.payment_method})
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <time
+                    className="text-sm text-[var(--color-text-secondary)] tabular-nums whitespace-nowrap shrink-0"
+                    dateTime={claim.claimed_at || undefined}
+                  >
+                    {formatEasternDateTime(claim.claimed_at)}
+                  </time>
+                </li>
+              ))}
+            </ul>
           )}
         </section>
       </main>

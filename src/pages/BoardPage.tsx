@@ -1,7 +1,17 @@
 import { Link, useSearchParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Board from '../components/Board'
-import { supabase, type Game, GAMES_PUBLIC_COLUMNS } from '../lib/supabase'
+import {
+  supabase,
+  type Game,
+  GAMES_PUBLIC_COLUMNS,
+  SQUARES_PUBLIC_COLUMNS,
+} from '../lib/supabase'
+import { formatEasternDateTime } from '../lib/formatEasternDateTime'
+import {
+  aggregatePublicBuyers,
+  type PublicBuyer,
+} from '../lib/publicBuyers'
 
 interface TopBuyer {
   name: string
@@ -49,6 +59,7 @@ function TrophyIcon({ place }: { place: 1 | 2 | 3 }) {
 export default function BoardPage() {
   const [searchParams] = useSearchParams()
   const [topBuyers, setTopBuyers] = useState<TopBuyer[]>([])
+  const [buyers, setBuyers] = useState<PublicBuyer[]>([])
   const [game, setGame] = useState<Game | null>(null)
   const [loading, setLoading] = useState(true)
   const [prizePot, setPrizePot] = useState(0)
@@ -126,6 +137,29 @@ export default function BoardPage() {
       { name: 'Michael Chen', squareCount: 6, totalCost: 60 },
       { name: 'Emily Rodriguez', squareCount: 5, totalCost: 50 },
     ])
+    // Mock buyers: earliest claimed_at; sorted newest-first for the public list
+    setBuyers([
+      {
+        name: 'Emily Rodriguez',
+        squareCount: 5,
+        firstClaimedAt: '2026-11-19T18:46:00.000Z', // 1:46 PM ET
+      },
+      {
+        name: 'Michael Chen',
+        squareCount: 6,
+        firstClaimedAt: '2026-11-18T16:30:00.000Z',
+      },
+      {
+        name: 'Sarah Johnson',
+        squareCount: 8,
+        firstClaimedAt: '2026-11-17T14:00:00.000Z',
+      },
+      {
+        name: 'Jordan Lee',
+        squareCount: 2,
+        firstClaimedAt: '2026-11-16T20:15:00.000Z',
+      },
+    ])
     setLoading(false)
   }
 
@@ -162,28 +196,53 @@ export default function BoardPage() {
         if ('claimed' in s) setClaimedCount(Number(s.claimed) || 0)
       }
 
-      const { data: buyersData, error: buyersError } = await supabase.rpc('get_top_buyers', {
+      const { data: topData, error: topError } = await supabase.rpc('get_top_buyers', {
         p_game_id: gameData.id,
-        p_limit: 5,
+        p_limit: 3,
       })
 
-      if (buyersError) {
-        console.error('Error fetching top buyers:', buyersError)
-        // Fallback for pre-migration / mock: empty list
+      if (topError) {
+        console.error('Error fetching top buyers:', topError)
         setTopBuyers([])
-        setLoading(false)
-        return
+      } else {
+        const top: TopBuyer[] = (topData || [])
+          .slice(0, 3)
+          .map((b: { name: string; square_count: number; total_cost: number }) => ({
+            name: b.name,
+            squareCount: b.square_count,
+            totalCost: b.total_cost,
+          }))
+        setTopBuyers(top)
       }
 
-      const buyers: TopBuyer[] = (buyersData || []).map(
-        (b: { name: string; square_count: number; total_cost: number }) => ({
-          name: b.name,
-          squareCount: b.square_count,
-          totalCost: b.total_cost,
-        })
+      // Prefer SECURITY DEFINER RPC (groups by email without exposing it).
+      // Fallback: anon-visible squares columns (name + claimed_at only).
+      const { data: publicBuyersData, error: publicBuyersError } = await supabase.rpc(
+        'get_public_buyers',
+        { p_game_id: gameData.id }
       )
 
-      setTopBuyers(buyers)
+      if (!publicBuyersError && publicBuyersData) {
+        setBuyers(
+          (publicBuyersData as { name: string; square_count: number; first_claimed_at: string }[]).map(
+            (b) => ({
+              name: b.name,
+              squareCount: b.square_count,
+              firstClaimedAt: b.first_claimed_at,
+            })
+          )
+        )
+      } else {
+        if (publicBuyersError) {
+          console.error('get_public_buyers unavailable, using squares fallback:', publicBuyersError)
+        }
+        const { data: squaresData } = await supabase
+          .from('squares')
+          .select(SQUARES_PUBLIC_COLUMNS)
+          .eq('game_id', gameData.id)
+        setBuyers(aggregatePublicBuyers(squaresData || []))
+      }
+
       setLoading(false)
     } catch (err) {
       console.error('Error in fetchTopBuyers:', err)
@@ -274,15 +333,11 @@ export default function BoardPage() {
           ) : topBuyers.length === 0 ? (
             <p className="text-center text-[var(--color-text-muted)] py-6">No squares claimed yet</p>
           ) : (
-            <div className="flex flex-wrap gap-6">
-              {topBuyers.map((buyer, index) => (
+            <div className="flex flex-wrap gap-6" data-testid="top-buyers-list">
+              {topBuyers.slice(0, 3).map((buyer, index) => (
                 <div key={`${buyer.name}-${index}`} className="flex items-center gap-3">
                   <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-slate-100">
-                    {index < 3 ? (
-                      <TrophyIcon place={(index + 1) as 1 | 2 | 3} />
-                    ) : (
-                      <span className="text-sm font-bold text-[var(--color-primary)]">{index + 1}</span>
-                    )}
+                    <TrophyIcon place={(index + 1) as 1 | 2 | 3} />
                   </div>
                   <div>
                     <div className="font-semibold text-base text-[var(--color-text)]">{buyer.name}</div>
@@ -301,6 +356,51 @@ export default function BoardPage() {
         <div className="mb-8 min-w-0 w-full">
           <Board onClaimSuccess={fetchTopBuyers} />
         </div>
+
+        {/* Public Buyers list — anon-safe (name / count / first claimed_at only) */}
+        <section
+          className="no-print bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden min-w-0 mb-8"
+          data-testid="buyers-list"
+          aria-labelledby="buyers-heading"
+        >
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-[var(--color-border)] bg-slate-50">
+            <h2 id="buyers-heading" className="text-xl sm:text-2xl font-bold text-[var(--color-text)]">
+              Buyers
+            </h2>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+              Full name, squares claimed, and first purchase time (ET)
+            </p>
+          </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-10">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)]" />
+            </div>
+          ) : buyers.length === 0 ? (
+            <p className="text-center text-[var(--color-text-muted)] py-8 px-4">No buyers yet</p>
+          ) : (
+            <ul className="divide-y divide-[var(--color-border-light)]">
+              {buyers.map((buyer) => (
+                <li
+                  key={`${buyer.name}-${buyer.firstClaimedAt}`}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-4 px-4 sm:px-6 py-3.5"
+                >
+                  <div className="min-w-0">
+                    <div className="font-semibold text-[var(--color-text)] truncate">{buyer.name}</div>
+                    <div className="text-sm text-[var(--color-text-muted)]">
+                      {buyer.squareCount} square{buyer.squareCount !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                  <time
+                    className="text-sm text-[var(--color-text-secondary)] tabular-nums whitespace-nowrap shrink-0"
+                    dateTime={buyer.firstClaimedAt}
+                  >
+                    {formatEasternDateTime(buyer.firstClaimedAt)}
+                  </time>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
         {/* Game Rules - Full Width Below Board */}
         <div className="no-print bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden min-w-0 mb-8">
