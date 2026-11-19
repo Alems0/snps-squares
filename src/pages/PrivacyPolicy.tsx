@@ -112,7 +112,7 @@ export default function PrivacyPolicy() {
               <p className="text-[var(--color-text)] leading-relaxed">
                 We keep board and claim records for the season and may keep historical records for charity
                 reporting and future fundraiser planning. If you want your personal information removed,
-                contact us at the email below and we will do our best to help.
+                contact the game organizer and we will do our best to help.
               </p>
             </section>
 
@@ -128,18 +128,18 @@ export default function PrivacyPolicy() {
               <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Children</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
                 This fundraiser is intended for adults (18 and older). We do not knowingly collect information
-                from children. If you believe a child has submitted information, please contact us so we can
-                remove it.
+                from children. If you believe a child has submitted information, please contact the game
+                organizer so we can remove it.
               </p>
             </section>
 
             <section>
               <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Your choices</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
-                You can ask what personal information we have about you, or ask us to delete it, by emailing
-                us. If you are a California resident, you also have rights under state privacy law, including
-                the right to know, delete, and not be discriminated against for exercising those rights. We
-                do not sell personal information.
+                You can ask what personal information we have about you, or ask us to delete it, by contacting
+                the game organizer. If you are a California resident, you also have rights under state privacy
+                law, including the right to know, delete, and not be discriminated against for exercising those
+                rights. We do not sell personal information.
               </p>
             </section>
 
@@ -154,17 +154,8 @@ export default function PrivacyPolicy() {
             <section>
               <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Contact</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
-                Questions about this Privacy Policy? Contact us:
+                Questions about this Privacy Policy? Please contact the game organizer.
               </p>
-              <div className="bg-gray-50 rounded-lg p-6 mt-4">
-                <p className="text-[var(--color-text)] font-semibold">Saint Nicholas Patriotic Society — SNPS Squares</p>
-                <p className="text-[var(--color-text)]">
-                  Email:{' '}
-                  <a href="mailto:stecher2789@gmail.com" className="text-[var(--color-primary)] hover:underline">
-                    stecher2789@gmail.com
-                  </a>
-                </p>
-              </div>
             </section>
           </div>
         </div>
