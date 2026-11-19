@@ -1130,7 +1130,11 @@ export default function AdminPanel() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-8">
-              <Link to="/" className="text-2xl font-bold text-[var(--color-primary)] hover:opacity-90 transition-opacity">
+              <Link
+                to="/"
+                data-testid="admin-home-link"
+                className="inline-flex items-center min-h-[44px] touch-manipulation text-2xl font-bold text-[var(--color-primary)] hover:opacity-90 transition-opacity"
+              >
                 SNPS Admin
               </Link>
               <nav className="hidden md:flex items-center gap-2">
@@ -1146,7 +1150,7 @@ export default function AdminPanel() {
               <span className="text-sm text-[var(--color-text-secondary)] font-medium hidden sm:inline">{user.email}</span>
               <button 
                 onClick={handleSignOut}
-                className="px-4 py-2.5 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-slate-50 border border-[var(--color-border)] rounded-lg transition-all"
+                className="min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-slate-50 border border-[var(--color-border)] rounded-lg transition-all"
               >
                 Sign Out
               </button>
@@ -1289,7 +1293,7 @@ export default function AdminPanel() {
                         <button
                           type="button"
                           onClick={() => setShowJoinPassword(v => !v)}
-                          className="px-2.5 py-1 text-xs font-semibold border border-[var(--color-border)] rounded-md hover:bg-slate-50 text-[var(--color-text-secondary)]"
+                          className="min-h-[44px] touch-manipulation px-3 py-2 text-sm font-semibold border border-[var(--color-border)] rounded-md hover:bg-slate-50 text-[var(--color-text-secondary)]"
                         >
                           {showJoinPassword ? 'Hide' : 'Show'}
                         </button>
@@ -1312,7 +1316,7 @@ export default function AdminPanel() {
                     type="button"
                     onClick={handleSaveJoinPassword}
                     disabled={!game || savingJoinPassword}
-                    className="px-4 py-2 text-sm font-semibold bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50"
+                    className="min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50"
                   >
                     {savingJoinPassword ? 'Saving…' : 'Save'}
                   </button>
@@ -1494,7 +1498,8 @@ export default function AdminPanel() {
                 <button
                   type="button"
                   onClick={() => setRestorePreview(null)}
-                  className="px-4 py-2 text-sm font-semibold border border-[var(--color-border)] rounded-lg hover:bg-slate-50"
+                  data-testid="restore-cancel"
+                  className="min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold border border-[var(--color-border)] rounded-lg hover:bg-slate-50"
                   disabled={restoreBusy}
                 >
                   Cancel
@@ -1504,7 +1509,7 @@ export default function AdminPanel() {
                   data-testid="confirm-restore"
                   onClick={handleConfirmRestore}
                   disabled={restoreBusy}
-                  className="px-4 py-2 text-sm font-semibold bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50"
+                  className="min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50"
                 >
                   {restoreBusy ? 'Restoring…' : 'Confirm restore'}
                 </button>
@@ -1564,34 +1569,141 @@ export default function AdminPanel() {
             <div className="flex justify-center items-center py-16">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)]"></div>
             </div>
+          ) : groupedClaims.length === 0 ? (
+            <div className="flex flex-col items-center py-16 px-6">
+              <p className="text-base font-semibold text-[var(--color-text-muted)]">No claims yet</p>
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Name</th>
-                    <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Email</th>
-                    <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Squares</th>
-                    <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Positions</th>
-                    <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Bought</th>
-                    <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Amount due</th>
-                    <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--color-border-light)]">
-                  {groupedClaims.length === 0 ? (
-                    <tr>
-                      <td className="py-16 px-6 text-center" colSpan={7}>
-                        <div className="flex flex-col items-center">
-                          <svg className="w-16 h-16 text-[var(--color-text-light)] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                          </svg>
-                          <p className="text-base font-semibold text-[var(--color-text-muted)]">No claims yet</p>
+            <>
+              {/* Mobile: stacked cards — actions stay in viewport (no horizontal table scroll) */}
+              <div className="md:hidden divide-y divide-[var(--color-border-light)]" data-testid="admin-claims-mobile">
+                {groupedClaims.map((group) => (
+                  <div key={group.key} className="p-4 space-y-3">
+                    <div>
+                      <div className="font-semibold text-base text-[var(--color-text)]">{group.name}</div>
+                      <div className="text-sm text-[var(--color-text-secondary)] break-all">
+                        {group.email || 'N/A'}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <div className="text-xs font-bold uppercase text-[var(--color-text-muted)]">Squares</div>
+                        <div className="font-semibold text-[var(--color-text)]">
+                          {group.squares.length}
+                          {group.unpaidCount > 0 ? (
+                            <span className="ml-1 text-amber-700">({group.unpaidCount} unpaid)</span>
+                          ) : null}
                         </div>
-                      </td>
+                        <div className="text-[var(--color-text-secondary)] mt-0.5">
+                          {group.positions.map((p) => formatSquareLabel(p)).join(', ')}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold uppercase text-[var(--color-text-muted)]">Bought</div>
+                        <div className="tabular-nums text-[var(--color-text-secondary)]">
+                          {formatEasternDateTime(group.firstClaimedAt)}
+                        </div>
+                        <div className="text-xs font-bold uppercase text-[var(--color-text-muted)] mt-2">
+                          Amount due
+                        </div>
+                        <div className="font-bold text-[var(--color-text)]">
+                          ${group.amountDue.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                    {group.email && group.unpaidCount > 0 && (
+                      <button
+                        type="button"
+                        data-testid="mark-all-paid"
+                        onClick={() => handleMarkAllPaymentStatus(group.email, 'paid')}
+                        className="w-full min-h-[44px] touch-manipulation px-4 py-2.5 bg-[var(--color-success)] text-white text-base font-semibold rounded-lg"
+                      >
+                        Mark all paid
+                      </button>
+                    )}
+                    {group.email && group.squares.some((s) => s.payment_status === 'paid') && (
+                      <button
+                        type="button"
+                        onClick={() => handleMarkAllPaymentStatus(group.email, 'unpaid')}
+                        className="w-full min-h-[44px] touch-manipulation px-4 py-2.5 border-2 border-[var(--color-border)] text-[var(--color-text-secondary)] text-base font-semibold rounded-lg"
+                      >
+                        Mark unpaid
+                      </button>
+                    )}
+                    <ul className="space-y-3 pt-1">
+                      {group.squares.map((claim) => (
+                        <li
+                          key={claim.id}
+                          className="rounded-lg border border-[var(--color-border-light)] bg-slate-50/80 p-3 space-y-2"
+                          data-testid="admin-claim-card"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="text-sm font-semibold text-[var(--color-text)]">
+                              Square {formatSquareLabel(claim.position)}
+                              {claim.payment_method ? (
+                                <span className="ml-2 capitalize text-xs font-semibold text-blue-700">
+                                  ({claim.payment_method})
+                                </span>
+                              ) : null}
+                            </div>
+                            <span
+                              className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold ${
+                                claim.payment_status === 'paid'
+                                  ? 'bg-green-50 text-green-700 border border-green-200'
+                                  : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                              }`}
+                            >
+                              {claim.payment_status}
+                            </span>
+                          </div>
+                          <div className="text-sm text-[var(--color-text-muted)] tabular-nums">
+                            Bought {formatEasternDateTime(claim.claimed_at)}
+                          </div>
+                          {claim.payment_status !== 'paid' ? (
+                            <div className="flex flex-col gap-2">
+                              <button
+                                type="button"
+                                data-testid="mark-paid"
+                                onClick={() => handleMarkPaid(claim.id)}
+                                className="w-full min-h-[44px] touch-manipulation px-4 py-2.5 bg-[var(--color-success)] text-white text-base font-semibold rounded-lg"
+                              >
+                                Mark Paid
+                              </button>
+                              <button
+                                type="button"
+                                data-testid="remove-claim"
+                                onClick={() => handleRemoveClaim(claim)}
+                                className="w-full min-h-[44px] touch-manipulation px-4 py-2.5 border-2 border-red-300 text-red-600 text-base font-semibold rounded-lg"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[var(--color-success)] text-sm font-semibold">Paid</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto" data-testid="admin-claims-desktop">
+                <table className="w-full">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Name</th>
+                      <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Email</th>
+                      <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Squares</th>
+                      <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Positions</th>
+                      <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Bought</th>
+                      <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Amount due</th>
+                      <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Actions</th>
                     </tr>
-                  ) : (
-                    groupedClaims.map((group) => {
+                  </thead>
+                  <tbody className="divide-y divide-[var(--color-border-light)]">
+                    {groupedClaims.map((group) => {
                       const expanded = Boolean(expandedGroups[group.key])
                       return (
                         <Fragment key={group.key}>
@@ -1600,12 +1712,12 @@ export default function AdminPanel() {
                               <button
                                 type="button"
                                 onClick={() =>
-                                  setExpandedGroups(prev => ({
+                                  setExpandedGroups((prev) => ({
                                     ...prev,
                                     [group.key]: !prev[group.key],
                                   }))
                                 }
-                                className="inline-flex items-center gap-2 text-left hover:text-[var(--color-primary)]"
+                                className="inline-flex items-center gap-2 min-h-[44px] text-left hover:text-[var(--color-primary)]"
                               >
                                 <span className="text-[var(--color-text-muted)]">{expanded ? '▾' : '▸'}</span>
                                 {group.name}
@@ -1623,7 +1735,7 @@ export default function AdminPanel() {
                               )}
                             </td>
                             <td className="py-5 px-6 text-sm text-[var(--color-text-secondary)]">
-                              {group.positions.map(p => formatSquareLabel(p)).join(', ')}
+                              {group.positions.map((p) => formatSquareLabel(p)).join(', ')}
                             </td>
                             <td className="py-5 px-6 text-sm text-[var(--color-text-secondary)] whitespace-nowrap tabular-nums">
                               {formatEasternDateTime(group.firstClaimedAt)}
@@ -1638,16 +1750,16 @@ export default function AdminPanel() {
                                     type="button"
                                     data-testid="mark-all-paid"
                                     onClick={() => handleMarkAllPaymentStatus(group.email, 'paid')}
-                                    className="px-3 py-1.5 bg-[var(--color-success)] text-white text-xs font-semibold rounded-lg hover:bg-opacity-90 transition-all shadow-sm"
+                                    className="min-h-[44px] touch-manipulation px-4 py-2 bg-[var(--color-success)] text-white text-sm font-semibold rounded-lg hover:bg-opacity-90 transition-all shadow-sm"
                                   >
                                     Mark all paid
                                   </button>
                                 )}
-                                {group.email && group.squares.some(s => s.payment_status === 'paid') && (
+                                {group.email && group.squares.some((s) => s.payment_status === 'paid') && (
                                   <button
                                     type="button"
                                     onClick={() => handleMarkAllPaymentStatus(group.email, 'unpaid')}
-                                    className="px-3 py-1.5 border-2 border-[var(--color-border)] text-[var(--color-text-secondary)] text-xs font-semibold rounded-lg hover:bg-slate-50 transition-all"
+                                    className="min-h-[44px] touch-manipulation px-4 py-2 border-2 border-[var(--color-border)] text-[var(--color-text-secondary)] text-sm font-semibold rounded-lg hover:bg-slate-50 transition-all"
                                   >
                                     Mark unpaid
                                   </button>
@@ -1670,11 +1782,13 @@ export default function AdminPanel() {
                                   </div>
                                 </td>
                                 <td className="py-3 px-6" colSpan={2}>
-                                  <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold ${
-                                    claim.payment_status === 'paid'
-                                      ? 'bg-green-50 text-green-700 border border-green-200'
-                                      : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-                                  }`}>
+                                  <span
+                                    className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold ${
+                                      claim.payment_status === 'paid'
+                                        ? 'bg-green-50 text-green-700 border border-green-200'
+                                        : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                                    }`}
+                                  >
                                     {claim.payment_status}
                                   </span>
                                 </td>
@@ -1683,14 +1797,18 @@ export default function AdminPanel() {
                                     {claim.payment_status !== 'paid' && (
                                       <>
                                         <button
+                                          type="button"
+                                          data-testid="mark-paid"
                                           onClick={() => handleMarkPaid(claim.id)}
-                                          className="px-3 py-1.5 bg-[var(--color-success)] text-white text-xs font-semibold rounded-lg hover:bg-opacity-90 transition-all shadow-sm"
+                                          className="min-h-[44px] touch-manipulation px-4 py-2 bg-[var(--color-success)] text-white text-sm font-semibold rounded-lg hover:bg-opacity-90 transition-all shadow-sm"
                                         >
                                           Mark Paid
                                         </button>
                                         <button
+                                          type="button"
+                                          data-testid="remove-claim"
                                           onClick={() => handleRemoveClaim(claim)}
-                                          className="px-3 py-1.5 border-2 border-red-300 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-50 transition-all"
+                                          className="min-h-[44px] touch-manipulation px-4 py-2 border-2 border-red-300 text-red-600 text-sm font-semibold rounded-lg hover:bg-red-50 transition-all"
                                         >
                                           Remove
                                         </button>
@@ -1705,11 +1823,11 @@ export default function AdminPanel() {
                             ))}
                         </Fragment>
                       )
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </section>
 
@@ -1765,8 +1883,8 @@ export default function AdminPanel() {
       <footer className="border-t border-[var(--color-border)] bg-white mt-auto shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-wrap justify-between items-center gap-4 text-sm text-[var(--color-text-secondary)]">
           <div className="flex items-center gap-8">
-            <Link to="/privacy" className="hover:text-[var(--color-primary)] transition-colors font-medium">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-[var(--color-primary)] transition-colors font-medium">Terms of Service</Link>
+            <Link to="/privacy" className="inline-flex items-center min-h-[44px] touch-manipulation py-2 hover:text-[var(--color-primary)] transition-colors font-medium">Privacy Policy</Link>
+            <Link to="/terms" className="inline-flex items-center min-h-[44px] touch-manipulation py-2 hover:text-[var(--color-primary)] transition-colors font-medium">Terms of Service</Link>
           </div>
           <p className="text-sm text-[var(--color-text-muted)]">© {new Date().getFullYear()} SNPS Squares. Not affiliated with the NFL.</p>
         </div>

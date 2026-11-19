@@ -48,10 +48,10 @@ export default function ClaimSuccess({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-text)] rounded-lg"
+            className="min-h-[44px] min-w-[44px] touch-manipulation inline-flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text)] rounded-lg"
             aria-label="Close"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>

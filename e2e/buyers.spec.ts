@@ -44,10 +44,10 @@ test.describe('Admin claim timestamps', () => {
     await page.goto('/admin/panel?mock_admin=1')
     await expect(page.getByTestId('admin-claims-grouped')).toBeVisible({ timeout: 30_000 })
 
-    const grouped = page.getByTestId('admin-claims-grouped')
-    await expect(grouped.getByText(/Bought/i).first()).toBeVisible()
+    const desktopClaims = page.getByTestId('admin-claims-desktop')
+    await expect(desktopClaims.getByRole('columnheader', { name: 'Bought' })).toBeVisible()
     // Michael's earliest (only) claim: 2026-11-19T18:46Z → Nov 19, 2026, 1:46 PM ET
-    await expect(grouped.getByText(/Nov 19, 2026.*1:46\s*PM\s*ET/).first()).toBeVisible()
+    await expect(desktopClaims.getByText(/Nov 19, 2026.*1:46\s*PM\s*ET/).first()).toBeVisible()
 
     const recent = page.getByTestId('admin-recent-claims')
     await expect(recent.getByRole('heading', { name: 'Recent Claims' })).toBeVisible()

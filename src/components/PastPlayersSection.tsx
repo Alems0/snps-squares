@@ -467,7 +467,7 @@ export default function PastPlayersSection() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <label className="px-4 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm font-semibold cursor-pointer hover:bg-slate-50">
+          <label className="inline-flex items-center min-h-[44px] touch-manipulation px-4 py-2.5 border-2 border-[var(--color-border)] rounded-lg text-base font-semibold cursor-pointer hover:bg-slate-50">
             Upload CSV
             <input
               type="file"
@@ -484,14 +484,14 @@ export default function PastPlayersSection() {
             type="button"
             onClick={exportCsv}
             disabled={players.length === 0}
-            className="px-4 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm font-semibold hover:bg-slate-50 disabled:opacity-50"
+            className="min-h-[44px] touch-manipulation px-4 py-2.5 border-2 border-[var(--color-border)] rounded-lg text-base font-semibold hover:bg-slate-50 disabled:opacity-50"
           >
             Export CSV
           </button>
           <button
             type="button"
             onClick={startAdd}
-            className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg text-sm font-semibold hover:bg-opacity-90"
+            className="min-h-[44px] touch-manipulation px-4 py-2.5 bg-[var(--color-primary)] text-white rounded-lg text-base font-semibold hover:bg-opacity-90"
           >
             Add Player
           </button>
@@ -517,7 +517,7 @@ export default function PastPlayersSection() {
             <button
               type="button"
               onClick={() => setInviteTemplate(DEFAULT_INVITE_TEMPLATE)}
-              className="text-xs font-semibold text-[var(--color-primary)] hover:underline"
+              className="min-h-[44px] touch-manipulation px-3 py-2 text-sm font-semibold text-[var(--color-primary)] hover:underline"
             >
               Reset default
             </button>
@@ -526,14 +526,15 @@ export default function PastPlayersSection() {
             value={inviteTemplate}
             onChange={(e) => setInviteTemplate(e.target.value)}
             rows={3}
-            className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm resize-y"
+            data-testid="invite-template"
+            className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base resize-y"
           />
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               disabled={selectedWithPhone.length === 0}
               onClick={copySelectedNumbers}
-              className="px-3 py-1.5 text-xs font-semibold border border-[var(--color-border)] rounded-lg hover:bg-white disabled:opacity-40"
+              className="min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold border border-[var(--color-border)] rounded-lg hover:bg-white disabled:opacity-40"
             >
               Copy numbers
             </button>
@@ -541,19 +542,19 @@ export default function PastPlayersSection() {
               type="button"
               disabled={selectedWithPhone.length === 0}
               onClick={copySelectedMessage}
-              className="px-3 py-1.5 text-xs font-semibold border border-[var(--color-border)] rounded-lg hover:bg-white disabled:opacity-40"
+              className="min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold border border-[var(--color-border)] rounded-lg hover:bg-white disabled:opacity-40"
             >
               Copy message
             </button>
             {textSelectedHref ? (
               <a
                 href={textSelectedHref}
-                className="px-3 py-1.5 text-xs font-semibold bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90"
+                className="inline-flex items-center min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90"
               >
                 Text selected ({selectedWithPhone.length})
               </a>
             ) : (
-              <span className="px-3 py-1.5 text-xs font-semibold bg-[var(--color-primary)] text-white rounded-lg opacity-40">
+              <span className="inline-flex items-center min-h-[44px] px-4 py-2.5 text-base font-semibold bg-[var(--color-primary)] text-white rounded-lg opacity-40">
                 Text selected
               </span>
             )}
@@ -565,25 +566,25 @@ export default function PastPlayersSection() {
             <h3 className="font-semibold text-[var(--color-text)]">{editing ? 'Edit Player' : 'Add Player'}</h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <input
-                className="px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm"
+                className="px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
                 placeholder="First name"
                 value={form.first_name}
                 onChange={(e) => setForm((f) => ({ ...f, first_name: e.target.value }))}
               />
               <input
-                className="px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm"
+                className="px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
                 placeholder="Last name"
                 value={form.last_name}
                 onChange={(e) => setForm((f) => ({ ...f, last_name: e.target.value }))}
               />
               <input
-                className="px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm"
+                className="px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
                 placeholder="Email"
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               />
               <input
-                className="px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm"
+                className="px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
                 placeholder="Phone (optional)"
                 value={form.phone}
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
@@ -593,7 +594,7 @@ export default function PastPlayersSection() {
               <button
                 type="button"
                 onClick={savePlayer}
-                className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg text-sm font-semibold"
+                className="min-h-[44px] touch-manipulation px-4 py-2.5 bg-[var(--color-primary)] text-white rounded-lg text-base font-semibold"
               >
                 Save
               </button>
@@ -603,7 +604,7 @@ export default function PastPlayersSection() {
                   setEditing(null)
                   setForm({ first_name: '', last_name: '', email: '', phone: '' })
                 }}
-                className="px-4 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm font-semibold"
+                className="min-h-[44px] touch-manipulation px-4 py-2.5 border-2 border-[var(--color-border)] rounded-lg text-base font-semibold"
               >
                 Cancel
               </button>
@@ -652,14 +653,14 @@ export default function PastPlayersSection() {
                 type="button"
                 disabled={csvBusy || previewCounts.new + previewCounts.update === 0}
                 onClick={confirmCsvImport}
-                className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+                className="min-h-[44px] touch-manipulation px-4 py-2.5 bg-[var(--color-primary)] text-white rounded-lg text-base font-semibold disabled:opacity-50"
               >
                 {csvBusy ? 'Importing…' : 'Confirm Import'}
               </button>
               <button
                 type="button"
                 onClick={() => setCsvPreview(null)}
-                className="px-4 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm font-semibold"
+                className="min-h-[44px] touch-manipulation px-4 py-2.5 border-2 border-[var(--color-border)] rounded-lg text-base font-semibold"
               >
                 Cancel
               </button>
@@ -669,10 +670,11 @@ export default function PastPlayersSection() {
 
         <input
           type="search"
+          data-testid="past-players-search"
           placeholder="Search name, email, or phone…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md px-4 py-2.5 border-2 border-[var(--color-border)] rounded-lg text-sm"
+          className="w-full max-w-md px-4 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
         />
 
         {loading ? (
@@ -685,15 +687,24 @@ export default function PastPlayersSection() {
               <thead className="bg-slate-50">
                 <tr>
                   <th className="py-3 px-3 text-left">
-                    <input
-                      type="checkbox"
-                      aria-label="Select all with phone"
-                      checked={
-                        filtered.some((p) => p.phone) &&
-                        filtered.filter((p) => p.phone).every((p) => selectedIds.has(p.id))
-                      }
-                      onChange={toggleSelectAllVisible}
-                    />
+                    <label
+                      data-testid="select-all-with-phone"
+                      className="inline-flex items-center gap-2 min-h-[44px] min-w-[44px] touch-manipulation cursor-pointer select-none"
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-5 w-5 shrink-0"
+                        aria-label="Select all with phone"
+                        checked={
+                          filtered.some((p) => p.phone) &&
+                          filtered.filter((p) => p.phone).every((p) => selectedIds.has(p.id))
+                        }
+                        onChange={toggleSelectAllVisible}
+                      />
+                      <span className="sr-only sm:not-sr-only text-xs font-semibold text-[var(--color-text-muted)] whitespace-nowrap">
+                        Select all with phone
+                      </span>
+                    </label>
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-bold text-[var(--color-text-muted)] uppercase">Name</th>
                   <th className="text-left py-3 px-4 text-xs font-bold text-[var(--color-text-muted)] uppercase">Email</th>
@@ -744,26 +755,26 @@ export default function PastPlayersSection() {
                             {smsHref ? (
                               <a
                                 href={smsHref}
-                                className="px-3 py-1.5 text-xs font-semibold border border-[var(--color-primary)] text-[var(--color-primary)] rounded-lg hover:bg-[var(--color-cream)]"
+                                className="min-h-[44px] touch-manipulation inline-flex items-center px-3 py-2 text-sm font-semibold border border-[var(--color-primary)] text-[var(--color-primary)] rounded-lg hover:bg-[var(--color-cream)]"
                               >
                                 Text invite
                               </a>
                             ) : (
-                              <span className="px-3 py-1.5 text-xs font-semibold border border-[var(--color-border)] text-[var(--color-text-muted)] rounded-lg opacity-50">
+                              <span className="inline-flex items-center min-h-[44px] px-3 py-2 text-sm font-semibold border border-[var(--color-border)] text-[var(--color-text-muted)] rounded-lg opacity-50">
                                 Text invite
                               </span>
                             )}
                             <button
                               type="button"
                               onClick={() => startEdit(p)}
-                              className="px-3 py-1.5 text-xs font-semibold border border-[var(--color-border)] rounded-lg hover:bg-slate-50"
+                              className="min-h-[44px] touch-manipulation inline-flex items-center px-3 py-2 text-sm font-semibold border border-[var(--color-border)] rounded-lg hover:bg-slate-50"
                             >
                               Edit
                             </button>
                             <button
                               type="button"
                               onClick={() => deletePlayer(p)}
-                              className="px-3 py-1.5 text-xs font-semibold border border-red-200 text-red-700 rounded-lg hover:bg-red-50"
+                              className="min-h-[44px] touch-manipulation inline-flex items-center px-3 py-2 text-sm font-semibold border border-red-200 text-red-700 rounded-lg hover:bg-red-50"
                             >
                               Delete
                             </button>

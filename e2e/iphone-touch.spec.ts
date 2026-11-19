@@ -177,7 +177,7 @@ test.describe('iPhone touch: admin actions', () => {
     await expect(page.getByTestId('admin-claims-grouped')).toBeVisible()
     await expect(page.getByTestId('admin-recent-claims')).toBeVisible()
     await expect(
-      page.getByTestId('admin-claims-grouped').getByText(/Nov 19, 2026.*1:46\s*PM\s*ET/)
+      page.getByTestId('admin-claims-mobile').getByText(/Nov 19, 2026.*1:46\s*PM\s*ET/).first()
     ).toBeVisible()
 
     // Configure Game opens bottom sheet

@@ -54,7 +54,7 @@ export default function ConfirmationModal({
           <button
             type="button"
             onClick={onCancel}
-            className="p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+            className="min-h-[44px] min-w-[44px] touch-manipulation inline-flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text)] rounded-lg"
             aria-label="Close"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

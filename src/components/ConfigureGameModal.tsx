@@ -119,7 +119,7 @@ export default function ConfigureGameModal({
             <button
               type="button"
               onClick={onClose}
-              className="text-white hover:text-gray-200 text-3xl leading-none"
+              className="min-h-[44px] min-w-[44px] touch-manipulation inline-flex items-center justify-center text-white hover:text-gray-200 text-3xl leading-none rounded-lg"
               disabled={isSubmitting}
               aria-label="Close"
             >
@@ -378,7 +378,7 @@ export default function ConfigureGameModal({
                   <button
                     type="button"
                     onClick={() => setShowJoinPassword((v) => !v)}
-                    className="shrink-0 px-3 py-2 border-2 border-gray-300 rounded-lg text-sm font-semibold text-[var(--color-text-secondary)] hover:bg-slate-50"
+                    className="shrink-0 min-h-[44px] touch-manipulation px-3 py-2 border-2 border-gray-300 rounded-lg text-base font-semibold text-[var(--color-text-secondary)] hover:bg-slate-50"
                   >
                     {showJoinPassword ? 'Hide' : 'Show'}
                   </button>
@@ -389,12 +389,12 @@ export default function ConfigureGameModal({
               </div>
             </div>
 
-            <label className="flex items-start gap-3 p-3 border-2 border-[var(--color-border)] rounded-lg cursor-pointer">
+            <label className="flex items-start gap-3 min-h-[44px] p-3 border-2 border-[var(--color-border)] rounded-lg cursor-pointer touch-manipulation">
               <input
                 type="checkbox"
                 checked={publicClaimingOpen}
                 onChange={(e) => setPublicClaimingOpen(e.target.checked)}
-                className="mt-1"
+                className="mt-1 h-5 w-5 shrink-0"
                 disabled={isSubmitting}
               />
               <div>

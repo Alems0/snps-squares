@@ -272,7 +272,7 @@ export default function BoardPage() {
               </div>
               <Link
                 to="/admin"
-                className="bg-white text-[var(--color-primary)] px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg text-sm font-semibold hover:bg-white/95 transition-all shadow-md whitespace-nowrap"
+                className="inline-flex items-center min-h-[44px] touch-manipulation bg-white text-[var(--color-primary)] px-4 sm:px-5 py-2.5 rounded-lg text-base font-semibold hover:bg-white/95 transition-all shadow-md whitespace-nowrap"
               >
                 Admin Login
               </Link>
@@ -478,8 +478,8 @@ export default function BoardPage() {
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="flex flex-wrap justify-between items-center gap-4 text-sm text-[var(--color-text-secondary)]">
             <div className="flex items-center gap-8">
-              <Link to="/privacy" className="hover:text-[var(--color-primary)] transition-colors font-medium">Privacy Policy</Link>
-              <Link to="/terms" className="hover:text-[var(--color-primary)] transition-colors font-medium">Terms of Service</Link>
+              <Link to="/privacy" className="inline-flex items-center min-h-[44px] touch-manipulation py-2 hover:text-[var(--color-primary)] transition-colors font-medium">Privacy Policy</Link>
+              <Link to="/terms" className="inline-flex items-center min-h-[44px] touch-manipulation py-2 hover:text-[var(--color-primary)] transition-colors font-medium">Terms of Service</Link>
             </div>
             <p className="text-sm text-[var(--color-text-muted)]">
               © {new Date().getFullYear()} SNPS Squares. Not affiliated with the NFL.
