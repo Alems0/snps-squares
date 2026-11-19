@@ -1,7 +1,9 @@
 import { formatVenmoHandle } from '../lib/formatVenmo'
+import { VENMO_ORDER_FEE } from '../lib/supabase'
 
 interface ClaimSuccessProps {
   squareCount: number
+  /** Square subtotal only (count × cost). Fee is derived when paymentMethod is venmo. */
   totalCost: number
   paymentMethod: 'cash' | 'venmo'
   venmoHandle?: string
@@ -15,10 +17,12 @@ export default function ClaimSuccess({
   venmoHandle,
   onClose,
 }: ClaimSuccessProps) {
+  const fee = paymentMethod === 'venmo' ? VENMO_ORDER_FEE : 0
+  const grandTotal = totalCost + fee
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[110] p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-        {/* Success Icon */}
         <div className="p-6 text-center">
           <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
             <svg
@@ -43,15 +47,26 @@ export default function ClaimSuccess({
             You've successfully claimed {squareCount} square{squareCount > 1 ? 's' : ''}.
           </p>
 
-          {/* Payment Info */}
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-sm font-semibold text-[var(--color-text-muted)]">
-                Total Amount
-              </span>
-              <span className="text-2xl font-bold text-[var(--color-success)]">
-                ${totalCost}
-              </span>
+          <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
+            <div className="space-y-2 mb-3">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-[var(--color-text-muted)]">Subtotal</span>
+                <span className="font-medium text-[var(--color-text)]">${totalCost.toFixed(2)}</span>
+              </div>
+              {fee > 0 && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[var(--color-text-muted)]">Venmo fee</span>
+                  <span className="font-medium text-[var(--color-text)]">${fee.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                <span className="text-sm font-semibold text-[var(--color-text-muted)]">
+                  Total Amount
+                </span>
+                <span className="text-2xl font-bold text-[var(--color-success)]">
+                  ${grandTotal.toFixed(2)}
+                </span>
+              </div>
             </div>
             <div className="border-t border-gray-200 pt-3">
               <div className="flex items-center justify-between">
@@ -59,7 +74,7 @@ export default function ClaimSuccess({
                   Payment Method
                 </span>
                 <span className="text-sm font-semibold text-[var(--color-primary)]">
-                  {paymentMethod === 'cash' ? '💵 Cash' : '📱 Venmo'}
+                  {paymentMethod === 'cash' ? 'Cash' : 'Venmo'}
                 </span>
               </div>
               {paymentMethod === 'venmo' && venmoHandle && (
@@ -75,7 +90,6 @@ export default function ClaimSuccess({
             </div>
           </div>
 
-          {/* Next Steps */}
           <div className="text-left bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
             <h3 className="font-semibold text-sm text-[var(--color-primary)] mb-2">
               Next Steps
@@ -83,13 +97,21 @@ export default function ClaimSuccess({
             <ul className="text-xs text-[var(--color-text-muted)] space-y-1">
               <li>• Your squares are now reserved</li>
               {paymentMethod === 'venmo' && venmoHandle && (
-                <li>• Send ${totalCost} to {formatVenmoHandle(venmoHandle)} via Venmo</li>
+                <li>
+                  • Send ${grandTotal.toFixed(2)}
+                  {fee > 0 ? ` (includes $${fee.toFixed(2)} Venmo fee)` : ''} to{' '}
+                  {formatVenmoHandle(venmoHandle)} via Venmo
+                </li>
               )}
               {paymentMethod === 'cash' && (
                 <li>• Arrange payment with the game host</li>
               )}
+              <li>
+                • If Venmo or cash payment cannot be confirmed 4 days before the Super Bowl,
+                the claimed square(s) will be removed.
+              </li>
               <li>• Check back after the game starts to see the numbers</li>
-              <li>• Good luck! 🏈</li>
+              <li>• Good luck!</li>
             </ul>
           </div>
 

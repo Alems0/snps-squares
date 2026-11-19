@@ -1,6 +1,13 @@
 import { useState, FormEvent, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { formatVenmoHandle } from '../lib/formatVenmo'
-import { supabase, EMAIL_REGEX, normalizePhone, type PlayerNameSuggestion } from '../lib/supabase'
+import {
+  supabase,
+  EMAIL_REGEX,
+  normalizePhone,
+  VENMO_ORDER_FEE,
+  type PlayerNameSuggestion,
+} from '../lib/supabase'
 
 interface ClaimPopoverProps {
   selectedSquares: number[]
@@ -60,12 +67,14 @@ export default function ClaimPopover({
     width: 'min(400px, calc(100vw - 24px))',
     maxHeight: `min(${MAX_POPOVER_H}px, 80vh)`,
     opacity: 0,
-    zIndex: 50,
+    zIndex: 100,
     pointerEvents: 'none'
   })
   const popoverRef = useRef<HTMLDivElement>(null)
 
-  const totalCost = selectedSquares.length * costPerSquare
+  const squareSubtotal = selectedSquares.length * costPerSquare
+  const venmoFee = paymentMethod === 'venmo' ? VENMO_ORDER_FEE : 0
+  const totalCost = squareSubtotal + venmoFee
 
   const calculatePosition = useCallback(() => {
     if (!boardRef.current || !popoverRef.current || selectedSquares.length === 0) return
@@ -90,14 +99,17 @@ export default function ClaimPopover({
       firstRect.right < 0 ||
       firstRect.left > vw
     if (needsScroll || isMobile) {
-      first.scrollIntoView({
-        block: isMobile ? 'start' : 'center',
-        inline: 'nearest',
-        behavior: 'instant'
-      })
-      if (isMobile) {
-        // Nudge so selection sits in the upper portion above the sheet
-        window.scrollBy({ top: -80, behavior: 'instant' })
+      try {
+        first.scrollIntoView({
+          block: isMobile ? 'start' : 'center',
+          inline: 'nearest',
+          behavior: 'auto',
+        })
+        if (isMobile) {
+          window.scrollBy({ top: -80, behavior: 'auto' })
+        }
+      } catch {
+        first.scrollIntoView(true)
       }
     }
 
@@ -136,7 +148,7 @@ export default function ClaimPopover({
         left: `${MARGIN}px`,
         width: `${popW}px`,
         maxHeight: `${maxH}px`,
-        zIndex: 50,
+        zIndex: 100,
         opacity: 1,
         pointerEvents: 'auto'
       })
@@ -145,7 +157,7 @@ export default function ClaimPopover({
 
     const popW = basePopW
 
-    // Wide selection spanning most of board: center over board
+    // Wide selection spanning most of board / opposite sides: center over board
     if (spanRatio > 0.6) {
       const boardCX = boardRect.left + boardRect.width / 2
       const boardCY = boardRect.top + boardRect.height / 2
@@ -157,7 +169,7 @@ export default function ClaimPopover({
         left: `${centeredLeft}px`,
         width: `${popW}px`,
         maxHeight: `${maxH}px`,
-        zIndex: 50,
+        zIndex: 100,
         opacity: 1,
         pointerEvents: 'auto'
       })
@@ -233,7 +245,7 @@ export default function ClaimPopover({
       left: `${finalLeft}px`,
       width: `${popW}px`,
       maxHeight: `${maxH}px`,
-      zIndex: 50,
+      zIndex: 100,
       opacity: 1,
       pointerEvents: 'auto'
     })
@@ -356,17 +368,18 @@ export default function ClaimPopover({
     }
   }
 
-  return (
+  return createPortal(
     <>
       {/* Non-blocking dim: squares stay toggleable; close via X / Cancel / Escape / Clear */}
       <div
-        className="fixed inset-0 z-40 pointer-events-none"
+        className="fixed inset-0 z-[90] pointer-events-none"
         style={{ background: 'rgba(0,0,0,0.2)' }}
         aria-hidden="true"
       />
 
       <div
         ref={popoverRef}
+        data-testid="claim-popover"
         role="dialog"
         aria-modal="true"
         aria-labelledby="claim-title"
@@ -400,9 +413,28 @@ export default function ClaimPopover({
                   </span>
                 ))}
               </div>
-              <div className="flex justify-between items-center pt-2 border-t border-[var(--color-border-light)]">
-                <span className="text-sm font-medium text-[var(--color-text-secondary)]">Total Cost</span>
-                <span className="text-xl font-bold text-[var(--color-primary)]">${totalCost}</span>
+              <div className="space-y-1 pt-2 border-t border-[var(--color-border-light)]">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[var(--color-text-secondary)]">
+                    Subtotal ({selectedSquares.length} × ${costPerSquare})
+                  </span>
+                  <span className="font-medium text-[var(--color-text)]">${squareSubtotal.toFixed(2)}</span>
+                </div>
+                {paymentMethod === 'venmo' && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-[var(--color-text-secondary)]">Venmo fee</span>
+                    <span className="font-medium text-[var(--color-text)]">${venmoFee.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-sm font-medium text-[var(--color-text-secondary)]">Total</span>
+                  <span className="text-xl font-bold text-[var(--color-primary)]">${totalCost.toFixed(2)}</span>
+                </div>
+                {paymentMethod === 'venmo' && (
+                  <p className="text-xs text-[var(--color-text-muted)] pt-1">
+                    Venmo adds a ${VENMO_ORDER_FEE.toFixed(2)} fee (per claim order, not per square).
+                  </p>
+                )}
               </div>
             </div>
 
@@ -590,6 +622,7 @@ export default function ClaimPopover({
           </div>
         </form>
       </div>
-    </>
+    </>,
+    document.body
   )
 }

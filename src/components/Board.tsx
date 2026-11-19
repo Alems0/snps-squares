@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { supabase, type Square, type Game, GAMES_PUBLIC_COLUMNS, SQUARES_PUBLIC_COLUMNS } from '../lib/supabase'
+import {
+  supabase,
+  type Square,
+  type Game,
+  GAMES_PUBLIC_COLUMNS,
+  SQUARES_PUBLIC_COLUMNS,
+} from '../lib/supabase'
+import { useAuth } from '../lib/useAuth'
+import { isAllowedAdmin } from '../lib/auth'
 import ClaimPopover from './ClaimPopover'
 import ClaimSuccess from './ClaimSuccess'
 
@@ -7,7 +15,17 @@ interface BoardProps {
   onClaimSuccess?: () => void
 }
 
+function useMockAdminFlag() {
+  if (typeof window === 'undefined') return false
+  if (import.meta.env.VITE_USE_MOCK !== 'true') return false
+  const params = new URLSearchParams(window.location.search)
+  return params.get('mock_admin') === '1' || sessionStorage.getItem('mock_admin') === '1'
+}
+
 export default function Board({ onClaimSuccess }: BoardProps = {}) {
+  const { user } = useAuth()
+  const mockAdmin = useMockAdminFlag()
+  const isAdminUser = mockAdmin || Boolean(user?.email && isAllowedAdmin(user.email))
   const [squares, setSquares] = useState<Square[]>([])
   const [game, setGame] = useState<Game | null>(null)
   const [selectedSquares, setSelectedSquares] = useState<number[]>([])
@@ -22,6 +40,10 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
   const [error, setError] = useState<string | null>(null)
   const boardRef = useRef<HTMLDivElement>(null)
 
+  // Public claiming open (default OFF). Admins can always select/claim.
+  const publicClaimingOpen = Boolean(game?.public_claiming_open)
+  const canSelect = isAdminUser || publicClaimingOpen
+
   // Fetch active game and squares
   useEffect(() => {
     fetchGameAndSquares()
@@ -33,6 +55,13 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       setLoading(true)
       setError(null)
 
+      // Playwright / local mock: skip Supabase entirely
+      if (import.meta.env.VITE_USE_MOCK === 'true') {
+        console.log('Using mock data (VITE_USE_MOCK)')
+        loadMockData()
+        return
+      }
+
       // Fetch active game (public columns — no join_password)
       const { data: gameData, error: gameError } = await supabase
         .from('games')
@@ -42,14 +71,6 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
       if (gameError) {
         console.error('Error fetching game:', gameError)
-        
-        // Only use mock data in dev mode with explicit flag
-        if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true') {
-          console.log('Using mock data (dev mode)')
-          loadMockData()
-          return
-        }
-        
         setError('Board unavailable. Please refresh the page.')
         setLoading(false)
         return
@@ -76,10 +97,9 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       setLoading(false)
     } catch (err) {
       console.error('Error fetching game data:', err)
-      
-      // Only use mock data in dev mode with explicit flag
-      if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true') {
-        console.log('Using mock data (dev mode)')
+
+      if (import.meta.env.VITE_USE_MOCK === 'true') {
+        console.log('Using mock data (VITE_USE_MOCK)')
         loadMockData()
         return
       }
@@ -97,16 +117,17 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       nfc_team: 'San Francisco 49ers',
       cost_per_square: 10,
       charity_percentage: 10,
-      q1_payout: 100,
-      q2_payout: 100,
-      q3_payout: 100,
-      final_payout: 600,
+      q1_payout: 200,
+      q2_payout: 200,
+      q3_payout: 200,
+      final_payout: 400,
       venmo_handle: '@snps-squares',
       join_password: '',
-      numbers_locked: true,
+      numbers_locked: false,
       afc_numbers: [3, 7, 0, 6, 1, 4, 9, 2, 8, 5],
       nfc_numbers: [2, 5, 8, 1, 9, 3, 6, 0, 7, 4],
       status: 'active',
+      public_claiming_open: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     })
@@ -148,8 +169,9 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
   const afcNumbers = game?.afc_numbers || [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
 
   const handleSquareClick = (position: number) => {
+    if (!canSelect) return
     const square = squares.find((s) => s.position === position)
-    
+
     // If square is already claimed, do nothing
     if (square?.claimed_by_name) {
       return
@@ -160,23 +182,27 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       const newSelection = prev.includes(position)
         ? prev.filter((p) => p !== position)
         : [...prev, position]
-      
+
       // Close popover if all squares deselected
       if (newSelection.length === 0 && showClaimModal) {
         setShowClaimModal(false)
       }
-      
+
       return newSelection
     })
   }
 
   const handleProceedToClaim = () => {
-    if (selectedSquares.length === 0) return
+    if (!canSelect || selectedSquares.length === 0) return
     // Scroll first selected square into view before opening popover
     const first = boardRef.current?.querySelector(
       `button[data-position="${selectedSquares[0]}"]`
     ) as HTMLElement | null
-    first?.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' })
+    try {
+      first?.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' })
+    } catch {
+      first?.scrollIntoView(true)
+    }
     setShowClaimModal(true)
   }
 
@@ -295,9 +321,18 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
   return (
     <>
+      {!canSelect && (
+        <div
+          data-testid="view-only-notice"
+          className="no-print mb-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-cream)] px-4 py-3 text-sm text-[var(--color-text-secondary)]"
+        >
+          Squares are view-only right now — contact the organizer to claim.
+        </div>
+      )}
+
       {/* Selection Panel — z-50 so Clear/Claim stay clickable above popover backdrop */}
-      {selectedSquares.length > 0 && (
-        <div className="relative z-50 bg-[var(--color-primary)] text-white rounded-xl shadow-lg mb-6 p-6">
+      {canSelect && selectedSquares.length > 0 && (
+        <div className="no-print relative z-50 bg-[var(--color-primary)] text-white rounded-xl shadow-lg mb-6 p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="bg-white text-[var(--color-primary)] rounded-full w-12 h-12 flex items-center justify-center font-bold text-xl flex-shrink-0">
@@ -308,7 +343,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                   {selectedSquares.length} square{selectedSquares.length > 1 ? 's' : ''} selected
                 </div>
                 <div className="text-sm opacity-90 mt-0.5">
-                  Total: ${selectedSquares.length * game.cost_per_square}
+                  Subtotal: ${selectedSquares.length * game.cost_per_square}
                 </div>
               </div>
             </div>
@@ -321,6 +356,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
               </button>
               <button
                 onClick={handleProceedToClaim}
+                data-testid="claim-now-button"
                 className="flex-1 sm:flex-initial px-5 py-2.5 bg-white text-[var(--color-primary)] rounded-lg font-semibold hover:bg-opacity-90 shadow-md transition-all"
               >
                 Claim Now
@@ -330,7 +366,11 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
         </div>
       )}
 
-      <div ref={boardRef} className="bg-white rounded-xl shadow-md overflow-hidden border border-[var(--color-border)] min-w-0 w-full max-w-full">
+      <div
+        ref={boardRef}
+        id="print-board"
+        className="bg-white rounded-xl shadow-md overflow-hidden border border-[var(--color-border)] min-w-0 w-full max-w-full"
+      >
       {/* Board container */}
       <div className="p-6 min-w-0">
         {/* NFC header - full width bar */}
@@ -389,14 +429,16 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                       const square = squares.find((s) => s.position === position)
                       const isClaimed = Boolean(square?.claimed_by_name)
                       const isPaid = isClaimed && square?.payment_status === 'paid'
-                      const isSelected = selectedSquares.includes(position)
-                      
+                      const isSelected = canSelect && selectedSquares.includes(position)
+
                       let bgColor = 'bg-white'
                       let borderColor = 'border-[var(--color-border-light)]'
                       let textColor = 'text-[var(--color-text-muted)]'
-                      let cursorStyle = 'cursor-pointer'
-                      let hoverClass = 'hover:border-[var(--color-primary)] hover:shadow-md hover:bg-slate-50'
-                      
+                      let cursorStyle = canSelect ? 'cursor-pointer' : 'cursor-default'
+                      let hoverClass = canSelect
+                        ? 'hover:border-[var(--color-primary)] hover:shadow-md hover:bg-slate-50'
+                        : ''
+
                       if (isClaimed) {
                         bgColor = 'bg-slate-100'
                         borderColor = isPaid ? 'border-[var(--color-paid)]' : 'border-[var(--color-border)]'
@@ -410,24 +452,30 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                         hoverClass = 'hover:bg-opacity-90'
                       }
 
+                      // Display uses board position 0–99 as #0–#99 (same as claim popover chips).
                       const displayText = isClaimed && square?.claimed_by_name
                         ? square.claimed_by_name
                         : isSelected
-                        ? '✓'
-                        : '+'
+                        ? `#${position}`
+                        : canSelect
+                        ? '+'
+                        : ''
 
                       return (
                         <button
                           key={position}
                           data-position={position}
+                          data-selected={isSelected ? 'true' : 'false'}
                           onClick={() => handleSquareClick(position)}
-                          disabled={isClaimed}
+                          disabled={isClaimed || !canSelect}
                           className={`aspect-square w-full ${isPaid ? 'border-[3px]' : 'border-2'} ${borderColor} rounded text-[10px] font-semibold leading-tight transition-all ${bgColor} ${textColor} flex items-center justify-center p-0.5 ${cursorStyle} ${hoverClass}`}
                           title={
                             isClaimed
                               ? `${square?.claimed_by_name}${isPaid ? ' (Paid)' : ' (Unpaid)'}`
+                              : !canSelect
+                              ? 'View only'
                               : isSelected
-                              ? 'Selected - Click to deselect'
+                              ? `Selected #${position} — Click to deselect`
                               : 'Available - Click to select'
                           }
                         >
@@ -444,13 +492,13 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       </div>
 
         {/* Legend */}
-        <div className="mt-6 pt-6 border-t border-[var(--color-border-light)] flex flex-wrap justify-center gap-6 text-sm font-medium text-[var(--color-text-secondary)]">
+        <div className="no-print mt-6 pt-6 border-t border-[var(--color-border-light)] flex flex-wrap justify-center gap-6 text-sm font-medium text-[var(--color-text-secondary)]">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 border-2 border-[var(--color-border-light)] bg-white flex items-center justify-center text-[var(--color-text-muted)] text-xs rounded shadow-sm">+</div>
             <span>Available</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 border-2 border-[var(--color-primary)] bg-[var(--color-primary)] flex items-center justify-center text-white text-xs rounded shadow-sm">✓</div>
+            <div className="w-6 h-6 border-2 border-[var(--color-primary)] bg-[var(--color-primary)] flex items-center justify-center text-white text-[8px] rounded shadow-sm">#</div>
             <span>Selected</span>
           </div>
           <div className="flex items-center gap-2">

@@ -40,3 +40,43 @@
       monospace;
   }
 }
+
+/* Admin "Print board (PDF)" — landscape, board grid only */
+@media print {
+  @page {
+    size: landscape;
+    margin: 0.4in;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  header,
+  footer,
+  nav,
+  [data-testid='view-only-notice'] {
+    display: none !important;
+  }
+
+  #print-board {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  #print-board .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  #print-board .min-w-\[440px\] {
+    min-width: 0 !important;
+  }
+}

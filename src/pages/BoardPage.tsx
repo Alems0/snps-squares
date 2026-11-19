@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Board from '../components/Board'
 import { supabase, type Game, GAMES_PUBLIC_COLUMNS } from '../lib/supabase'
@@ -29,22 +29,42 @@ function getConfiguredPayouts(game: Game | null): PayoutChip[] {
   if (!game) return []
   const chips: PayoutChip[] = [
     { key: 'q1', label: 'Q1', shortLabel: 'Q1', amount: Number(game.q1_payout) || 0 },
-    { key: 'q2', label: 'Q2 / Halftime', shortLabel: 'Q2/HT', amount: Number(game.q2_payout) || 0 },
+    { key: 'q2', label: 'Q2 / Halftime', shortLabel: 'Q2 / HT', amount: Number(game.q2_payout) || 0 },
     { key: 'q3', label: 'Q3', shortLabel: 'Q3', amount: Number(game.q3_payout) || 0 },
-    { key: 'final', label: 'Final', shortLabel: 'Final', amount: Number(game.final_payout) || 0 },
+    { key: 'final', label: 'Q4 Final Game Score', shortLabel: 'Q4 Final', amount: Number(game.final_payout) || 0 },
   ]
-  // Hide the row when no payouts are configured
   if (!chips.some((c) => c.amount > 0)) return []
   return chips
 }
 
+function TrophyIcon({ place }: { place: 1 | 2 | 3 }) {
+  const fill = place === 1 ? '#EAB308' : place === 2 ? '#94A3B8' : '#D97706'
+  return (
+    <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill={fill} aria-hidden="true">
+      <path d="M6 3h12v2h2a2 2 0 012 2v1a5 5 0 01-4.1 4.9A5.5 5.5 0 0113.5 16H13v2h3v2H8v-2h3v-2h-.5a5.5 5.5 0 01-4.4-3.1A5 5 0 012 8V7a2 2 0 012-2h2V3zm2 2v2H4v1a3 3 0 002.8 3H9A5 5 0 018 8V5zm8 0v3a5 5 0 01-1 3h2.2A3 3 0 0020 8V7h-4z" />
+    </svg>
+  )
+}
+
 export default function BoardPage() {
+  const [searchParams] = useSearchParams()
   const [topBuyers, setTopBuyers] = useState<TopBuyer[]>([])
   const [game, setGame] = useState<Game | null>(null)
   const [loading, setLoading] = useState(true)
   const [prizePot, setPrizePot] = useState(0)
+  const [claimedCount, setClaimedCount] = useState(0)
   const [openFAQ, setOpenFAQ] = useState<number | null>(null)
   const payoutChips = getConfiguredPayouts(game)
+  const availableCount = Math.max(0, 100 - claimedCount)
+  const isPrintMode = searchParams.get('print') === '1'
+
+  useEffect(() => {
+    if (!isPrintMode) return
+    const t = window.setTimeout(() => {
+      window.print()
+    }, 600)
+    return () => window.clearTimeout(t)
+  }, [isPrintMode])
 
   const faqItems: FAQItem[] = [
     {
@@ -66,6 +86,10 @@ export default function BoardPage() {
     {
       question: "Do I need to create an account?",
       answer: "No! Simply click any available square, enter your name and email, and you're in. No signup, no password, no hassle."
+    },
+    {
+      question: "What if I don't pay in time?",
+      answer: "If Venmo or cash payment cannot be confirmed 4 days before the Super Bowl, the claimed square(s) will be removed."
     }
   ]
 
@@ -82,20 +106,26 @@ export default function BoardPage() {
       nfc_team: 'San Francisco 49ers',
       cost_per_square: 10,
       charity_percentage: 10,
-      q1_payout: 100,
-      q2_payout: 100,
-      q3_payout: 100,
-      final_payout: 600,
+      q1_payout: 200,
+      q2_payout: 200,
+      q3_payout: 200,
+      final_payout: 400,
       venmo_handle: '@snps-squares',
-      numbers_locked: true,
+      numbers_locked: false,
       afc_numbers: [3, 7, 0, 6, 1, 4, 9, 2, 8, 5],
       nfc_numbers: [2, 5, 8, 1, 9, 3, 6, 0, 7, 4],
       status: 'active',
+      public_claiming_open: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
     setPrizePot(900)
-    setTopBuyers([])
+    setClaimedCount(34)
+    setTopBuyers([
+      { name: 'Sarah Johnson', squareCount: 8, totalCost: 80 },
+      { name: 'Michael Chen', squareCount: 6, totalCost: 60 },
+      { name: 'Emily Rodriguez', squareCount: 5, totalCost: 50 },
+    ])
     setLoading(false)
   }
 
@@ -103,8 +133,7 @@ export default function BoardPage() {
     try {
       setLoading(true)
 
-      // Dev mock: skip network so header payouts render without Supabase
-      if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true') {
+      if (import.meta.env.VITE_USE_MOCK === 'true') {
         loadMockHeaderGame()
         return
       }
@@ -127,8 +156,10 @@ export default function BoardPage() {
       const { data: stats } = await supabase.rpc('get_public_game_stats', {
         p_game_id: gameData.id,
       })
-      if (stats && typeof stats === 'object' && 'prize_pot' in stats) {
-        setPrizePot(Number((stats as { prize_pot: number }).prize_pot) || 0)
+      if (stats && typeof stats === 'object') {
+        const s = stats as { prize_pot?: number; claimed?: number }
+        if ('prize_pot' in s) setPrizePot(Number(s.prize_pot) || 0)
+        if ('claimed' in s) setClaimedCount(Number(s.claimed) || 0)
       }
 
       const { data: buyersData, error: buyersError } = await supabase.rpc('get_top_buyers', {
@@ -163,7 +194,7 @@ export default function BoardPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[var(--color-background)]">
       {/* Header */}
-      <header className="bg-[var(--color-primary)] text-white shadow-md">
+      <header className="no-print bg-[var(--color-primary)] text-white shadow-md">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 sm:py-6">
           <div className="flex flex-wrap justify-between items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
@@ -191,37 +222,49 @@ export default function BoardPage() {
 
           {payoutChips.length > 0 && (
             <div
-              className="mt-4 pt-3 border-t border-white/15 flex flex-wrap gap-1.5 sm:gap-2"
-              aria-label="Quarter payouts"
+              className="mt-4 pt-3 border-t border-white/15 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 text-center"
+              aria-label="Prizes"
             >
-              {payoutChips.map((chip) => (
-                <div
-                  key={chip.key}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-cream)]/15 ring-1 ring-white/20 px-2.5 py-1 max-w-full"
-                >
-                  <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-white/80 whitespace-nowrap">
+              <span className="text-xs sm:text-sm font-bold uppercase tracking-wide text-white/90 w-full sm:w-auto">
+                Prizes:
+              </span>
+              {payoutChips.map((chip, i) => (
+                <span key={chip.key} className="inline-flex items-center text-xs sm:text-sm text-white">
+                  {i > 0 && <span className="mx-1.5 text-white/40" aria-hidden="true">·</span>}
+                  <span className="font-medium text-white/85 whitespace-nowrap">
                     <span className="sm:hidden">{chip.shortLabel}</span>
                     <span className="hidden sm:inline">{chip.label}</span>
                   </span>
-                  <span className="text-xs sm:text-sm font-bold tabular-nums text-white whitespace-nowrap">
+                  <span className="ml-1 font-bold tabular-nums whitespace-nowrap">
                     {formatCurrency(chip.amount)}
                   </span>
-                </div>
+                </span>
               ))}
             </div>
           )}
         </div>
       </header>
 
-      {/* Top Buyers Section - Full Width Compact */}
-      <section className="bg-white border-b border-[var(--color-border)] shadow-sm">
-        <div className="max-w-6xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between mb-4">
+      {/* Top Buyers + board metrics */}
+      <section className="no-print bg-white border-b border-[var(--color-border)] shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5 text-[var(--color-primary)]" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
               <h2 className="text-xl font-bold text-[var(--color-text)]">Top Buyers</h2>
+            </div>
+            <div className="flex flex-wrap gap-4 text-sm">
+              <div>
+                <span className="text-[var(--color-text-muted)] font-medium">Squares Claimed</span>
+                <span className="ml-2 font-bold text-[var(--color-text)] tabular-nums">{claimedCount}</span>
+              </div>
+              <div>
+                <span className="text-[var(--color-text-muted)] font-medium">Squares Available</span>
+                <span className="ml-2 font-bold text-[var(--color-text)] tabular-nums">{availableCount}</span>
+                <span className="text-[var(--color-text-muted)]"> / 100</span>
+              </div>
             </div>
           </div>
           {loading ? (
@@ -234,10 +277,12 @@ export default function BoardPage() {
             <div className="flex flex-wrap gap-6">
               {topBuyers.map((buyer, index) => (
                 <div key={`${buyer.name}-${index}`} className="flex items-center gap-3">
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white ${
-                    index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-orange-600' : 'bg-[var(--color-primary)]'
-                  }`}>
-                    {index + 1}
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-slate-100">
+                    {index < 3 ? (
+                      <TrophyIcon place={(index + 1) as 1 | 2 | 3} />
+                    ) : (
+                      <span className="text-sm font-bold text-[var(--color-primary)]">{index + 1}</span>
+                    )}
                   </div>
                   <div>
                     <div className="font-semibold text-base text-[var(--color-text)]">{buyer.name}</div>
@@ -258,7 +303,7 @@ export default function BoardPage() {
         </div>
 
         {/* Game Rules - Full Width Below Board */}
-        <div className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden min-w-0 mb-8">
+        <div className="no-print bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden min-w-0 mb-8">
           <div className="px-6 py-5 border-b border-[var(--color-border)] bg-slate-50">
             <h2 className="text-2xl font-bold text-[var(--color-text)]">Game Rules</h2>
           </div>
@@ -292,7 +337,7 @@ export default function BoardPage() {
         </div>
 
         {/* FAQ Section - Full Width Below Game Rules */}
-        <section className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden">
+        <section className="no-print bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden">
           <div className="px-6 py-5 border-b border-[var(--color-border)] bg-slate-50">
             <h2 className="text-2xl font-bold text-[var(--color-text)]">Frequently Asked Questions</h2>
           </div>
@@ -329,7 +374,7 @@ export default function BoardPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-[var(--color-border)] mt-auto shadow-sm">
+      <footer className="no-print bg-white border-t border-[var(--color-border)] mt-auto shadow-sm">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="flex flex-wrap justify-between items-center gap-4 text-sm text-[var(--color-text-secondary)]">
             <div className="flex items-center gap-8">
