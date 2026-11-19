@@ -8,7 +8,6 @@ import {
   formatAxisLabel,
 } from '../lib/supabase'
 import { useAuth } from '../lib/useAuth'
-import { isAllowedAdmin } from '../lib/auth'
 import ClaimPopover from './ClaimPopover'
 import ClaimSuccess from './ClaimSuccess'
 
@@ -16,17 +15,8 @@ interface BoardProps {
   onClaimSuccess?: () => void
 }
 
-function useMockAdminFlag() {
-  if (typeof window === 'undefined') return false
-  if (import.meta.env.VITE_USE_MOCK !== 'true') return false
-  const params = new URLSearchParams(window.location.search)
-  return params.get('mock_admin') === '1' || sessionStorage.getItem('mock_admin') === '1'
-}
-
 export default function Board({ onClaimSuccess }: BoardProps = {}) {
-  const { user } = useAuth()
-  const mockAdmin = useMockAdminFlag()
-  const isAdminUser = mockAdmin || Boolean(user?.email && isAllowedAdmin(user.email))
+  const { isAdmin: isAdminUser } = useAuth()
   const [squares, setSquares] = useState<Square[]>([])
   const [game, setGame] = useState<Game | null>(null)
   const [selectedSquares, setSelectedSquares] = useState<number[]>([])

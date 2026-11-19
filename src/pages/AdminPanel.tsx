@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { isAllowedAdmin, signOutAdmin } from '../lib/auth'
+import { signOutAdmin } from '../lib/auth'
 import { useAuth } from '../lib/useAuth'
 import {
   supabase,
@@ -95,7 +95,7 @@ function stripCsvFormulaGuard(value: string): string {
 
 export default function AdminPanel() {
   const navigate = useNavigate()
-  const { user, loading } = useAuth()
+  const { user, loading, isAdmin } = useAuth()
   const [claims, setClaims] = useState<ClaimData[]>([])
   const [game, setGame] = useState<Game | null>(null)
   const [claimOrders, setClaimOrders] = useState<ClaimOrder[]>([])
@@ -134,7 +134,7 @@ export default function AdminPanel() {
       return
     }
 
-    if (!isAllowedAdmin(user.email)) {
+    if (!isAdmin) {
       signOutAdmin().then(() => {
         navigate('/admin')
       }).catch(() => {
@@ -144,7 +144,7 @@ export default function AdminPanel() {
       // User is authenticated and allowed, fetch data
       fetchGameAndClaims()
     }
-  }, [user, loading, navigate])
+  }, [user, loading, isAdmin, navigate])
 
   useEffect(() => {
     setJoinPasswordDraft('')
