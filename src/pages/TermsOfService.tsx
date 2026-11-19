@@ -210,17 +210,8 @@ export default function TermsOfService() {
             <section>
               <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Contact</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
-                Questions about these Terms? Contact us:
+                Questions about these Terms? Please contact the game organizer.
               </p>
-              <div className="bg-gray-50 rounded-lg p-6 mt-4">
-                <p className="text-[var(--color-text)] font-semibold">Saint Nicholas Patriotic Society — SNPS Squares</p>
-                <p className="text-[var(--color-text)]">
-                  Email:{' '}
-                  <a href="mailto:stecher2789@gmail.com" className="text-[var(--color-primary)] hover:underline">
-                    stecher2789@gmail.com
-                  </a>
-                </p>
-              </div>
             </section>
           </div>
         </div>
