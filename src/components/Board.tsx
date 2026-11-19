@@ -103,6 +103,19 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
   }
 
   const loadMockData = () => {
+    const params = new URLSearchParams(window.location.search)
+    const numbersMode = params.get('mock_numbers')
+    // blank = '?' placeholders; alt = post-randomize permutation; default = seeded numbers
+    const blank = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+    const seededAfc = [3, 7, 0, 6, 1, 4, 9, 2, 8, 5]
+    const seededNfc = [2, 5, 8, 1, 9, 3, 6, 0, 7, 4]
+    const altAfc = [9, 1, 4, 0, 7, 2, 5, 8, 3, 6]
+    const altNfc = [0, 6, 3, 8, 1, 5, 9, 2, 4, 7]
+    const afc =
+      numbersMode === 'blank' ? blank : numbersMode === 'alt' ? altAfc : seededAfc
+    const nfc =
+      numbersMode === 'blank' ? blank : numbersMode === 'alt' ? altNfc : seededNfc
+
     setGame({
       id: 'mock',
       season: 2026,
@@ -116,9 +129,9 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       final_payout: 400,
       venmo_handle: '@snps-squares',
       join_password: '',
-      numbers_locked: false,
-      afc_numbers: [3, 7, 0, 6, 1, 4, 9, 2, 8, 5],
-      nfc_numbers: [2, 5, 8, 1, 9, 3, 6, 0, 7, 4],
+      numbers_locked: numbersMode === 'alt',
+      afc_numbers: afc,
+      nfc_numbers: nfc,
       status: 'active',
       public_claiming_open: false,
       created_at: new Date().toISOString(),
@@ -394,102 +407,111 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
             </div>
           </div>
 
-          {/* Main grid container with horizontal scroll on mobile */}
-          <div className="flex-1 min-w-0 overflow-x-auto">
-            <div className="min-w-[440px]">
-              {/* NFC numbers row */}
-              <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: 'auto repeat(10, minmax(56px, 1fr))' }}>
-                {/* Empty corner cell */}
-                <div className="aspect-square"></div>
-                {/* NFC numbers */}
-                {nfcNumbers.map((num, i) => (
+          {/* One CSS grid for headers + cells so columns/rows share tracks */}
+          <div
+            data-testid="board-scroll"
+            className="board-scroll flex-1 min-w-0 overflow-auto"
+          >
+            <div data-testid="board-grid" className="board-grid">
+              {/* Sticky corner */}
+              <div
+                data-testid="board-corner"
+                className="board-corner"
+                aria-hidden="true"
+              />
+
+              {/* NFC column headers (top) */}
+              {nfcNumbers.map((num, i) => (
+                <div
+                  key={`nfc-${i}`}
+                  data-testid={`nfc-num-${i}`}
+                  data-col={i}
+                  className="board-nfc-header"
+                >
+                  {num === -1 ? '?' : num}
+                </div>
+              ))}
+
+              {Array.from({ length: 10 }, (_, row) => (
+                <React.Fragment key={`row-${row}`}>
                   <div
-                    key={`nfc-${i}`}
-                    className="aspect-square w-full flex items-center justify-center font-bold text-sm bg-[var(--color-nfc)] text-white rounded shadow-sm"
+                    data-testid={`afc-num-${row}`}
+                    data-row={row}
+                    className="board-afc-header"
                   >
-                    {num === -1 ? '?' : num}
+                    {afcNumbers[row] === -1 ? '?' : afcNumbers[row]}
                   </div>
-                ))}
-              </div>
+                  {Array.from({ length: 10 }, (_, col) => {
+                    const position = row * 10 + col
+                    const square = squares.find((s) => s.position === position)
+                    const isClaimed = Boolean(square?.claimed_by_name)
+                    const isPaid = isClaimed && square?.payment_status === 'paid'
+                    const isSelected = canSelect && selectedSquares.includes(position)
 
-              {/* Grid with AFC numbers and squares */}
-              <div className="grid gap-2" style={{ gridTemplateColumns: 'auto repeat(10, minmax(56px, 1fr))' }}>
-              {Array.from({ length: 10 }, (_, row) => {
-                return (
-                  <React.Fragment key={`row-${row}`}>
-                    {/* AFC number for this row */}
-                    <div
-                      className="aspect-square w-full flex items-center justify-center font-bold text-sm bg-[var(--color-afc)] text-white rounded shadow-sm"
-                    >
-                      {afcNumbers[row] === -1 ? '?' : afcNumbers[row]}
-                    </div>
-                    {/* Squares for this row */}
-                    {Array.from({ length: 10 }, (_, col) => {
-                      const position = row * 10 + col
-                      const square = squares.find((s) => s.position === position)
-                      const isClaimed = Boolean(square?.claimed_by_name)
-                      const isPaid = isClaimed && square?.payment_status === 'paid'
-                      const isSelected = canSelect && selectedSquares.includes(position)
+                    let bgColor = 'bg-white'
+                    let borderColor = 'border-[var(--color-border-light)]'
+                    let textColor = 'text-[var(--color-text-muted)]'
+                    let cursorStyle = canSelect ? 'cursor-pointer' : 'cursor-default'
+                    let hoverClass = canSelect
+                      ? 'hover:border-[var(--color-primary)] hover:shadow-md hover:bg-slate-50'
+                      : ''
 
-                      let bgColor = 'bg-white'
-                      let borderColor = 'border-[var(--color-border-light)]'
-                      let textColor = 'text-[var(--color-text-muted)]'
-                      let cursorStyle = canSelect ? 'cursor-pointer' : 'cursor-default'
-                      let hoverClass = canSelect
-                        ? 'hover:border-[var(--color-primary)] hover:shadow-md hover:bg-slate-50'
-                        : ''
+                    if (isClaimed) {
+                      bgColor = 'bg-slate-100'
+                      borderColor = isPaid
+                        ? 'border-[var(--color-paid)]'
+                        : 'border-[var(--color-border)]'
+                      textColor = 'text-[var(--color-text-secondary)]'
+                      cursorStyle = 'cursor-not-allowed'
+                      hoverClass = ''
+                    } else if (isSelected) {
+                      bgColor = 'bg-[var(--color-primary)]'
+                      borderColor = 'border-[var(--color-primary)]'
+                      textColor = 'text-white'
+                      hoverClass = 'hover:bg-opacity-90'
+                    }
 
-                      if (isClaimed) {
-                        bgColor = 'bg-slate-100'
-                        borderColor = isPaid ? 'border-[var(--color-paid)]' : 'border-[var(--color-border)]'
-                        textColor = 'text-[var(--color-text-secondary)]'
-                        cursorStyle = 'cursor-not-allowed'
-                        hoverClass = ''
-                      } else if (isSelected) {
-                        bgColor = 'bg-[var(--color-primary)]'
-                        borderColor = 'border-[var(--color-primary)]'
-                        textColor = 'text-white'
-                        hoverClass = 'hover:bg-opacity-90'
-                      }
-
-                      // Storage position is 0–99; badges use displaySquareNumber → #1–#100.
-                      const displayText = isClaimed && square?.claimed_by_name
+                    // Storage position is 0–99; badges use displaySquareNumber → #1–#100.
+                    const displayText =
+                      isClaimed && square?.claimed_by_name
                         ? square.claimed_by_name
                         : isSelected
-                        ? formatSquareLabel(position)
-                        : canSelect
-                        ? '+'
-                        : ''
+                          ? formatSquareLabel(position)
+                          : canSelect
+                            ? '+'
+                            : ''
 
-                      return (
-                        <button
-                          key={position}
-                          data-position={position}
-                          data-selected={isSelected ? 'true' : 'false'}
-                          onClick={() => handleSquareClick(position)}
-                          disabled={isClaimed || !canSelect}
-                          className={`aspect-square w-full ${isPaid ? 'border-[3px]' : 'border-2'} ${borderColor} rounded text-[10px] font-semibold leading-tight transition-all ${bgColor} ${textColor} flex items-center justify-center p-0.5 ${cursorStyle} ${hoverClass}`}
-                          title={
-                            isClaimed
-                              ? `${square?.claimed_by_name}${isPaid ? ' (Paid)' : ' (Unpaid)'}`
-                              : !canSelect
+                    return (
+                      <button
+                        key={position}
+                        data-position={position}
+                        data-row={row}
+                        data-col={col}
+                        data-selected={isSelected ? 'true' : 'false'}
+                        onClick={() => handleSquareClick(position)}
+                        disabled={isClaimed || !canSelect}
+                        className={`board-cell aspect-square w-full ${isPaid ? 'border-[3px]' : 'border-2'} ${borderColor} rounded text-[10px] font-semibold leading-tight transition-all ${bgColor} ${textColor} flex items-center justify-center p-0.5 ${cursorStyle} ${hoverClass}`}
+                        title={
+                          isClaimed
+                            ? `${square?.claimed_by_name}${isPaid ? ' (Paid)' : ' (Unpaid)'}`
+                            : !canSelect
                               ? 'View only'
                               : isSelected
-                              ? `Selected ${formatSquareLabel(position)} — Click to deselect`
-                              : 'Available - Click to select'
-                          }
-                        >
-                          <span className="break-words text-center line-clamp-2 w-full">{displayText}</span>
-                        </button>
-                      )
-                    })}
-                  </React.Fragment>
-                )
-              })}
+                                ? `Selected ${formatSquareLabel(position)} — Click to deselect`
+                                : 'Available - Click to select'
+                        }
+                      >
+                        <span className="break-words text-center line-clamp-2 w-full">
+                          {displayText}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </React.Fragment>
+              ))}
             </div>
           </div>
         </div>
-      </div>
 
         {/* Legend */}
         <div className="no-print mt-6 pt-6 border-t border-[var(--color-border-light)] flex flex-wrap justify-center gap-6 text-sm font-medium text-[var(--color-text-secondary)]">
