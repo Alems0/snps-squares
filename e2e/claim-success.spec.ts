@@ -69,6 +69,9 @@ test.describe('Claim success popup viewport fit', () => {
 
       const success = await completeVenmoClaim(page)
 
+      // data-position 1 & 2 → display #2 and #3
+      await expect(success.getByText('#2', { exact: true })).toBeVisible()
+      await expect(success.getByText('#3', { exact: true })).toBeVisible()
       await expect(success.getByText('Venmo fee', { exact: true })).toBeVisible()
       await expect(success.getByText('$2.00').first()).toBeVisible()
       await expect(success.getByText(/4 days before the Super Bowl/)).toBeVisible()

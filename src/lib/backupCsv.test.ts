@@ -248,6 +248,37 @@ describe('parseBackupCsv — 9 variants', () => {
     expect(warnings.some((w) => /scientific-notation phone/i.test(w))).toBe(true)
   })
 
+  it('9b. square_number display column is ignored (position stays 0–99)', () => {
+    const header =
+      'position,square_number,first_name,last_name,full_name,email,phone,payment_method,payment_status,claimed_at'
+    const lines = ['# SQUARES', header]
+    for (let pos = 0; pos < 100; pos++) {
+      const email = pos % 2 === 0 ? `user${pos}@test.com` : ''
+      const first = email ? `First${pos}` : ''
+      const last = email ? `Last${pos}` : ''
+      // Deliberately wrong display number — must not affect restore position
+      lines.push(
+        [
+          String(pos),
+          String(pos + 99),
+          first,
+          last,
+          first && last ? `${first} ${last}` : '',
+          email,
+          '',
+          email ? 'cash' : '',
+          'unpaid',
+          '',
+        ].join(',')
+      )
+    }
+    const { rows, errors } = parseBackupCsv(lines.join('\n'))
+    expect(errors).toEqual([])
+    expectHundred(rows)
+    expect(rows.find((r) => r.position === 0)?.email).toBe('user0@test.com')
+    expect(rows.find((r) => r.position === 99)).toBeDefined()
+  })
+
   it('9. literal leading apostrophe (csvSafe formula guard)', () => {
     const settings = ['# SETTINGS', '# SQUARES']
     const header = HEADER

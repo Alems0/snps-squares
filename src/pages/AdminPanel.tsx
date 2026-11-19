@@ -21,6 +21,7 @@ import ConfirmationModal from '../components/ConfirmationModal'
 import PastPlayersSection from '../components/PastPlayersSection'
 import AdminClaimOnBehalf from '../components/AdminClaimOnBehalf'
 import { formatVenmoHandle } from '../lib/formatVenmo'
+import { displaySquareNumber, formatSquareLabel } from '../lib/displaySquareNumber'
 
 interface ClaimData extends Square {
   name: string
@@ -493,7 +494,7 @@ export default function AdminPanel() {
       return
     }
 
-    const confirmMsg = `Remove ${claim.name} from square #${claim.position}? This cannot be undone.`
+    const confirmMsg = `Remove ${claim.name} from square ${formatSquareLabel(claim.position)}? This cannot be undone.`
     if (!window.confirm(confirmMsg)) {
       return
     }
@@ -771,9 +772,9 @@ export default function AdminPanel() {
       }
 
       const csvRows = [
-        ['Position', 'Name', 'Email', 'Payment Status', 'Payment Method', 'Claimed At'],
+        ['Square', 'Name', 'Email', 'Payment Status', 'Payment Method', 'Claimed At'],
         ...(allSquares || []).map(square => [
-          square.position.toString(),
+          displaySquareNumber(square.position).toString(),
           square.claimed_by_name || `${square.first_name || ''} ${square.last_name || ''}`.trim() || '',
           square.claimed_by_email || '',
           square.payment_status || '',
@@ -865,6 +866,7 @@ export default function AdminPanel() {
       lines.push(
         [
           'position',
+          'square_number',
           'first_name',
           'last_name',
           'full_name',
@@ -889,6 +891,7 @@ export default function AdminPanel() {
         lines.push(
           [
             csvSafe(square.position),
+            csvSafe(displaySquareNumber(square.position)),
             csvSafe(first),
             csvSafe(last),
             csvSafe(full),
@@ -1515,7 +1518,7 @@ export default function AdminPanel() {
                 <ul className="text-sm text-amber-800 space-y-1">
                   {restorePreview.conflicts.slice(0, 8).map((c) => (
                     <li key={c.position}>
-                      #{c.position}: {c.currentEmail} → {c.backupEmail}
+                      {formatSquareLabel(c.position)}: {c.currentEmail} → {c.backupEmail}
                     </li>
                   ))}
                   {restorePreview.conflicts.length > 8 && (
@@ -1603,7 +1606,7 @@ export default function AdminPanel() {
                               )}
                             </td>
                             <td className="py-5 px-6 text-sm text-[var(--color-text-secondary)]">
-                              {group.positions.map(p => `#${p}`).join(', ')}
+                              {group.positions.map(p => formatSquareLabel(p)).join(', ')}
                             </td>
                             <td className="py-5 px-6 text-sm font-bold text-[var(--color-text)]">
                               ${group.amountDue.toFixed(2)}
@@ -1636,7 +1639,7 @@ export default function AdminPanel() {
                             group.squares.map((claim) => (
                               <tr key={claim.id} className="bg-slate-50/80">
                                 <td className="py-3 px-6 pl-12 text-sm text-[var(--color-text-secondary)]" colSpan={2}>
-                                  Square #{claim.position}
+                                  Square {formatSquareLabel(claim.position)}
                                   {claim.payment_method ? (
                                     <span className="ml-2 capitalize text-xs font-semibold text-blue-700">
                                       ({claim.payment_method})

@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react'
 import { formatVenmoHandle } from '../lib/formatVenmo'
+import { displaySquareNumber } from '../lib/displaySquareNumber'
 
 interface ClaimModalProps {
   selectedSquares: number[]
@@ -107,7 +108,7 @@ export default function ClaimModal({
                   key={pos}
                   className="inline-flex items-center justify-center w-8 h-8 bg-[var(--color-primary)] text-white rounded text-xs font-bold"
                 >
-                  {pos + 1}
+                  {displaySquareNumber(pos)}
                 </span>
               ))}
             </div>

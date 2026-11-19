@@ -1,8 +1,11 @@
 import { formatVenmoHandle } from '../lib/formatVenmo'
+import { formatSquareLabel } from '../lib/displaySquareNumber'
 import { VENMO_ORDER_FEE } from '../lib/supabase'
 
 interface ClaimSuccessProps {
   squareCount: number
+  /** Storage positions 0–99; shown as #1–#100. */
+  positions?: number[]
   /** Square subtotal only (count × cost). Fee is derived when paymentMethod is venmo. */
   totalCost: number
   paymentMethod: 'cash' | 'venmo'
@@ -12,6 +15,7 @@ interface ClaimSuccessProps {
 
 export default function ClaimSuccess({
   squareCount,
+  positions = [],
   totalCost,
   paymentMethod,
   venmoHandle,
@@ -74,6 +78,21 @@ export default function ClaimSuccess({
           <p className="text-sm text-[var(--color-text-muted)] mb-3 sm:mb-4">
             You've successfully claimed {squareCount} square{squareCount > 1 ? 's' : ''}.
           </p>
+
+          {positions.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-1.5 mb-3 sm:mb-4">
+              {[...positions]
+                .sort((a, b) => a - b)
+                .map((pos) => (
+                  <span
+                    key={pos}
+                    className="inline-flex items-center px-2 py-0.5 rounded-md bg-[var(--color-primary)] text-white text-xs font-semibold"
+                  >
+                    {formatSquareLabel(pos)}
+                  </span>
+                ))}
+            </div>
+          )}
 
           <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4 text-left">
             <div className="space-y-1.5 mb-2">

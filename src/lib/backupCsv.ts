@@ -21,6 +21,7 @@ export interface ParseBackupCsvResult {
 const HEADER_ALIASES: Record<string, string> = {
   position: 'position',
   pos: 'position',
+  // square_number (1–100 display) is intentionally omitted — restore uses position (0–99) only
   first_name: 'first_name',
   first: 'first_name',
   firstname: 'first_name',

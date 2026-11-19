@@ -1,6 +1,7 @@
 import { useState, FormEvent, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { formatVenmoHandle } from '../lib/formatVenmo'
+import { formatSquareLabel } from '../lib/displaySquareNumber'
 import {
   supabase,
   EMAIL_REGEX,
@@ -420,7 +421,7 @@ export default function ClaimPopover({
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {selectedSquares.map(pos => (
                   <span key={pos} className="inline-flex items-center px-2 py-0.5 rounded-md bg-[var(--color-primary)] text-white text-xs font-semibold">
-                    #{pos}
+                    {formatSquareLabel(pos)}
                   </span>
                 ))}
               </div>
