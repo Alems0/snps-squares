@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react'
-import { Game } from '../lib/supabase'
+import { Game, TEAM_NAME_MAX_LEN } from '../lib/supabase'
 
 interface ConfigureGameModalProps {
   game: Game
@@ -14,6 +14,8 @@ interface ConfigureGameModalProps {
     venmo_handle: string
     join_password: string
     public_claiming_open?: boolean
+    nfc_team: string
+    afc_team: string
   }) => Promise<void>
 }
 
@@ -34,6 +36,8 @@ export default function ConfigureGameModal({
   const [publicClaimingOpen, setPublicClaimingOpen] = useState(
     Boolean(game.public_claiming_open)
   )
+  const [nfcTeam, setNfcTeam] = useState(game.nfc_team || '')
+  const [afcTeam, setAfcTeam] = useState(game.afc_team || '')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -72,6 +76,13 @@ export default function ConfigureGameModal({
       return
     }
 
+    const nfcTrimmed = nfcTeam.trim()
+    const afcTrimmed = afcTeam.trim()
+    if (nfcTrimmed.length > TEAM_NAME_MAX_LEN || afcTrimmed.length > TEAM_NAME_MAX_LEN) {
+      setError(`Team names must be ${TEAM_NAME_MAX_LEN} characters or fewer`)
+      return
+    }
+
     setIsSubmitting(true)
     try {
       await onSave({
@@ -84,6 +95,8 @@ export default function ConfigureGameModal({
         venmo_handle: venmoHandle.trim(),
         join_password: joinPassword.trim(),
         public_claiming_open: publicClaimingOpen,
+        nfc_team: nfcTrimmed,
+        afc_team: afcTrimmed,
       })
       onClose()
     } catch (err) {
@@ -112,6 +125,54 @@ export default function ConfigureGameModal({
 
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Axis team names */}
+          <section className="space-y-4" data-testid="configure-team-names">
+            <h3 className="text-lg font-bold text-[var(--color-primary)] border-b-2 border-[var(--color-border)] pb-2">
+              Board Axis Teams
+            </h3>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              Shown on the board as “NFC – …” (top) and “AFC – …” (side). Leave blank to show only NFC or AFC.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="nfcTeam"
+                  className="block text-sm font-semibold text-[var(--color-text)] mb-2"
+                >
+                  NFC team (horizontal)
+                </label>
+                <input
+                  type="text"
+                  id="nfcTeam"
+                  value={nfcTeam}
+                  onChange={(e) => setNfcTeam(e.target.value)}
+                  maxLength={TEAM_NAME_MAX_LEN}
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
+                  placeholder="e.g. Eagles"
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="afcTeam"
+                  className="block text-sm font-semibold text-[var(--color-text)] mb-2"
+                >
+                  AFC team (vertical)
+                </label>
+                <input
+                  type="text"
+                  id="afcTeam"
+                  value={afcTeam}
+                  onChange={(e) => setAfcTeam(e.target.value)}
+                  maxLength={TEAM_NAME_MAX_LEN}
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
+                  placeholder="e.g. Chiefs"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+          </section>
+
           {/* Cost & Charity Section */}
           <section className="space-y-4">
             <h3 className="text-lg font-bold text-[var(--color-primary)] border-b-2 border-[var(--color-border)] pb-2">

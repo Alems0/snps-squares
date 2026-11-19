@@ -1,8 +1,6 @@
 import { supabase } from './supabase'
 import type { User } from '@supabase/supabase-js'
 
-const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || 'stecher2789@gmail.com').toLowerCase()
-
 /**
  * Sign in admin with Google OAuth
  */
@@ -13,11 +11,11 @@ export async function signInWithGoogle() {
       redirectTo: `${window.location.origin}/admin`,
     },
   })
-  
+
   if (error) {
     throw error
   }
-  
+
   return data
 }
 
@@ -35,12 +33,15 @@ export async function signOutAdmin() {
  * Get current admin session
  */
 export async function getCurrentSession() {
-  const { data: { session }, error } = await supabase.auth.getSession()
-  
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession()
+
   if (error) {
     throw error
   }
-  
+
   return session
 }
 
@@ -53,22 +54,25 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 /**
- * Check if current user is admin (by checking against allowlist)
+ * Server-side admin check via SECURITY DEFINER is_admin()
+ * (compares auth JWT email to public.admins). No client-side email allowlist.
  */
-export async function isAdmin(email?: string): Promise<boolean> {
-  if (!email) {
-    const user = await getCurrentUser()
-    email = user?.email
+export async function checkIsAdmin(): Promise<boolean> {
+  // Playwright / local mock: never call Supabase
+  if (import.meta.env.VITE_USE_MOCK === 'true') {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('mock_admin') === '1' || sessionStorage.getItem('mock_admin') === '1') {
+        return true
+      }
+    }
+    return false
   }
-  
-  if (!email) return false
-  
-  return email.toLowerCase() === ADMIN_EMAIL
-}
 
-/**
- * Check if user email is allowed admin (case-insensitive)
- */
-export function isAllowedAdmin(email: string): boolean {
-  return email.toLowerCase() === ADMIN_EMAIL
+  const { data, error } = await supabase.rpc('is_admin')
+  if (error) {
+    console.warn('is_admin RPC failed:', error.message)
+    return false
+  }
+  return Boolean(data)
 }

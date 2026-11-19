@@ -1,31 +1,36 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { signInWithGoogle, isAllowedAdmin, signOutAdmin } from '../lib/auth'
+import { signInWithGoogle, signOutAdmin } from '../lib/auth'
 import { useAuth } from '../lib/useAuth'
+
+const DENIED_MESSAGE = 'This account is not authorized for admin access.'
 
 export default function AdminSignIn() {
   const navigate = useNavigate()
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, isAdmin } = useAuth()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (authLoading) return
 
-    if (user?.email) {
-      if (isAllowedAdmin(user.email)) {
-        navigate('/admin/panel')
-      } else {
-        // User is signed in but not authorized - sign them out
-        signOutAdmin().then(() => {
-          setError(`Access denied. Only ${import.meta.env.VITE_ADMIN_EMAIL || 'stecher2789@gmail.com'} can access the admin panel.`)
-        }).catch(err => {
-          console.error('Error signing out:', err)
-          setError(`Access denied. Only ${import.meta.env.VITE_ADMIN_EMAIL || 'stecher2789@gmail.com'} can access the admin panel.`)
-        })
-      }
+    if (!user) return
+
+    if (isAdmin) {
+      navigate('/admin/panel')
+      return
     }
-  }, [user, authLoading, navigate])
+
+    // Signed in but not in public.admins — sign out and show neutral message
+    signOutAdmin()
+      .then(() => {
+        setError(DENIED_MESSAGE)
+      })
+      .catch((err) => {
+        console.error('Error signing out:', err)
+        setError(DENIED_MESSAGE)
+      })
+  }, [user, authLoading, isAdmin, navigate])
 
   const handleGoogleSignIn = async () => {
     setError('')
@@ -63,11 +68,11 @@ export default function AdminSignIn() {
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="bg-white rounded-lg shadow-lg px-8 py-14 sm:px-12 sm:py-16 w-full max-w-md">
           <h1 className="text-3xl font-bold mb-4 text-center">Admin Sign In</h1>
-          
+
           <p className="text-sm text-center text-[var(--color-text-muted)] mb-10">
             Only authorized administrators can access this area.
           </p>
-          
+
           {error && (
             <div className="bg-[var(--color-danger)] bg-opacity-10 border border-[var(--color-danger)] text-[var(--color-danger)] rounded-lg p-4 mb-8 text-sm">
               {error}
@@ -104,7 +109,6 @@ export default function AdminSignIn() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="bg-white border-t border-gray-200 py-6 px-4 mt-auto">
         <div className="container mx-auto max-w-7xl">
           <div className="flex flex-wrap justify-center gap-4 sm:gap-8 text-sm font-medium text-[var(--color-text-muted)] mb-3">
