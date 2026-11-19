@@ -22,6 +22,67 @@
   --color-danger: #ef4444;
   --color-info: #3b82f6;
   --color-paid: #059669;
+
+  /* Board grid track size — headers and cells share this */
+  --board-cell: 3.5rem;
+  --board-gap: 0.5rem;
+}
+
+/* Single board grid: row-header + 10 equal cell columns, shared gap */
+.board-grid {
+  --cell: minmax(var(--board-cell), 1fr);
+  display: grid;
+  grid-template-columns: [row-header] auto repeat(10, var(--cell));
+  gap: var(--board-gap);
+  width: max(100%, calc(11 * var(--board-cell) + 10 * var(--board-gap)));
+  min-width: calc(11 * var(--board-cell) + 10 * var(--board-gap));
+  align-items: stretch;
+}
+
+.board-corner {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  background: var(--color-surface);
+  min-height: var(--board-cell);
+}
+
+.board-nfc-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  font-weight: 700;
+  font-size: 0.875rem;
+  line-height: 1;
+  color: white;
+  background: var(--color-nfc);
+  border-radius: 0.25rem;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+}
+
+.board-afc-header {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  min-width: var(--board-cell);
+  width: 100%;
+  font-weight: 700;
+  font-size: 0.875rem;
+  line-height: 1;
+  color: white;
+  background: var(--color-afc);
+  border-radius: 0.25rem;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
 }
 
 @layer base {
@@ -95,11 +156,18 @@ textarea {
     max-width: none !important;
   }
 
-  #print-board .overflow-x-auto {
+  #print-board .board-scroll {
     overflow: visible !important;
   }
 
-  #print-board .min-w-\[440px\] {
+  #print-board .board-grid {
     min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  #print-board .board-corner,
+  #print-board .board-nfc-header,
+  #print-board .board-afc-header {
+    position: static !important;
   }
 }
