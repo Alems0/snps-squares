@@ -9,6 +9,7 @@ import {
   VENMO_ORDER_FEE,
   type PlayerNameSuggestion,
 } from '../lib/supabase'
+import PaymentMethodToggle from './PaymentMethodToggle'
 
 interface ClaimPopoverProps {
   selectedSquares: number[]
@@ -159,7 +160,6 @@ export default function ClaimPopover({
         left: `${MARGIN}px`,
         width: `${popW}px`,
         maxHeight: `${maxH}px`,
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         zIndex: 100,
         opacity: 1,
         pointerEvents: 'auto',
@@ -471,7 +471,7 @@ export default function ClaimPopover({
                 }}
                 onFocus={() => setShowSuggestions(true)}
                 placeholder="Start typing your name…"
-                className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
+                className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-base"
                 disabled={isSubmitting}
                 autoComplete="off"
               />
@@ -511,7 +511,7 @@ export default function ClaimPopover({
                       setFirstName(e.target.value)
                       clearSelectedPlayer()
                     }}
-                    className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
+                    className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-base"
                     required
                     disabled={isSubmitting}
                   />
@@ -528,7 +528,7 @@ export default function ClaimPopover({
                       setLastName(e.target.value)
                       clearSelectedPlayer()
                     }}
-                    className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
+                    className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-base"
                     required
                     disabled={isSubmitting}
                   />
@@ -546,7 +546,7 @@ export default function ClaimPopover({
                       id="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
+                      className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-base"
                       required
                       disabled={isSubmitting}
                     />
@@ -561,76 +561,42 @@ export default function ClaimPopover({
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="(555) 123-4567"
-                      className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-sm"
+                      className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-primary)] transition-colors text-base"
                       disabled={isSubmitting}
                       autoComplete="tel"
                     />
                   </div>
                 </>
               )}
-
-              <div>
-                <label className="block text-xs font-semibold text-[var(--color-text)] mb-1.5">
-                  Payment Method <span className="text-red-500">*</span>
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="flex items-start gap-2 p-2.5 border-2 border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-primary)] transition-colors">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="venmo"
-                      checked={paymentMethod === 'venmo'}
-                      onChange={(e) => setPaymentMethod(e.target.value as 'venmo')}
-                      className="mt-0.5"
-                      disabled={isSubmitting}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm text-[var(--color-text)]">Venmo</div>
-                      {venmoHandle && (
-                        <div className="text-xs text-[var(--color-text-muted)] mt-0.5 truncate">
-                          {formatVenmoHandle(venmoHandle)}
-                        </div>
-                      )}
-                    </div>
-                  </label>
-                  <label className="flex items-start gap-2 p-2.5 border-2 border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-primary)] transition-colors">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="cash"
-                      checked={paymentMethod === 'cash'}
-                      onChange={(e) => setPaymentMethod(e.target.value as 'cash')}
-                      className="mt-0.5"
-                      disabled={isSubmitting}
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-sm text-[var(--color-text)]">Cash</div>
-                      <div className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                        Pay admin
-                      </div>
-                    </div>
-                  </label>
-                </div>
-              </div>
             </div>
           </div>
 
-          <div className="shrink-0 flex gap-2 p-4 pt-2 border-t border-[var(--color-border-light)] bg-white">
-            <button
-              type="button"
-              onClick={onClose}
+          {/* Sticky chrome: payment + actions stay above the fold / safe-area (never under scroll) */}
+          <div className="shrink-0 border-t border-[var(--color-border-light)] bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] space-y-3">
+            <PaymentMethodToggle
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+              venmoHandle={venmoHandle ? formatVenmoHandle(venmoHandle) : undefined}
               disabled={isSubmitting}
-              className="flex-1 px-4 py-2.5 border-2 border-[var(--color-border)] text-[var(--color-text)] rounded-lg hover:bg-slate-50 transition-all font-semibold text-sm disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-2.5 bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90 transition-all font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? 'Claiming...' : `Claim ${selectedSquares.length}`}
-            </button>
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="flex-1 min-h-[44px] touch-manipulation px-4 py-2.5 border-2 border-[var(--color-border)] text-[var(--color-text)] rounded-lg hover:bg-slate-50 transition-all font-semibold text-base disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                data-testid="claim-submit"
+                disabled={isSubmitting}
+                className="flex-1 min-h-[44px] touch-manipulation px-4 py-2.5 bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90 transition-all font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? 'Claiming...' : `Claim ${selectedSquares.length}`}
+              </button>
+            </div>
           </div>
         </form>
       </div>

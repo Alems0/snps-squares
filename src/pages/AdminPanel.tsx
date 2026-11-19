@@ -1125,7 +1125,7 @@ export default function AdminPanel() {
   const publicClaimingOpen = Boolean(game?.public_claiming_open)
   
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--color-background)]">
+    <div className="min-h-screen flex flex-col bg-[var(--color-background)] overflow-x-hidden">
       <header className="bg-white border-b border-[var(--color-border)] sticky top-0 z-10 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex justify-between items-center">
@@ -1155,7 +1155,7 @@ export default function AdminPanel() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <main className="flex-1 w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="mb-10">
           <h1 className="text-4xl font-bold text-[var(--color-text)] mb-3">Dashboard</h1>
           <p className="text-base text-[var(--color-text-secondary)]">Manage your Super Bowl squares game</p>
@@ -1305,7 +1305,7 @@ export default function AdminPanel() {
                     value={joinPasswordDraft}
                     onChange={(e) => setJoinPasswordDraft(e.target.value)}
                     placeholder="New join password (blank = open)"
-                    className="flex-1 min-w-[12rem] px-3 py-2 text-sm border border-[var(--color-border)] rounded-lg bg-white text-[var(--color-text)]"
+                    className="flex-1 min-w-0 w-full sm:min-w-[12rem] px-3 py-3 text-base border border-[var(--color-border)] rounded-lg bg-white text-[var(--color-text)]"
                     autoComplete="new-password"
                   />
                   <button

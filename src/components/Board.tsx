@@ -344,14 +344,14 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
             <div className="flex gap-3 w-full sm:w-auto">
               <button
                 onClick={handleCancelSelection}
-                className="flex-1 sm:flex-initial px-5 py-2.5 bg-transparent border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:text-[var(--color-primary)] transition-all"
+                className="flex-1 sm:flex-initial min-h-[44px] touch-manipulation px-5 py-2.5 bg-transparent border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:text-[var(--color-primary)] transition-all"
               >
                 Clear
               </button>
               <button
                 onClick={handleProceedToClaim}
                 data-testid="claim-now-button"
-                className="flex-1 sm:flex-initial px-5 py-2.5 bg-white text-[var(--color-primary)] rounded-lg font-semibold hover:bg-opacity-90 shadow-md transition-all"
+                className="flex-1 sm:flex-initial min-h-[44px] touch-manipulation px-5 py-2.5 bg-white text-[var(--color-primary)] rounded-lg font-semibold hover:bg-opacity-90 shadow-md transition-all"
               >
                 Claim Now
               </button>

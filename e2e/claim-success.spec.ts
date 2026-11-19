@@ -50,7 +50,7 @@ async function completeVenmoClaim(page: Page) {
   await popover.locator('#firstName').fill('Test')
   await popover.locator('#lastName').fill('User')
   await popover.locator('#email').fill('test.user@example.com')
-  await popover.locator('input[name="paymentMethod"][value="venmo"]').check()
+  await popover.getByTestId('payment-venmo').click()
   await popover.getByRole('button', { name: /Claim 2/i }).click()
 
   const success = page.getByTestId('claim-success')

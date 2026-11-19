@@ -40,7 +40,7 @@ export default function ConfirmationModal({
       onClick={onCancel}
     >
       <div
-        className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl max-w-md w-full flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom,0px)]"
+        className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl max-w-md w-full flex flex-col overflow-hidden"
         style={{ maxHeight: 'min(calc(100dvh - 24px), calc(100vh - 24px))' }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -67,19 +67,19 @@ export default function ConfirmationModal({
             {description}
           </p>
         </div>
-        <div className="shrink-0 flex gap-3 justify-end px-4 py-3 sm:px-6 sm:pb-5 border-t border-[var(--color-border-light)] bg-white">
+        <div className="shrink-0 flex gap-3 justify-end px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-6 border-t border-[var(--color-border-light)] bg-white">
           <button
             ref={cancelButtonRef}
             type="button"
             onClick={onCancel}
-            className="px-4 sm:px-5 py-2 sm:py-2.5 border-2 border-[var(--color-border)] text-[var(--color-text)] rounded-lg hover:bg-slate-50 hover:border-[var(--color-text-muted)] transition-all font-semibold text-sm"
+            className="min-h-[44px] touch-manipulation px-4 sm:px-5 py-2.5 border-2 border-[var(--color-border)] text-[var(--color-text)] rounded-lg hover:bg-slate-50 hover:border-[var(--color-text-muted)] transition-all font-semibold text-base"
           >
             {cancelText}
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg font-semibold transition-all text-sm ${
+            className={`min-h-[44px] touch-manipulation px-4 sm:px-5 py-2.5 rounded-lg font-semibold transition-all text-base ${
               variant === 'destructive'
                 ? 'bg-red-600 text-white hover:bg-red-700'
                 : 'bg-[var(--color-primary)] text-white hover:bg-opacity-90'

@@ -34,7 +34,7 @@ export default function ClaimSuccess({
         role="dialog"
         aria-modal="true"
         aria-labelledby="claim-success-title"
-        className="bg-white w-full sm:max-w-md shadow-2xl flex flex-col overflow-hidden rounded-t-2xl sm:rounded-xl pb-[env(safe-area-inset-bottom,0px)]"
+        className="bg-white w-full sm:max-w-md shadow-2xl flex flex-col overflow-hidden rounded-t-2xl sm:rounded-xl"
         style={{ maxHeight: 'min(calc(100dvh - 24px), calc(100vh - 24px))' }}
       >
         {/* Header — always visible */}
@@ -162,12 +162,12 @@ export default function ClaimSuccess({
         </div>
 
         {/* Sticky footer Done */}
-        <div className="shrink-0 border-t border-[var(--color-border-light)] px-4 py-3 sm:px-5 bg-white">
+        <div className="shrink-0 border-t border-[var(--color-border-light)] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-5 bg-white">
           <button
             type="button"
             data-testid="claim-success-done"
             onClick={onClose}
-            className="w-full px-4 py-2.5 sm:py-3 bg-[var(--color-primary)] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity text-sm sm:text-base"
+            className="w-full min-h-[48px] touch-manipulation px-4 py-3 bg-[var(--color-primary)] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity text-base"
           >
             Done
           </button>
