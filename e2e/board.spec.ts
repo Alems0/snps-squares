@@ -95,7 +95,8 @@ test.describe('Admin selection and claim popover', () => {
     await expect(popover.getByText(/Subtotal \(2 × \$10\)/)).toBeVisible()
     await expect(popover.getByText('$20.00').first()).toBeVisible()
 
-    await popover.locator('input[name="paymentMethod"][value="venmo"]').check()
+    await popover.getByTestId('payment-venmo').click()
+    await expect(popover.getByTestId('payment-venmo')).toHaveAttribute('aria-pressed', 'true')
     await expect(popover.getByText('Venmo fee')).toBeVisible()
     await expect(popover.getByText('$2.00').first()).toBeVisible()
     await expect(popover.getByText('$22.00')).toBeVisible()

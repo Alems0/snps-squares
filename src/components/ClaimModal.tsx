@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react'
 import { formatVenmoHandle } from '../lib/formatVenmo'
 import { displaySquareNumber } from '../lib/displaySquareNumber'
+import PaymentMethodToggle from './PaymentMethodToggle'
 
 interface ClaimModalProps {
   selectedSquares: number[]
@@ -182,57 +183,12 @@ export default function ClaimModal({
               />
             </div>
 
-            {/* Payment Method */}
-            <div>
-              <label className="block text-sm font-semibold text-[var(--color-text)] mb-2">
-                Payment Method *
-              </label>
-              <div className="space-y-3">
-                <label className="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-[var(--color-primary)] transition-colors">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="cash"
-                    checked={paymentMethod === 'cash'}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'cash')}
-                    className="w-4 h-4 text-[var(--color-primary)]"
-                    disabled={isSubmitting}
-                  />
-                  <div className="ml-3 flex-1">
-                    <div className="font-semibold text-[var(--color-text)]">Cash</div>
-                    <div className="text-xs text-[var(--color-text-muted)]">
-                      Pay in person
-                    </div>
-                  </div>
-                  <span className="text-2xl">💵</span>
-                </label>
-
-                <label className="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-[var(--color-primary)] transition-colors">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="venmo"
-                    checked={paymentMethod === 'venmo'}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'venmo')}
-                    className="w-4 h-4 text-[var(--color-primary)]"
-                    disabled={isSubmitting}
-                  />
-                  <div className="ml-3 flex-1">
-                    <div className="font-semibold text-[var(--color-text)]">Venmo</div>
-                    {venmoHandle ? (
-                      <div className="text-xs text-[var(--color-text-muted)]">
-                        Send to: <span className="font-mono font-semibold">{formatVenmoHandle(venmoHandle)}</span>
-                      </div>
-                    ) : (
-                      <div className="text-xs text-[var(--color-text-muted)]">
-                        Venmo details will be provided
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-2xl">📱</span>
-                </label>
-              </div>
-            </div>
+            <PaymentMethodToggle
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+              venmoHandle={venmoHandle ? formatVenmoHandle(venmoHandle) : undefined}
+              disabled={isSubmitting}
+            />
 
             {/* Error Message */}
             {error && (

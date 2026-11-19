@@ -24,6 +24,25 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      testIgnore: /iphone-touch\.spec\.ts/,
+    },
+    {
+      name: 'webkit-iphone-13',
+      use: {
+        ...devices['iPhone 13'],
+        hasTouch: true,
+        isMobile: true,
+      },
+      testMatch: /iphone-touch\.spec\.ts/,
+    },
+    {
+      name: 'webkit-iphone-se',
+      use: {
+        ...devices['iPhone SE'],
+        hasTouch: true,
+        isMobile: true,
+      },
+      testMatch: /iphone-touch\.spec\.ts/,
     },
   ],
 })

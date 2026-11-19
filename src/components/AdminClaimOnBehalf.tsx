@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { supabase, type Game, type Player, EMAIL_REGEX, normalizePhone } from '../lib/supabase'
 import { parseDisplaySquareNumber } from '../lib/displaySquareNumber'
+import PaymentMethodToggle, { type PaymentMethod } from './PaymentMethodToggle'
 
 interface AdminClaimOnBehalfProps {
   game: Game | null
@@ -16,7 +17,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'venmo'>('venmo')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('venmo')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -185,7 +186,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
             value={positionsRaw}
             onChange={(e) => setPositionsRaw(e.target.value)}
             placeholder="e.g. 13, 14, 25"
-            className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm"
+            className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
           />
         </div>
 
@@ -198,7 +199,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
               setSelected(null)
             }}
             placeholder="Start typing a name…"
-            className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm"
+            className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
             autoComplete="off"
           />
           {suggestions.length > 0 && (
@@ -227,7 +228,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
             <input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm"
+              className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
             />
           </div>
           <div>
@@ -235,7 +236,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
             <input
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm"
+              className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
             />
           </div>
           <div>
@@ -243,7 +244,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm"
+              className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
             />
           </div>
           <div>
@@ -255,34 +256,21 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="(555) 123-4567"
-              className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm"
+              className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
             />
           </div>
         </div>
 
-        <div className="flex gap-4 items-center">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              checked={paymentMethod === 'venmo'}
-              onChange={() => setPaymentMethod('venmo')}
-            />
-            Venmo
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              checked={paymentMethod === 'cash'}
-              onChange={() => setPaymentMethod('cash')}
-            />
-            Cash
-          </label>
-        </div>
+        <PaymentMethodToggle
+          value={paymentMethod}
+          onChange={setPaymentMethod}
+          disabled={busy}
+        />
 
         <button
           type="submit"
           disabled={busy || !game}
-          className="px-5 py-2.5 bg-[var(--color-primary)] text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+          className="min-h-[44px] touch-manipulation px-5 py-2.5 bg-[var(--color-primary)] text-white rounded-lg text-base font-semibold disabled:opacity-50"
         >
           {busy ? 'Claiming…' : 'Claim Squares'}
         </button>

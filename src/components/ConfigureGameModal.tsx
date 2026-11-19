@@ -109,7 +109,7 @@ export default function ConfigureGameModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
       <div
-        className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl max-w-3xl w-full flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom,0px)]"
+        className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl max-w-3xl w-full flex flex-col overflow-hidden"
         style={{ maxHeight: 'min(calc(100dvh - 24px), calc(100vh - 24px))' }}
       >
         {/* Header */}
@@ -456,18 +456,18 @@ export default function ConfigureGameModal({
         </div>
 
           {/* Sticky footer actions */}
-          <div className="shrink-0 flex gap-3 p-4 sm:px-6 border-t border-[var(--color-border-light)] bg-white">
+          <div className="shrink-0 flex gap-3 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-6 border-t border-[var(--color-border-light)] bg-white">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-gray-300 rounded-lg font-semibold text-[var(--color-text)] hover:bg-gray-50 transition-colors text-sm sm:text-base"
+              className="flex-1 min-h-[44px] touch-manipulation px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-gray-300 rounded-lg font-semibold text-[var(--color-text)] hover:bg-gray-50 transition-colors text-base"
               disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-[var(--color-primary)] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-sm sm:text-base"
+              className="flex-1 min-h-[44px] touch-manipulation px-4 sm:px-6 py-2.5 sm:py-3 bg-[var(--color-primary)] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-base"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Saving...' : 'Save Configuration'}
