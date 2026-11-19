@@ -687,15 +687,24 @@ export default function PastPlayersSection() {
               <thead className="bg-slate-50">
                 <tr>
                   <th className="py-3 px-3 text-left">
-                    <input
-                      type="checkbox"
-                      aria-label="Select all with phone"
-                      checked={
-                        filtered.some((p) => p.phone) &&
-                        filtered.filter((p) => p.phone).every((p) => selectedIds.has(p.id))
-                      }
-                      onChange={toggleSelectAllVisible}
-                    />
+                    <label
+                      data-testid="select-all-with-phone"
+                      className="inline-flex items-center gap-2 min-h-[44px] min-w-[44px] touch-manipulation cursor-pointer select-none"
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-5 w-5 shrink-0"
+                        aria-label="Select all with phone"
+                        checked={
+                          filtered.some((p) => p.phone) &&
+                          filtered.filter((p) => p.phone).every((p) => selectedIds.has(p.id))
+                        }
+                        onChange={toggleSelectAllVisible}
+                      />
+                      <span className="sr-only sm:not-sr-only text-xs font-semibold text-[var(--color-text-muted)] whitespace-nowrap">
+                        Select all with phone
+                      </span>
+                    </label>
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-bold text-[var(--color-text-muted)] uppercase">Name</th>
                   <th className="text-left py-3 px-4 text-xs font-bold text-[var(--color-text-muted)] uppercase">Email</th>

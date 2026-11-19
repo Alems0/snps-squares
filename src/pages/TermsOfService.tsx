@@ -121,7 +121,11 @@ export default function TermsOfService() {
               <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Privacy</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
                 How we collect and use information is described in our{' '}
-                <Link to="/privacy" className="text-[var(--color-primary)] hover:underline">
+                <Link
+                  to="/privacy"
+                  data-testid="terms-inline-privacy"
+                  className="inline-flex items-center min-h-[44px] py-2.5 text-[var(--color-primary)] hover:underline align-baseline"
+                >
                   Privacy Policy
                 </Link>
                 . In short: names appear on the board; email and phone (if provided) are used only for

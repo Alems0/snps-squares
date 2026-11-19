@@ -1130,7 +1130,11 @@ export default function AdminPanel() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-8">
-              <Link to="/" className="text-2xl font-bold text-[var(--color-primary)] hover:opacity-90 transition-opacity">
+              <Link
+                to="/"
+                data-testid="admin-home-link"
+                className="inline-flex items-center min-h-[44px] touch-manipulation text-2xl font-bold text-[var(--color-primary)] hover:opacity-90 transition-opacity"
+              >
                 SNPS Admin
               </Link>
               <nav className="hidden md:flex items-center gap-2">
@@ -1494,7 +1498,8 @@ export default function AdminPanel() {
                 <button
                   type="button"
                   onClick={() => setRestorePreview(null)}
-                  className="px-4 py-2 text-sm font-semibold border border-[var(--color-border)] rounded-lg hover:bg-slate-50"
+                  data-testid="restore-cancel"
+                  className="min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold border border-[var(--color-border)] rounded-lg hover:bg-slate-50"
                   disabled={restoreBusy}
                 >
                   Cancel
@@ -1504,7 +1509,7 @@ export default function AdminPanel() {
                   data-testid="confirm-restore"
                   onClick={handleConfirmRestore}
                   disabled={restoreBusy}
-                  className="px-4 py-2 text-sm font-semibold bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50"
+                  className="min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50"
                 >
                   {restoreBusy ? 'Restoring…' : 'Confirm restore'}
                 </button>

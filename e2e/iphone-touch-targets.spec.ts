@@ -58,6 +58,9 @@ test.describe('iPhone touch targets & input sizes', () => {
       expect(await fontSizeOf(invite)).toBeGreaterThanOrEqual(16)
 
       // Key admin controls >= 44px
+      expect(
+        await minHeightOf(page.getByTestId('admin-home-link'))
+      ).toBeGreaterThanOrEqual(43)
       await expect(page.getByRole('button', { name: 'Sign Out' })).toBeVisible()
       expect(await minHeightOf(page.getByRole('button', { name: 'Sign Out' }))).toBeGreaterThanOrEqual(
         43
@@ -81,6 +84,13 @@ test.describe('iPhone touch targets & input sizes', () => {
       expect(
         await minHeightOf(page.getByRole('button', { name: 'Reset default' }))
       ).toBeGreaterThanOrEqual(43)
+
+      const selectAll = page.getByTestId('select-all-with-phone')
+      await selectAll.scrollIntoViewIfNeeded()
+      const selectBox = await selectAll.boundingBox()
+      expect(selectBox).toBeTruthy()
+      expect(selectBox!.height).toBeGreaterThanOrEqual(43)
+      expect(selectBox!.width).toBeGreaterThanOrEqual(43)
 
       // Mobile claims cards — Mark Paid / Remove in viewport
       const mobile = page.getByTestId('admin-claims-mobile')
@@ -109,7 +119,28 @@ test.describe('iPhone touch targets & input sizes', () => {
     })
   }
 
-  test('public Admin Login and footer links >= 44px @ 390x844', async ({ page }) => {
+  test('restore preview Cancel/Confirm >= 44px @ 390x844', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await gotoAdmin(page)
+
+    const csv = [
+      'position,first_name,last_name,full_name,email,phone,payment_method,payment_status,claimed_at',
+      '0,Ada,Lovelace,Ada Lovelace,ada@test.com,,cash,unpaid,',
+      '1,,,,,,,unpaid,',
+    ].join('\n')
+    await page.getByTestId('admin-restore-backup').locator('input[type="file"]').setInputFiles({
+      name: 'tiny-backup.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from(csv),
+    })
+    await expect(page.getByRole('heading', { name: 'Restore preview' })).toBeVisible()
+    expect(await minHeightOf(page.getByTestId('restore-cancel'))).toBeGreaterThanOrEqual(43)
+    expect(await minHeightOf(page.getByTestId('confirm-restore'))).toBeGreaterThanOrEqual(43)
+  })
+
+  test('public Admin Login, footer, and Terms inline Privacy >= 44px @ 390x844', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/')
     await expect(page.getByRole('link', { name: 'Admin Login' })).toBeVisible({
@@ -131,5 +162,10 @@ test.describe('iPhone touch targets & input sizes', () => {
     expect(
       await minHeightOf(page.getByRole('link', { name: 'Back to Board' }))
     ).toBeGreaterThanOrEqual(43)
+
+    await page.goto('/terms')
+    const inlinePrivacy = page.getByTestId('terms-inline-privacy')
+    await inlinePrivacy.scrollIntoViewIfNeeded()
+    expect(await minHeightOf(inlinePrivacy)).toBeGreaterThanOrEqual(43)
   })
 })
