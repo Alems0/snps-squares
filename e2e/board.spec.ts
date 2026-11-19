@@ -102,6 +102,32 @@ test.describe('Admin selection and claim popover', () => {
   })
 })
 
+test.describe('Axis team labels', () => {
+  for (const vp of [
+    { name: 'desktop', width: 1280, height: 800 },
+    { name: 'mobile', width: 375, height: 812 },
+  ] as const) {
+    test(`shows NFC/AFC team names @ ${vp.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height })
+      await page.goto('/')
+      await waitForBoard(page)
+
+      const nfc = page.getByTestId('nfc-axis-label')
+      const afc = page.getByTestId('afc-axis-label')
+      await expect(nfc).toBeVisible()
+      await expect(afc).toBeVisible()
+      await expect(nfc).toHaveText('NFC – Eagles')
+      await expect(afc).toHaveText('AFC – Chiefs')
+
+      const overflow = await page.evaluate(() => ({
+        scrollWidth: document.body.scrollWidth,
+        innerWidth: window.innerWidth,
+      }))
+      expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.innerWidth + 1)
+    })
+  }
+})
+
 test.describe('Board chrome: prizes, trophies, FAQ, print', () => {
   test('prizes banner, trophies, FAQ, and print board', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
@@ -125,6 +151,8 @@ test.describe('Board chrome: prizes, trophies, FAQ, print', () => {
     })
     await page.goto('/?print=1')
     await expect(page.locator('#print-board')).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByTestId('nfc-axis-label')).toHaveText('NFC – Eagles')
+    await expect(page.getByTestId('afc-axis-label')).toHaveText('AFC – Chiefs')
   })
 })
 

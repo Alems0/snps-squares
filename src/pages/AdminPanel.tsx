@@ -155,8 +155,8 @@ export default function AdminPanel() {
     const mockGame: Game = {
       id: 'mock',
       season: 2026,
-      afc_team: 'Kansas City Chiefs',
-      nfc_team: 'San Francisco 49ers',
+      afc_team: 'Chiefs',
+      nfc_team: 'Eagles',
       cost_per_square: 10,
       charity_percentage: 10,
       q1_payout: 200,
@@ -712,6 +712,8 @@ export default function AdminPanel() {
     venmo_handle: string
     join_password: string
     public_claiming_open?: boolean
+    nfc_team: string
+    afc_team: string
   }) => {
     if (!game) throw new Error('No active game found')
 
@@ -1267,6 +1269,22 @@ export default function AdminPanel() {
               <h2 className="text-xl font-bold text-[var(--color-text)]">Current Game Settings</h2>
             </div>
             <div className="grid sm:grid-cols-2 gap-x-10 gap-y-5">
+              <div className="flex justify-between items-center gap-3 py-3 border-b border-[var(--color-border-light)] min-w-0">
+                <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0">NFC team</span>
+                <span className="text-base font-bold text-[var(--color-text)] truncate text-right" title={game?.nfc_team || ''}>
+                  {game?.nfc_team?.trim() && game.nfc_team.trim().toUpperCase() !== 'NFC'
+                    ? game.nfc_team.trim()
+                    : '—'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center gap-3 py-3 border-b border-[var(--color-border-light)] min-w-0">
+                <span className="text-sm font-medium text-[var(--color-text-secondary)] shrink-0">AFC team</span>
+                <span className="text-base font-bold text-[var(--color-text)] truncate text-right" title={game?.afc_team || ''}>
+                  {game?.afc_team?.trim() && game.afc_team.trim().toUpperCase() !== 'AFC'
+                    ? game.afc_team.trim()
+                    : '—'}
+                </span>
+              </div>
               <div className="flex justify-between items-center py-3 border-b border-[var(--color-border-light)]">
                 <span className="text-sm font-medium text-[var(--color-text-secondary)]">Cost per square</span>
                 <span className="text-base font-bold text-[var(--color-text)]">${game?.cost_per_square || 0}</span>

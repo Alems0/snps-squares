@@ -102,8 +102,8 @@ export default function BoardPage() {
     setGame({
       id: 'mock',
       season: 2026,
-      afc_team: 'Kansas City Chiefs',
-      nfc_team: 'San Francisco 49ers',
+      afc_team: 'Chiefs',
+      nfc_team: 'Eagles',
       cost_per_square: 10,
       charity_percentage: 10,
       q1_payout: 200,

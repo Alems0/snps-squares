@@ -5,6 +5,7 @@ import {
   type Game,
   GAMES_PUBLIC_COLUMNS,
   SQUARES_PUBLIC_COLUMNS,
+  formatAxisLabel,
 } from '../lib/supabase'
 import { useAuth } from '../lib/useAuth'
 import { isAllowedAdmin } from '../lib/auth'
@@ -113,8 +114,8 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
     setGame({
       id: 'mock',
       season: 2026,
-      afc_team: 'Kansas City Chiefs',
-      nfc_team: 'San Francisco 49ers',
+      afc_team: 'Chiefs',
+      nfc_team: 'Eagles',
       cost_per_square: 10,
       charity_percentage: 10,
       q1_payout: 200,
@@ -375,22 +376,28 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       <div className="p-6 min-w-0">
         {/* NFC header - full width bar */}
         <div className="mb-4 min-w-0">
-          <div className="font-bold text-white text-center text-lg py-3 px-4 rounded-lg bg-[var(--color-nfc)] shadow-sm">
-            NFC
+          <div
+            data-testid="nfc-axis-label"
+            title={formatAxisLabel('NFC', game.nfc_team)}
+            className="font-bold text-white text-center text-base sm:text-lg py-3 px-3 sm:px-4 rounded-lg bg-[var(--color-nfc)] shadow-sm truncate max-w-full"
+          >
+            {formatAxisLabel('NFC', game.nfc_team)}
           </div>
         </div>
 
-        <div className="flex gap-4 min-w-0">
+        <div className="flex gap-3 sm:gap-4 min-w-0">
           {/* Left AFC label - full height vertical bar */}
-          <div className="flex items-stretch flex-shrink-0">
-            <div 
-              className="font-bold text-white text-lg px-4 py-3 rounded-lg bg-[var(--color-afc)] shadow-sm flex items-center justify-center"
-              style={{ 
+          <div className="flex items-stretch flex-shrink-0 max-w-[3rem] sm:max-w-[3.5rem]">
+            <div
+              data-testid="afc-axis-label"
+              title={formatAxisLabel('AFC', game.afc_team)}
+              className="font-bold text-white text-base sm:text-lg px-2 sm:px-4 py-3 rounded-lg bg-[var(--color-afc)] shadow-sm flex items-center justify-center max-h-full overflow-hidden"
+              style={{
                 writingMode: 'vertical-rl',
-                textOrientation: 'mixed'
+                textOrientation: 'mixed',
               }}
             >
-              AFC
+              <span className="truncate max-h-full">{formatAxisLabel('AFC', game.afc_team)}</span>
             </div>
           </div>
 

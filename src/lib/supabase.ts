@@ -127,6 +127,22 @@ export const SQUARES_PUBLIC_COLUMNS =
 export const GAMES_PUBLIC_COLUMNS =
   'id, season, afc_team, nfc_team, cost_per_square, charity_percentage, q1_payout, q2_payout, q3_payout, final_payout, venmo_handle, numbers_locked, afc_numbers, nfc_numbers, status, public_claiming_open, created_at, updated_at'
 
+/** Max length for games.afc_team / games.nfc_team (admin-configured axis labels). */
+export const TEAM_NAME_MAX_LEN = 40
+
+/**
+ * Board axis label: "NFC – Eagles" when a team name is set; plain "NFC"/"AFC" when blank
+ * or when the stored value is just the conference name (schema defaults).
+ */
+export function formatAxisLabel(
+  conference: 'NFC' | 'AFC',
+  team: string | null | undefined
+): string {
+  const trimmed = (team ?? '').trim()
+  if (!trimmed || trimmed.toUpperCase() === conference) return conference
+  return `${conference} – ${trimmed}`
+}
+
 /** Escape CSV cell; neutralize formula injection (=, +, -, @). */
 export function csvSafe(value: string | number | null | undefined): string {
   const raw = value == null ? '' : String(value)
