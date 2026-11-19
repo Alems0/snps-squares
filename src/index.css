@@ -42,13 +42,6 @@
     max-width: 100%;
   }
 
-  /* Prevent iOS Safari auto-zoom on focus (requires >= 16px). */
-  input,
-  select,
-  textarea {
-    font-size: 16px;
-  }
-
   /* Prefer tap over 300ms delay / gesture interference on controls. */
   button,
   [role='button'],
@@ -61,6 +54,14 @@
     font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
       monospace;
   }
+}
+
+/* Outside @layer so it wins over utility classes like text-sm on form fields.
+   iOS Safari zooms focused inputs smaller than 16px. */
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+select,
+textarea {
+  font-size: 16px !important;
 }
 
 /* Admin "Print board (PDF)" — landscape, board grid only */

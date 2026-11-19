@@ -405,10 +405,10 @@ export default function ClaimPopover({
           </h2>
           <button
             onClick={onClose}
-            className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors p-1"
+            className="min-h-[44px] min-w-[44px] touch-manipulation inline-flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors rounded-lg"
             aria-label="Close"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -481,7 +481,7 @@ export default function ClaimPopover({
                     <li key={s.id}>
                       <button
                         type="button"
-                        className="w-full text-left px-3 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-slate-50"
+                        className="w-full min-h-[44px] touch-manipulation text-left px-3 py-3 text-base font-semibold text-[var(--color-text)] hover:bg-slate-50"
                         onClick={() => pickSuggestion(s)}
                       >
                         {s.display_name}

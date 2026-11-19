@@ -208,7 +208,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
                 <li key={p.id}>
                   <button
                     type="button"
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50"
+                    className="w-full min-h-[44px] touch-manipulation text-left px-3 py-3 text-base hover:bg-slate-50"
                     onClick={() => pickPlayer(p)}
                   >
                     <span className="font-semibold text-[var(--color-text)]">

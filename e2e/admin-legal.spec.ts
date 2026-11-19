@@ -33,9 +33,10 @@ test.describe('Admin panel (mock)', () => {
     await expect(metrics.getByText('Revenue', { exact: true })).toBeVisible()
     await expect(metrics.getByText('Charity', { exact: true })).toBeVisible()
 
-    // Grouped claims + mark all paid (Sarah has unpaid squares)
-    await expect(page.getByTestId('admin-claims-grouped').getByText('Sarah Johnson')).toBeVisible()
-    await expect(page.getByTestId('mark-all-paid').first()).toBeVisible()
+    // Grouped claims + mark all paid (Sarah has unpaid squares) — desktop table at 1280px
+    const desktopClaims = page.getByTestId('admin-claims-desktop')
+    await expect(desktopClaims.getByText('Sarah Johnson')).toBeVisible()
+    await expect(desktopClaims.getByTestId('mark-all-paid').first()).toBeVisible()
 
     // Restore: upload a tiny CSV and expect preview UI
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'snps-restore-'))

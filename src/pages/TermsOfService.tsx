@@ -14,7 +14,7 @@ export default function TermsOfService() {
           </div>
           <Link
             to="/"
-            className="border-2 border-white text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg text-sm font-bold hover:bg-white hover:text-[#16a34a] transition-all shadow-md hover:shadow-lg whitespace-nowrap"
+            className="inline-flex items-center min-h-[44px] touch-manipulation border-2 border-white text-white px-4 sm:px-5 py-2.5 rounded-lg text-base font-bold hover:bg-white hover:text-[#16a34a] transition-all shadow-md hover:shadow-lg whitespace-nowrap"
           >
             Back to Board
           </Link>
@@ -220,10 +220,10 @@ export default function TermsOfService() {
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 py-6 px-4 mt-12">
         <div className="container mx-auto max-w-7xl flex flex-wrap justify-center gap-4 sm:gap-8 text-sm font-medium text-[var(--color-text-muted)]">
-          <Link to="/privacy" className="hover:text-[var(--color-primary)] transition-colors hover:underline">
+          <Link to="/privacy" className="inline-flex items-center min-h-[44px] touch-manipulation py-2 hover:text-[var(--color-primary)] transition-colors hover:underline">
             Privacy Policy
           </Link>
-          <Link to="/terms" className="hover:text-[var(--color-primary)] transition-colors hover:underline">
+          <Link to="/terms" className="inline-flex items-center min-h-[44px] touch-manipulation py-2 hover:text-[var(--color-primary)] transition-colors hover:underline">
             Terms of Service
           </Link>
         </div>
