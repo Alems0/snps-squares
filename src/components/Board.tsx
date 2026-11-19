@@ -8,6 +8,7 @@ import {
   formatAxisLabel,
 } from '../lib/supabase'
 import { useAuth } from '../lib/useAuth'
+import { formatSquareLabel } from '../lib/displaySquareNumber'
 import ClaimPopover from './ClaimPopover'
 import ClaimSuccess from './ClaimSuccess'
 
@@ -24,6 +25,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
   const [showSuccess, setShowSuccess] = useState(false)
   const [successData, setSuccessData] = useState<{
     squareCount: number
+    positions: number[]
     totalCost: number
     paymentMethod: 'cash' | 'venmo'
   } | null>(null)
@@ -254,6 +256,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
 
     setSuccessData({
       squareCount: selectedSquares.length,
+      positions: [...selectedSquares],
       totalCost: selectedSquares.length * game.cost_per_square,
       paymentMethod: data.paymentMethod,
     })
@@ -449,11 +452,11 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                         hoverClass = 'hover:bg-opacity-90'
                       }
 
-                      // Display uses board position 0–99 as #0–#99 (same as claim popover chips).
+                      // Storage position is 0–99; badges use displaySquareNumber → #1–#100.
                       const displayText = isClaimed && square?.claimed_by_name
                         ? square.claimed_by_name
                         : isSelected
-                        ? `#${position}`
+                        ? formatSquareLabel(position)
                         : canSelect
                         ? '+'
                         : ''
@@ -472,7 +475,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
                               : !canSelect
                               ? 'View only'
                               : isSelected
-                              ? `Selected #${position} — Click to deselect`
+                              ? `Selected ${formatSquareLabel(position)} — Click to deselect`
                               : 'Available - Click to select'
                           }
                         >
@@ -525,6 +528,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       {showSuccess && successData && (
         <ClaimSuccess
           squareCount={successData.squareCount}
+          positions={successData.positions}
           totalCost={successData.totalCost}
           paymentMethod={successData.paymentMethod}
           venmoHandle={game.venmo_handle}

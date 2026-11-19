@@ -107,16 +107,21 @@ export default function ConfigureGameModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div
+        className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl max-w-3xl w-full flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom,0px)]"
+        style={{ maxHeight: 'min(calc(100dvh - 24px), calc(100vh - 24px))' }}
+      >
         {/* Header */}
-        <div className="bg-[var(--color-primary)] text-white px-6 py-4 rounded-t-xl sticky top-0 z-10">
+        <div className="shrink-0 bg-[var(--color-primary)] text-white px-4 py-3 sm:px-6 sm:py-4 z-10">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Configure Game</h2>
+            <h2 className="text-xl sm:text-2xl font-bold">Configure Game</h2>
             <button
+              type="button"
               onClick={onClose}
               className="text-white hover:text-gray-200 text-3xl leading-none"
               disabled={isSubmitting}
+              aria-label="Close"
             >
               ×
             </button>
@@ -124,7 +129,8 @@ export default function ConfigureGameModal({
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-5 sm:space-y-6">
           {/* Axis team names */}
           <section className="space-y-4" data-testid="configure-team-names">
             <h3 className="text-lg font-bold text-[var(--color-primary)] border-b-2 border-[var(--color-border)] pb-2">
@@ -447,20 +453,21 @@ export default function ConfigureGameModal({
               {error}
             </div>
           )}
+        </div>
 
-          {/* Submit Buttons */}
-          <div className="flex gap-3 pt-2 sticky bottom-0 bg-white pb-2">
+          {/* Sticky footer actions */}
+          <div className="shrink-0 flex gap-3 p-4 sm:px-6 border-t border-[var(--color-border-light)] bg-white">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-lg font-semibold text-[var(--color-text)] hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-gray-300 rounded-lg font-semibold text-[var(--color-text)] hover:bg-gray-50 transition-colors text-sm sm:text-base"
               disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-6 py-3 bg-[var(--color-primary)] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-[var(--color-primary)] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-sm sm:text-base"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Saving...' : 'Save Configuration'}

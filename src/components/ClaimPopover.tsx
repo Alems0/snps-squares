@@ -1,6 +1,7 @@
 import { useState, FormEvent, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { formatVenmoHandle } from '../lib/formatVenmo'
+import { formatSquareLabel } from '../lib/displaySquareNumber'
 import {
   supabase,
   EMAIL_REGEX,
@@ -28,6 +29,11 @@ interface ClaimPopoverProps {
 const MARGIN = 12
 const GAP = 12
 const MAX_POPOVER_H = 560
+
+function viewportMaxHeight(isMobile: boolean, vh: number): number {
+  const pad = 24 + (isMobile ? 8 : 0)
+  return Math.min(MAX_POPOVER_H, Math.max(240, vh - pad))
+}
 
 function rectsOverlap(
   a: { top: number; left: number; width: number; height: number },
@@ -65,10 +71,10 @@ export default function ClaimPopover({
     top: 0,
     left: 0,
     width: 'min(400px, calc(100vw - 24px))',
-    maxHeight: `min(${MAX_POPOVER_H}px, 80vh)`,
+    maxHeight: 'min(560px, calc(100dvh - 24px), calc(100vh - 24px))',
     opacity: 0,
     zIndex: 100,
-    pointerEvents: 'none'
+    pointerEvents: 'none',
   })
   const popoverRef = useRef<HTMLDivElement>(null)
 
@@ -131,26 +137,32 @@ export default function ClaimPopover({
 
     // Measure popover (force max-height so measurement is accurate)
     const popoverEl = popoverRef.current
-    const maxH = Math.min(MAX_POPOVER_H, isMobile ? vh * 0.52 : vh * 0.8)
+    const maxH = viewportMaxHeight(isMobile, vh)
     popoverEl.style.maxHeight = `${maxH}px`
 
     const popoverRect = popoverEl.getBoundingClientRect()
     const basePopW = popoverRect.width || Math.min(400, vw - MARGIN * 2)
     const popH = Math.min(popoverRect.height || 480, maxH)
 
-    // Mobile: bottom sheet, full usable width, clamped; selection scrolled above
+    // Mobile: bottom sheet with safe-area inset; selection scrolled above
     if (isMobile) {
       const popW = vw - MARGIN * 2
-      const top = Math.max(MARGIN, vh - popH - MARGIN)
+      const safeBottom =
+        typeof CSS !== 'undefined' && CSS.supports?.('padding-bottom: env(safe-area-inset-bottom)')
+          ? 0
+          : 0
+      const bottomPad = MARGIN + safeBottom
+      const top = Math.max(MARGIN, vh - popH - bottomPad)
       setStyle({
         position: 'fixed',
         top: `${top}px`,
         left: `${MARGIN}px`,
         width: `${popW}px`,
         maxHeight: `${maxH}px`,
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         zIndex: 100,
         opacity: 1,
-        pointerEvents: 'auto'
+        pointerEvents: 'auto',
       })
       return
     }
@@ -409,7 +421,7 @@ export default function ClaimPopover({
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {selectedSquares.map(pos => (
                   <span key={pos} className="inline-flex items-center px-2 py-0.5 rounded-md bg-[var(--color-primary)] text-white text-xs font-semibold">
-                    #{pos}
+                    {formatSquareLabel(pos)}
                   </span>
                 ))}
               </div>

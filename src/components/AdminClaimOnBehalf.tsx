@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { supabase, type Game, type Player, EMAIL_REGEX, normalizePhone } from '../lib/supabase'
+import { parseDisplaySquareNumber } from '../lib/displaySquareNumber'
 
 interface AdminClaimOnBehalfProps {
   game: Game | null
@@ -49,6 +50,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
     setSuggestions([])
   }
 
+  /** Accept display square numbers 1–100; convert to storage positions 0–99 for RPC. */
   const parsePositions = (): number[] | null => {
     const parts = positionsRaw
       .split(/[\s,]+/)
@@ -58,8 +60,9 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
     const nums: number[] = []
     for (const p of parts) {
       const n = Number(p)
-      if (!Number.isInteger(n) || n < 0 || n > 99) return null
-      nums.push(n)
+      const storage = parseDisplaySquareNumber(n)
+      if (storage === null) return null
+      nums.push(storage)
     }
     return [...new Set(nums)]
   }
@@ -74,7 +77,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
     }
     const positions = parsePositions()
     if (!positions) {
-      setError('Enter valid square numbers (0–99), comma or space separated')
+      setError('Enter valid square numbers (1–100), comma or space separated')
       return
     }
     const fn = firstName.trim()
@@ -175,11 +178,13 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
         )}
 
         <div>
-          <label className="block text-xs font-semibold text-[var(--color-text)] mb-1">Square positions</label>
+          <label className="block text-xs font-semibold text-[var(--color-text)] mb-1">
+            Square numbers (1–100)
+          </label>
           <input
             value={positionsRaw}
             onChange={(e) => setPositionsRaw(e.target.value)}
-            placeholder="e.g. 12, 13, 24"
+            placeholder="e.g. 13, 14, 25"
             className="w-full px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-sm"
           />
         </div>

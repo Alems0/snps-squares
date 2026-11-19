@@ -70,14 +70,15 @@ test.describe('Admin selection and claim popover', () => {
     await expect(page.getByTestId('claim-popover')).toBeVisible()
   })
 
-  test('shows #position on select and clears on deselect', async ({ page }) => {
+  test('shows 1-based #square on select and clears on deselect', async ({ page }) => {
+    // data-position stays 0-based (storage); badge shows displaySquareNumber(4) → #5
     const btn = page.locator('button[data-position="4"]')
     await btn.scrollIntoViewIfNeeded()
     await btn.click()
 
     await expect(btn).toHaveAttribute('data-selected', 'true')
     await expect(btn).toHaveText(/#\d+/)
-    await expect(btn).toContainText('#4')
+    await expect(btn).toContainText('#5')
 
     await btn.click()
     await expect(btn).toHaveAttribute('data-selected', 'false')

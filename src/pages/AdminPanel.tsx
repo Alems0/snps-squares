@@ -11,27 +11,25 @@ import {
   type Game,
   type ClaimOrder,
 } from '../lib/supabase'
+import {
+  decodeCsvBytes,
+  parseBackupCsv,
+  type BackupSquareRow,
+} from '../lib/backupCsv'
 import ConfigureGameModal from '../components/ConfigureGameModal'
 import ConfirmationModal from '../components/ConfirmationModal'
 import PastPlayersSection from '../components/PastPlayersSection'
 import AdminClaimOnBehalf from '../components/AdminClaimOnBehalf'
 import { formatVenmoHandle } from '../lib/formatVenmo'
+import { displaySquareNumber, formatSquareLabel } from '../lib/displaySquareNumber'
+import { formatEasternDateTime } from '../lib/formatEasternDateTime'
+import { earliestClaimedAt } from '../lib/publicBuyers'
 
 interface ClaimData extends Square {
   name: string
 }
 
-interface RestoreSquareRow {
-  position: number
-  first_name: string
-  last_name: string
-  email: string
-  payment_method: string
-  payment_status: string
-  phone?: string
-  claimed_at?: string
-  full_name?: string
-}
+type RestoreSquareRow = BackupSquareRow
 
 interface RestoreConflict {
   position: number
@@ -44,6 +42,7 @@ interface RestorePreview {
   claimedCount: number
   emptyCount: number
   conflicts: RestoreConflict[]
+  warnings: string[]
 }
 
 interface GroupedClaim {
@@ -54,43 +53,8 @@ interface GroupedClaim {
   positions: number[]
   unpaidCount: number
   amountDue: number
-}
-
-function parseCsvLine(line: string): string[] {
-  const cells: string[] = []
-  let cur = ''
-  let inQuotes = false
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i]
-    if (inQuotes) {
-      if (ch === '"') {
-        if (line[i + 1] === '"') {
-          cur += '"'
-          i++
-        } else {
-          inQuotes = false
-        }
-      } else {
-        cur += ch
-      }
-    } else if (ch === '"') {
-      inQuotes = true
-    } else if (ch === ',') {
-      cells.push(cur)
-      cur = ''
-    } else {
-      cur += ch
-    }
-  }
-  cells.push(cur)
-  return cells.map((c) => c.trim())
-}
-
-function stripCsvFormulaGuard(value: string): string {
-  if (value.startsWith("'") && /^'[=+\-@]/.test(value)) {
-    return value.slice(1)
-  }
-  return value
+  /** Earliest claimed_at across the group's squares */
+  firstClaimedAt: string | null
 }
 
 export default function AdminPanel() {
@@ -125,6 +89,7 @@ export default function AdminPanel() {
   const [restoreBusy, setRestoreBusy] = useState(false)
   const [allSquaresForConflicts, setAllSquaresForConflicts] = useState<Square[]>([])
   const restoreFileRef = useRef<HTMLInputElement>(null)
+  const restorePreviewRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     if (loading) return
@@ -150,6 +115,14 @@ export default function AdminPanel() {
     setJoinPasswordDraft('')
     setShowJoinPassword(false)
   }, [game?.id, game?.join_password])
+
+  useEffect(() => {
+    if (!restorePreview) return
+    const id = window.setTimeout(() => {
+      restorePreviewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 50)
+    return () => window.clearTimeout(id)
+  }, [restorePreview])
 
   const loadMockAdminData = () => {
     const mockGame: Game = {
@@ -184,7 +157,7 @@ export default function AdminPanel() {
         last_name: 'Johnson',
         claimed_by_name: 'Sarah Johnson',
         claimed_by_email: 'sarah@test.com',
-        claimed_at: new Date().toISOString(),
+        claimed_at: '2026-11-17T14:00:00.000Z',
         payment_status: 'unpaid',
         payment_method: 'venmo',
         claim_order_id: orderId,
@@ -198,7 +171,7 @@ export default function AdminPanel() {
         last_name: 'Johnson',
         claimed_by_name: 'Sarah Johnson',
         claimed_by_email: 'sarah@test.com',
-        claimed_at: new Date().toISOString(),
+        claimed_at: '2026-11-17T15:30:00.000Z',
         payment_status: 'unpaid',
         payment_method: 'venmo',
         claim_order_id: orderId,
@@ -212,10 +185,10 @@ export default function AdminPanel() {
         last_name: 'Chen',
         claimed_by_name: 'Michael Chen',
         claimed_by_email: 'michael@test.com',
-        claimed_at: new Date().toISOString(),
+        claimed_at: '2026-11-19T18:46:00.000Z',
         payment_status: 'paid',
         payment_method: 'cash',
-        paid_at: new Date().toISOString(),
+        paid_at: '2026-11-19T19:00:00.000Z',
         name: 'Michael Chen',
       },
     ]
@@ -400,6 +373,7 @@ export default function AdminPanel() {
           positions: [],
           unpaidCount: 0,
           amountDue: 0,
+          firstClaimedAt: null,
         }
         groups.set(key, group)
       }
@@ -415,6 +389,7 @@ export default function AdminPanel() {
     for (const group of groups.values()) {
       group.positions.sort((a, b) => a - b)
       group.squares.sort((a, b) => a.position - b.position)
+      group.firstClaimedAt = earliestClaimedAt(group.squares)
 
       const unpaidSquares = group.squares.filter(s => s.payment_status !== 'paid')
       const squareDue = unpaidSquares.length * game.cost_per_square
@@ -449,6 +424,16 @@ export default function AdminPanel() {
       a.name.localeCompare(b.name) || a.email.localeCompare(b.email)
     )
   }, [claims, claimOrders, game])
+
+  const recentClaims = useMemo(() => {
+    return [...claims]
+      .filter((c) => c.claimed_at)
+      .sort(
+        (a, b) =>
+          new Date(b.claimed_at!).getTime() - new Date(a.claimed_at!).getTime()
+      )
+      .slice(0, 25)
+  }, [claims])
 
   const handleSignOut = async () => {
     try {
@@ -525,7 +510,7 @@ export default function AdminPanel() {
       return
     }
 
-    const confirmMsg = `Remove ${claim.name} from square #${claim.position}? This cannot be undone.`
+    const confirmMsg = `Remove ${claim.name} from square ${formatSquareLabel(claim.position)}? This cannot be undone.`
     if (!window.confirm(confirmMsg)) {
       return
     }
@@ -803,9 +788,9 @@ export default function AdminPanel() {
       }
 
       const csvRows = [
-        ['Position', 'Name', 'Email', 'Payment Status', 'Payment Method', 'Claimed At'],
+        ['Square', 'Name', 'Email', 'Payment Status', 'Payment Method', 'Claimed At'],
         ...(allSquares || []).map(square => [
-          square.position.toString(),
+          displaySquareNumber(square.position).toString(),
           square.claimed_by_name || `${square.first_name || ''} ${square.last_name || ''}`.trim() || '',
           square.claimed_by_email || '',
           square.payment_status || '',
@@ -897,6 +882,7 @@ export default function AdminPanel() {
       lines.push(
         [
           'position',
+          'square_number',
           'first_name',
           'last_name',
           'full_name',
@@ -921,6 +907,7 @@ export default function AdminPanel() {
         lines.push(
           [
             csvSafe(square.position),
+            csvSafe(displaySquareNumber(square.position)),
             csvSafe(first),
             csvSafe(last),
             csvSafe(full),
@@ -933,7 +920,9 @@ export default function AdminPanel() {
         )
       }
 
-      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+      // UTF-8 BOM + CRLF so Mac Excel opens cleanly
+      const csvBody = '\uFEFF' + lines.join('\r\n')
+      const blob = new Blob([csvBody], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
@@ -946,7 +935,10 @@ export default function AdminPanel() {
     }
   }
 
-  const buildRestorePreview = (rows: RestoreSquareRow[]): RestorePreview => {
+  const buildRestorePreview = (
+    rows: RestoreSquareRow[],
+    warnings: string[] = []
+  ): RestorePreview => {
     const claimedCount = rows.filter(r => r.email.trim()).length
     const emptyCount = rows.length - claimedCount
     const conflicts: RestoreConflict[] = []
@@ -968,7 +960,7 @@ export default function AdminPanel() {
       }
     }
 
-    return { rows, claimedCount, emptyCount, conflicts }
+    return { rows, claimedCount, emptyCount, conflicts, warnings }
   }
 
   const validateRestoreRows = (rows: RestoreSquareRow[]): string | null => {
@@ -1008,81 +1000,31 @@ export default function AdminPanel() {
     if (!file || !game) return
 
     try {
-      const text = await file.text()
-      const rawLines = text.split(/\r?\n/).filter(l => l.trim().length > 0)
+      const buf = await file.arrayBuffer()
+      const text = decodeCsvBytes(buf)
+      const parsed = parseBackupCsv(text)
 
-      let headerIdx = -1
-      let headers: string[] = []
-      for (let i = 0; i < rawLines.length; i++) {
-        const line = rawLines[i].trim()
-        if (line.startsWith('#')) continue
-        const cells = parseCsvLine(line).map(c => c.toLowerCase())
-        if (cells.includes('position')) {
-          headerIdx = i
-          headers = cells
-          break
-        }
+      if (parsed.errors.length > 0 && parsed.rows.length === 0) {
+        alert(parsed.errors.join('\n'))
+        return
       }
-
-      if (headerIdx < 0) {
-        alert('Could not find a CSV header row containing "position".')
+      if (parsed.errors.length > 0) {
+        alert(`Backup parse issues:\n${parsed.errors.slice(0, 8).join('\n')}`)
         return
       }
 
-      const col = (name: string) => headers.indexOf(name)
-
-      const rows: RestoreSquareRow[] = []
-      for (let i = headerIdx + 1; i < rawLines.length; i++) {
-        const line = rawLines[i].trim()
-        if (!line || line.startsWith('#')) continue
-        const cells = parseCsvLine(line).map(stripCsvFormulaGuard)
-
-        const positionRaw = cells[col('position')] ?? ''
-        const position = Number(positionRaw)
-        if (!Number.isFinite(position)) continue
-
-        const first_name = cells[col('first_name')] ?? ''
-        const last_name = cells[col('last_name')] ?? ''
-        const full_name = cells[col('full_name')] ?? ''
-        const email = (cells[col('email')] ?? cells[col('claimed_by_email')] ?? '').toLowerCase()
-        const phone = cells[col('phone')] ?? ''
-        const payment_method = (cells[col('payment_method')] ?? '').toLowerCase()
-        const payment_status = (cells[col('payment_status')] ?? 'unpaid').toLowerCase() || 'unpaid'
-        const claimed_at = cells[col('claimed_at')] ?? ''
-
-        let first = first_name
-        let last = last_name
-        if ((!first || !last) && full_name) {
-          const parts = full_name.trim().split(/\s+/)
-          if (!first) first = parts[0] || ''
-          if (!last) last = parts.slice(1).join(' ') || ''
-        }
-
-        rows.push({
-          position,
-          first_name: first,
-          last_name: last,
-          email,
-          phone: phone || undefined,
-          payment_method,
-          payment_status,
-          claimed_at: claimed_at || undefined,
-          full_name: full_name || undefined,
-        })
-      }
-
-      if (rows.length === 0) {
+      if (parsed.rows.length === 0) {
         alert('No square rows found in backup file.')
         return
       }
 
-      const validationError = validateRestoreRows(rows)
+      const validationError = validateRestoreRows(parsed.rows)
       if (validationError) {
         alert(validationError)
         return
       }
 
-      setRestorePreview(buildRestorePreview(rows))
+      setRestorePreview(buildRestorePreview(parsed.rows, parsed.warnings))
     } catch (err) {
       console.error('Error parsing restore file:', err)
       alert('Failed to parse backup file.')
@@ -1131,22 +1073,35 @@ export default function AdminPanel() {
 
       if (error) {
         console.error('Error restoring squares:', error)
-        alert('Failed to restore from backup.')
+        alert(`Failed to restore from backup.\n${error.message || String(error)}`)
         return
       }
 
-      const restored = (data as { restored?: number } | null)?.restored
-      const skipped = (data as { skipped?: number } | null)?.skipped
+      const result = data as {
+        restored?: number
+        skipped?: number
+        errors?: Array<{ row?: number; error?: string }>
+      } | null
+      const restored = result?.restored
+      const skipped = result?.skipped
+      const serverErrors = Array.isArray(result?.errors) ? result!.errors! : []
+      const errorLines = serverErrors
+        .slice(0, 12)
+        .map((e) => `row ${e.row ?? '?'}: ${e.error ?? 'unknown'}`)
+        .join('\n')
+
       alert(
         `Restore complete.${restored != null ? ` Restored: ${restored}.` : ''}${
           skipped != null ? ` Skipped: ${skipped}.` : ''
-        }`
+        }${errorLines ? `\n\nServer skipped/errors:\n${errorLines}` : ''}`
       )
       setRestorePreview(null)
       await fetchGameAndClaims()
     } catch (err) {
       console.error('Error in handleConfirmRestore:', err)
-      alert('Failed to restore from backup.')
+      alert(
+        `Failed to restore from backup.\n${err instanceof Error ? err.message : String(err)}`
+      )
     } finally {
       setRestoreBusy(false)
     }
@@ -1518,7 +1473,12 @@ export default function AdminPanel() {
         </div>
 
         {restorePreview && (
-          <section className="mb-10 bg-white rounded-xl border border-[var(--color-border)] shadow-md p-6">
+          <section
+            ref={restorePreviewRef}
+            data-testid="restore-preview"
+            className="mb-10 bg-white rounded-xl border border-[var(--color-border)] shadow-md p-6 scroll-mt-24 overflow-y-auto overscroll-contain"
+            style={{ maxHeight: 'min(calc(100dvh - 24px), calc(100vh - 24px))' }}
+          >
             <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
               <div>
                 <h2 className="text-xl font-bold text-[var(--color-text)]">Restore preview</h2>
@@ -1527,6 +1487,7 @@ export default function AdminPanel() {
                   {restorePreview.conflicts.length > 0
                     ? ` · ${restorePreview.conflicts.length} conflict(s)`
                     : ' · no conflicts'}
+                  {` · ${restorePreview.rows.length} rows`}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -1540,6 +1501,7 @@ export default function AdminPanel() {
                 </button>
                 <button
                   type="button"
+                  data-testid="confirm-restore"
                   onClick={handleConfirmRestore}
                   disabled={restoreBusy}
                   className="px-4 py-2 text-sm font-semibold bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50"
@@ -1548,6 +1510,22 @@ export default function AdminPanel() {
                 </button>
               </div>
             </div>
+            {restorePreview.warnings.length > 0 && (
+              <div
+                data-testid="restore-warnings"
+                className="rounded-lg border border-sky-200 bg-sky-50 p-4 mb-4"
+              >
+                <p className="text-sm font-semibold text-sky-900 mb-2">Parser warnings:</p>
+                <ul className="text-sm text-sky-800 space-y-1">
+                  {restorePreview.warnings.slice(0, 12).map((w, i) => (
+                    <li key={`${i}-${w.slice(0, 24)}`}>{w}</li>
+                  ))}
+                  {restorePreview.warnings.length > 12 && (
+                    <li>…and {restorePreview.warnings.length - 12} more</li>
+                  )}
+                </ul>
+              </div>
+            )}
             {restorePreview.conflicts.length > 0 && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                 <p className="text-sm font-semibold text-amber-900 mb-2">
@@ -1556,7 +1534,7 @@ export default function AdminPanel() {
                 <ul className="text-sm text-amber-800 space-y-1">
                   {restorePreview.conflicts.slice(0, 8).map((c) => (
                     <li key={c.position}>
-                      #{c.position}: {c.currentEmail} → {c.backupEmail}
+                      {formatSquareLabel(c.position)}: {c.currentEmail} → {c.backupEmail}
                     </li>
                   ))}
                   {restorePreview.conflicts.length > 8 && (
@@ -1595,6 +1573,7 @@ export default function AdminPanel() {
                     <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Email</th>
                     <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Squares</th>
                     <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Positions</th>
+                    <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Bought</th>
                     <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Amount due</th>
                     <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Actions</th>
                   </tr>
@@ -1602,7 +1581,7 @@ export default function AdminPanel() {
                 <tbody className="divide-y divide-[var(--color-border-light)]">
                   {groupedClaims.length === 0 ? (
                     <tr>
-                      <td className="py-16 px-6 text-center" colSpan={6}>
+                      <td className="py-16 px-6 text-center" colSpan={7}>
                         <div className="flex flex-col items-center">
                           <svg className="w-16 h-16 text-[var(--color-text-light)] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
@@ -1644,7 +1623,10 @@ export default function AdminPanel() {
                               )}
                             </td>
                             <td className="py-5 px-6 text-sm text-[var(--color-text-secondary)]">
-                              {group.positions.map(p => `#${p}`).join(', ')}
+                              {group.positions.map(p => formatSquareLabel(p)).join(', ')}
+                            </td>
+                            <td className="py-5 px-6 text-sm text-[var(--color-text-secondary)] whitespace-nowrap tabular-nums">
+                              {formatEasternDateTime(group.firstClaimedAt)}
                             </td>
                             <td className="py-5 px-6 text-sm font-bold text-[var(--color-text)]">
                               ${group.amountDue.toFixed(2)}
@@ -1677,12 +1659,15 @@ export default function AdminPanel() {
                             group.squares.map((claim) => (
                               <tr key={claim.id} className="bg-slate-50/80">
                                 <td className="py-3 px-6 pl-12 text-sm text-[var(--color-text-secondary)]" colSpan={2}>
-                                  Square #{claim.position}
+                                  Square {formatSquareLabel(claim.position)}
                                   {claim.payment_method ? (
                                     <span className="ml-2 capitalize text-xs font-semibold text-blue-700">
                                       ({claim.payment_method})
                                     </span>
                                   ) : null}
+                                  <div className="mt-0.5 text-xs text-[var(--color-text-muted)] tabular-nums">
+                                    Bought {formatEasternDateTime(claim.claimed_at)}
+                                  </div>
                                 </td>
                                 <td className="py-3 px-6" colSpan={2}>
                                   <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold ${
@@ -1693,7 +1678,7 @@ export default function AdminPanel() {
                                     {claim.payment_status}
                                   </span>
                                 </td>
-                                <td className="py-3 px-6" colSpan={2}>
+                                <td className="py-3 px-6" colSpan={3}>
                                   <div className="flex items-center gap-2">
                                     {claim.payment_status !== 'paid' && (
                                       <>
@@ -1725,6 +1710,54 @@ export default function AdminPanel() {
                 </tbody>
               </table>
             </div>
+          )}
+        </section>
+
+        <section
+          className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden mt-10"
+          data-testid="admin-recent-claims"
+        >
+          <div className="px-6 py-5 border-b border-[var(--color-border)] bg-slate-50">
+            <h2 className="text-xl font-bold text-[var(--color-text)]">Recent Claims</h2>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+              Newest first · times shown in Eastern (ET)
+            </p>
+          </div>
+          {claimsLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--color-primary)]" />
+            </div>
+          ) : recentClaims.length === 0 ? (
+            <p className="text-center text-[var(--color-text-muted)] py-10 px-4">No claims yet</p>
+          ) : (
+            <ul className="divide-y divide-[var(--color-border-light)]">
+              {recentClaims.map((claim) => (
+                <li
+                  key={claim.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-4 px-4 sm:px-6 py-3.5"
+                >
+                  <div className="min-w-0">
+                    <div className="font-semibold text-sm text-[var(--color-text)] truncate">
+                      {claim.name}
+                    </div>
+                    <div className="text-sm text-[var(--color-text-secondary)]">
+                      Square {formatSquareLabel(claim.position)}
+                      {claim.payment_method ? (
+                        <span className="ml-2 capitalize text-xs font-semibold text-blue-700">
+                          ({claim.payment_method})
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <time
+                    className="text-sm text-[var(--color-text-secondary)] tabular-nums whitespace-nowrap shrink-0"
+                    dateTime={claim.claimed_at || undefined}
+                  >
+                    {formatEasternDateTime(claim.claimed_at)}
+                  </time>
+                </li>
+              ))}
+            </ul>
           )}
         </section>
       </main>
