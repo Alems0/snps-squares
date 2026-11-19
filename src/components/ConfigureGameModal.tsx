@@ -13,6 +13,7 @@ interface ConfigureGameModalProps {
     final_payout: number
     venmo_handle: string
     join_password: string
+    public_claiming_open?: boolean
   }) => Promise<void>
 }
 
@@ -29,6 +30,10 @@ export default function ConfigureGameModal({
   const [finalPayout, setFinalPayout] = useState(game.final_payout.toString())
   const [venmoHandle, setVenmoHandle] = useState(game.venmo_handle || '')
   const [joinPassword, setJoinPassword] = useState(game.join_password || '')
+  const [showJoinPassword, setShowJoinPassword] = useState(false)
+  const [publicClaimingOpen, setPublicClaimingOpen] = useState(
+    Boolean(game.public_claiming_open)
+  )
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -78,6 +83,7 @@ export default function ConfigureGameModal({
         final_payout: finalNum,
         venmo_handle: venmoHandle.trim(),
         join_password: joinPassword.trim(),
+        public_claiming_open: publicClaimingOpen,
       })
       onClose()
     } catch (err) {
@@ -291,20 +297,49 @@ export default function ConfigureGameModal({
                 >
                   Join Password (Optional)
                 </label>
-                <input
-                  type="text"
-                  id="joinPassword"
-                  value={joinPassword}
-                  onChange={(e) => setJoinPassword(e.target.value)}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
-                  placeholder="Leave empty for open board"
-                  disabled={isSubmitting}
-                />
+                <div className="flex gap-2">
+                  <input
+                    type={showJoinPassword ? 'text' : 'password'}
+                    id="joinPassword"
+                    value={joinPassword}
+                    onChange={(e) => setJoinPassword(e.target.value)}
+                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
+                    placeholder="Leave empty for open board"
+                    disabled={isSubmitting}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowJoinPassword((v) => !v)}
+                    className="shrink-0 px-3 py-2 border-2 border-gray-300 rounded-lg text-sm font-semibold text-[var(--color-text-secondary)] hover:bg-slate-50"
+                  >
+                    {showJoinPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
                 <p className="text-xs text-[var(--color-text-muted)] mt-1">
-                  Require password to claim squares
+                  Admin-only secret — never shown to public visitors
                 </p>
               </div>
             </div>
+
+            <label className="flex items-start gap-3 p-3 border-2 border-[var(--color-border)] rounded-lg cursor-pointer">
+              <input
+                type="checkbox"
+                checked={publicClaimingOpen}
+                onChange={(e) => setPublicClaimingOpen(e.target.checked)}
+                className="mt-1"
+                disabled={isSubmitting}
+              />
+              <div>
+                <div className="font-semibold text-sm text-[var(--color-text)]">
+                  Public claiming open
+                </div>
+                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                  When off (default), only signed-in admins can select and claim squares.
+                  Visitors see a view-only board.
+                </p>
+              </div>
+            </label>
           </section>
 
           {/* Preview Section */}

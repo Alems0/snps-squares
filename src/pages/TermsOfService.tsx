@@ -25,220 +25,201 @@ export default function TermsOfService() {
       <main className="container mx-auto max-w-4xl px-4 py-12">
         <div className="bg-white rounded-xl shadow-lg p-8 sm:p-12">
           <h1 className="text-4xl font-bold text-[var(--color-primary)] mb-2">Terms of Service</h1>
-          <p className="text-sm text-[var(--color-text-muted)] mb-8">Last Updated: September 2026</p>
+          <p className="text-sm text-[var(--color-text-muted)] mb-8">Last updated: November 19, 2026</p>
 
           <div className="prose prose-lg max-w-none space-y-8">
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Acceptance of Terms</h2>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Agreement</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
-                By accessing and using SNPS Squares (the "Service"), you accept and agree to be bound by these 
-                Terms of Service ("Terms"). If you do not agree to these Terms, please do not use the Service. 
-                These Terms apply to all users of the Service, including administrators and participants.
+                By using SNPS Squares (the “Service”), you agree to these Terms of Service. If you do not
+                agree, please do not use the Service.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Description of Service</h2>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">What this is</h2>
               <p className="text-[var(--color-text)] leading-relaxed mb-4">
-                SNPS Squares is a charitable fundraising platform operated by SNPS (Sunday Night Pong Series) that 
-                provides a Super Bowl squares board for entertainment purposes. The Service allows participants to:
+                SNPS Squares is a charitable fundraiser for the Saint Nicholas Patriotic Society (SNPS).
+                It is <strong>not a gambling site</strong>. The board is a community fundraising activity
+                tied to a football game for fun and fundraising.
+              </p>
+              <p className="text-[var(--color-text)] leading-relaxed mb-4">
+                When you claim a square, you are making a donation that supports the charity. Proceeds and
+                payouts from this fundraiser help support veterans, families in distress, and student scholarships.
+              </p>
+              <p className="text-[var(--color-text)] leading-relaxed">
+                The Service lets you view the board, claim squares, see game progress, and participate in
+                the fundraiser. Prize amounts and charity percentages are set by the organizers and shown
+                on the board where applicable.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Your responsibility</h2>
+              <p className="text-[var(--color-text)] leading-relaxed mb-4">
+                You accept responsibility for your own actions and for following the laws where you live.
+                You must be at least 18 years old to participate. By using the Service, you confirm that
+                you meet that age requirement and that joining this fundraiser is allowed under your local laws.
+              </p>
+              <p className="text-[var(--color-text)] leading-relaxed mb-4">You agree not to:</p>
+              <ul className="list-disc list-inside space-y-2 text-[var(--color-text)] ml-4">
+                <li>Claim squares with false or misleading information</li>
+                <li>Try to break, abuse, or unfairly manipulate the Service</li>
+                <li>Use bots or automated tools to claim squares or scrape the site</li>
+                <li>Interfere with other participants or the organizers</li>
+                <li>Violate any applicable law</li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Admin rights</h2>
+              <p className="text-[var(--color-text)] leading-relaxed">
+                SNPS administrators may remove claims, free up squares, mark payments, adjust board settings,
+                or refuse participation at any time if they believe it is needed for fairness, accuracy,
+                safety, or to protect the fundraiser. They may also suspend or end access to the Service
+                for conduct that violates these Terms or harms the community.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Not affiliated with the NFL</h2>
+              <p className="text-[var(--color-text)] leading-relaxed">
+                SNPS Squares is an independent charitable fundraiser and is <strong>not affiliated with,
+                endorsed by, or sponsored by the National Football League (NFL)</strong>, any NFL team, or
+                the Super Bowl. Team names and related references are used only for identification and
+                entertainment. NFL trademarks belong to their owners.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Donations and payments</h2>
+              <p className="text-[var(--color-text)] leading-relaxed mb-4">
+                Claiming a square is a donation to support SNPS’s charitable work. This site does{' '}
+                <strong>not</strong> process payments itself. Donations are typically paid off-platform
+                (for example Venmo or cash) to the organizer. The cost per square and payment instructions
+                are provided separately. We do not store credit card numbers or bank passwords.
+              </p>
+              <p className="text-[var(--color-text)] leading-relaxed">
+                You are responsible for sending payment as instructed. The administrator tracks paid and
+                unpaid claims in the Service. Payment disputes between participants and organizers are
+                handled outside this app.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Payouts</h2>
+              <p className="text-[var(--color-text)] leading-relaxed">
+                Where the fundraiser includes square payouts, winners are generally based on the last digit
+                of each team’s score at the end of each quarter (or as otherwise explained on the board).
+                Payout amounts and timing are decided by SNPS organizers and communicated to participants.
+                We do not guarantee any specific prize amount. Payouts, like donations, are handled by the
+                organizer off-platform.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Privacy</h2>
+              <p className="text-[var(--color-text)] leading-relaxed">
+                How we collect and use information is described in our{' '}
+                <Link to="/privacy" className="text-[var(--color-primary)] hover:underline">
+                  Privacy Policy
+                </Link>
+                . In short: names appear on the board; email and phone (if provided) are used only for
+                payment confirmation and admin contact; join passwords are never made public.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">No warranties</h2>
+              <p className="text-[var(--color-text)] leading-relaxed mb-4">
+                The Service is provided <strong>“as is” and “as available.”</strong> We make no warranties
+                of any kind—express or implied—including warranties of merchantability, fitness for a
+                particular purpose, or non-infringement.
+              </p>
+              <p className="text-[var(--color-text)] leading-relaxed mb-4">We do not promise that:</p>
+              <ul className="list-disc list-inside space-y-2 text-[var(--color-text)] ml-4">
+                <li>The Service will always be available, uninterrupted, or error-free</li>
+                <li>Information on the board will always be complete or accurate</li>
+                <li>The Service will meet your expectations</li>
+                <li>Any problem will be fixed within a certain time</li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Limitation of liability</h2>
+              <p className="text-[var(--color-text)] leading-relaxed mb-4">
+                To the fullest extent allowed by law, Saint Nicholas Patriotic Society, SNPS Squares, and
+                their organizers, officers, volunteers, and agents are not liable for any indirect,
+                incidental, special, consequential, or punitive damages—or for loss of profits, data, or
+                goodwill—arising from:
               </p>
               <ul className="list-disc list-inside space-y-2 text-[var(--color-text)] ml-4">
-                <li>Claim squares on a 10x10 Super Bowl squares board</li>
-                <li>View the board state and track game progress</li>
-                <li>Participate in a community fundraising activity</li>
-                <li>See leaderboards and top buyers</li>
+                <li>Your use of, or inability to use, the Service</li>
+                <li>Removed claims, refused participation, or other admin decisions</li>
+                <li>Errors, downtime, or technical problems</li>
+                <li>Actions of other participants or third parties</li>
+                <li>Payment or payout disputes handled off-platform</li>
+                <li>Your failure to follow local laws</li>
               </ul>
               <p className="text-[var(--color-text)] leading-relaxed mt-4">
-                A portion of all proceeds is donated to charitable causes as determined by SNPS organizers.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Eligibility and User Conduct</h2>
-              <p className="text-[var(--color-text)] leading-relaxed mb-4">
-                You must be at least 18 years of age to participate in SNPS Squares. By using the Service, you represent 
-                that you meet this age requirement and have the legal capacity to enter into these Terms.
-              </p>
-              <p className="text-[var(--color-text)] leading-relaxed mb-4">
-                You agree to use the Service only for lawful purposes and in accordance with these Terms. You agree not to:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-[var(--color-text)] ml-4">
-                <li>Claim squares using false or misleading information</li>
-                <li>Attempt to manipulate, exploit, or abuse the Service</li>
-                <li>Interfere with or disrupt the Service or servers</li>
-                <li>Use automated tools to claim squares or scrape data</li>
-                <li>Violate any applicable laws or regulations</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Not Affiliated with the NFL</h2>
-              <p className="text-[var(--color-text)] leading-relaxed">
-                SNPS Squares is an independent charitable fundraiser and is <strong>not affiliated with, endorsed by, 
-                or sponsored by the National Football League (NFL)</strong>, any NFL team, or the Super Bowl. All team 
-                names, logos, and references are used for identification and entertainment purposes only. NFL-related 
-                trademarks and copyrights are property of their respective owners.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Payments and Financial Transactions</h2>
-              <p className="text-[var(--color-text)] leading-relaxed mb-4">
-                <strong>Important:</strong> SNPS Squares does NOT process payments directly. All payments are handled 
-                off-platform through peer-to-peer payment services (such as Venmo) or cash transactions between 
-                participants and the administrator.
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-[var(--color-text)] ml-4">
-                <li>The cost per square is clearly displayed on the board page</li>
-                <li>Payment instructions and the administrator's payment handle are provided separately</li>
-                <li>Participants are responsible for sending payment to the designated administrator</li>
-                <li>The administrator is responsible for tracking payments within the Service</li>
-                <li>We do not store credit card information or payment credentials</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Charitable Fundraising and Legal Compliance</h2>
-              <p className="text-[var(--color-text)] leading-relaxed mb-4">
-                SNPS Squares is operated as a charitable fundraiser. A percentage of all proceeds is donated to 
-                charitable causes as determined by SNPS organizers. However:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-[var(--color-text)] ml-4">
-                <li>Participants should be aware of and comply with local laws regarding gaming, gambling, and fundraising activities</li>
-                <li>The organizer is responsible for ensuring compliance with applicable charitable gaming regulations</li>
-                <li>This Service is intended for entertainment and community fundraising purposes only</li>
-                <li>Participants are responsible for understanding and complying with their local jurisdictional requirements</li>
-              </ul>
-              <p className="text-[var(--color-text)] leading-relaxed mt-4">
-                By participating, you acknowledge that you are familiar with and will comply with all applicable laws in your jurisdiction.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Prize Distribution and Winnings</h2>
-              <p className="text-[var(--color-text)] leading-relaxed">
-                Winners are determined by the last digit of each team's score at the end of each quarter of the 
-                Super Bowl game. Prize amounts and distribution are at the discretion of the SNPS administrator and 
-                are clearly communicated to participants. We do not guarantee specific prize amounts or distributions. 
-                Prize payments are handled directly by the administrator through the same off-platform payment methods 
-                used for square purchases.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Intellectual Property</h2>
-              <p className="text-[var(--color-text)] leading-relaxed">
-                The Service and its original content, features, and functionality are owned by SNPS and are protected 
-                by international copyright, trademark, patent, trade secret, and other intellectual property laws. 
-                You may not copy, modify, distribute, sell, or lease any part of the Service without prior written 
-                consent from SNPS.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Disclaimers and Limitation of Liability</h2>
-              
-              <h3 className="text-xl font-semibold text-[var(--color-text)] mt-6 mb-3">No Warranties</h3>
-              <p className="text-[var(--color-text)] leading-relaxed mb-4">
-                THE SERVICE IS PROVIDED ON AN "AS IS" AND "AS AVAILABLE" BASIS WITHOUT WARRANTIES OF ANY KIND, 
-                EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, 
-                FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
-              </p>
-              <p className="text-[var(--color-text)] leading-relaxed mb-4">
-                We do not warrant that:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-[var(--color-text)] ml-4">
-                <li>The Service will be uninterrupted, secure, or error-free</li>
-                <li>The results obtained from using the Service will be accurate or reliable</li>
-                <li>The quality of the Service will meet your expectations</li>
-                <li>Any errors in the Service will be corrected</li>
-              </ul>
-
-              <h3 className="text-xl font-semibold text-[var(--color-text)] mt-6 mb-3">Limitation of Liability</h3>
-              <p className="text-[var(--color-text)] leading-relaxed mb-4">
-                TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL SNPS, ITS OFFICERS, DIRECTORS, 
-                EMPLOYEES, OR AGENTS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE 
-                DAMAGES, INCLUDING WITHOUT LIMITATION, LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE 
-                LOSSES, RESULTING FROM:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-[var(--color-text)] ml-4">
-                <li>Your access to or use of or inability to access or use the Service</li>
-                <li>Any conduct or content of any third party on the Service</li>
-                <li>Any content obtained from the Service</li>
-                <li>Unauthorized access, use, or alteration of your transmissions or content</li>
-                <li>Payment disputes between participants and administrators</li>
-              </ul>
-              <p className="text-[var(--color-text)] leading-relaxed mt-4">
-                YOUR SOLE REMEDY FOR DISSATISFACTION WITH THE SERVICE IS TO STOP USING THE SERVICE.
+                Your only remedy if you are unhappy with the Service is to stop using it.
               </p>
             </section>
 
             <section>
               <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Indemnification</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
-                You agree to defend, indemnify, and hold harmless SNPS and its officers, directors, employees, and 
-                agents from and against any claims, liabilities, damages, losses, and expenses, including reasonable 
-                attorney's fees, arising out of or in any way connected with your access to or use of the Service, 
-                your violation of these Terms, or your violation of any rights of another person or entity.
+                You agree to hold SNPS and its organizers harmless from claims, losses, and expenses
+                (including reasonable attorney’s fees) that arise from your use of the Service, your
+                violation of these Terms, or your violation of someone else’s rights.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Termination</h2>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Intellectual property</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
-                We reserve the right to suspend or terminate your access to the Service at any time, without notice, 
-                for conduct that we believe violates these Terms or is harmful to other users, us, or third parties, 
-                or for any other reason in our sole discretion. Upon termination, your right to use the Service will 
-                immediately cease.
+                The Service’s design, content, and features belong to SNPS (except for third-party marks
+                such as NFL-related names). You may not copy, sell, or reuse the Service without permission.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Changes to Terms</h2>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Changes to these Terms</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
-                We reserve the right to modify or replace these Terms at any time at our sole discretion. If a 
-                revision is material, we will provide notice by updating the "Last Updated" date at the top of 
-                these Terms. Your continued use of the Service after any such changes constitutes your acceptance 
-                of the new Terms.
+                We may update these Terms at any time. When we do, we will change the “Last updated” date
+                at the top. Continued use after a change means you accept the new Terms.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Governing Law</h2>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Governing law</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
-                These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in 
-                which SNPS operates, without regard to its conflict of law provisions. Any disputes arising from 
-                these Terms or your use of the Service shall be resolved in the courts of that jurisdiction.
+                These Terms are governed by the laws of the jurisdiction where SNPS operates, without regard
+                to conflict-of-law rules. Disputes will be handled in the courts of that jurisdiction.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Severability</h2>
-              <p className="text-[var(--color-text)] leading-relaxed">
-                If any provision of these Terms is found to be unenforceable or invalid, that provision shall be 
-                limited or eliminated to the minimum extent necessary so that these Terms shall otherwise remain 
-                in full force and effect and enforceable.
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Other</h2>
+              <p className="text-[var(--color-text)] leading-relaxed mb-4">
+                If one part of these Terms cannot be enforced, the rest still applies. These Terms and our
+                Privacy Policy are the full agreement between you and SNPS about use of the Service.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Entire Agreement</h2>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Contact</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
-                These Terms, together with our Privacy Policy, constitute the entire agreement between you and SNPS 
-                regarding the use of the Service and supersede any prior agreements between you and SNPS relating 
-                to your use of the Service.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Contact Us</h2>
-              <p className="text-[var(--color-text)] leading-relaxed">
-                If you have any questions about these Terms, please contact us at:
+                Questions about these Terms? Contact us:
               </p>
               <div className="bg-gray-50 rounded-lg p-6 mt-4">
-                <p className="text-[var(--color-text)] font-semibold">SNPS Squares</p>
-                <p className="text-[var(--color-text)]">Email: <a href="mailto:stecher2789@gmail.com" className="text-[var(--color-primary)] hover:underline">stecher2789@gmail.com</a></p>
+                <p className="text-[var(--color-text)] font-semibold">Saint Nicholas Patriotic Society — SNPS Squares</p>
+                <p className="text-[var(--color-text)]">
+                  Email:{' '}
+                  <a href="mailto:stecher2789@gmail.com" className="text-[var(--color-primary)] hover:underline">
+                    stecher2789@gmail.com
+                  </a>
+                </p>
               </div>
             </section>
           </div>

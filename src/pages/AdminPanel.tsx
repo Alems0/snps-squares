@@ -1,8 +1,16 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { isAllowedAdmin, signOutAdmin } from '../lib/auth'
 import { useAuth } from '../lib/useAuth'
-import { supabase, type Square, type Game } from '../lib/supabase'
+import {
+  supabase,
+  csvSafe,
+  EMAIL_REGEX,
+  VENMO_ORDER_FEE,
+  type Square,
+  type Game,
+  type ClaimOrder,
+} from '../lib/supabase'
 import ConfigureGameModal from '../components/ConfigureGameModal'
 import ConfirmationModal from '../components/ConfirmationModal'
 import PastPlayersSection from '../components/PastPlayersSection'
@@ -13,11 +21,84 @@ interface ClaimData extends Square {
   name: string
 }
 
+interface RestoreSquareRow {
+  position: number
+  first_name: string
+  last_name: string
+  email: string
+  payment_method: string
+  payment_status: string
+  phone?: string
+  claimed_at?: string
+  full_name?: string
+}
+
+interface RestoreConflict {
+  position: number
+  currentEmail: string
+  backupEmail: string
+}
+
+interface RestorePreview {
+  rows: RestoreSquareRow[]
+  claimedCount: number
+  emptyCount: number
+  conflicts: RestoreConflict[]
+}
+
+interface GroupedClaim {
+  key: string
+  name: string
+  email: string
+  squares: ClaimData[]
+  positions: number[]
+  unpaidCount: number
+  amountDue: number
+}
+
+function parseCsvLine(line: string): string[] {
+  const cells: string[] = []
+  let cur = ''
+  let inQuotes = false
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          cur += '"'
+          i++
+        } else {
+          inQuotes = false
+        }
+      } else {
+        cur += ch
+      }
+    } else if (ch === '"') {
+      inQuotes = true
+    } else if (ch === ',') {
+      cells.push(cur)
+      cur = ''
+    } else {
+      cur += ch
+    }
+  }
+  cells.push(cur)
+  return cells.map((c) => c.trim())
+}
+
+function stripCsvFormulaGuard(value: string): string {
+  if (value.startsWith("'") && /^'[=+\-@]/.test(value)) {
+    return value.slice(1)
+  }
+  return value
+}
+
 export default function AdminPanel() {
   const navigate = useNavigate()
   const { user, loading } = useAuth()
   const [claims, setClaims] = useState<ClaimData[]>([])
   const [game, setGame] = useState<Game | null>(null)
+  const [claimOrders, setClaimOrders] = useState<ClaimOrder[]>([])
   const [claimsLoading, setClaimsLoading] = useState(true)
   const [stats, setStats] = useState({
     totalClaimed: 0,
@@ -33,6 +114,17 @@ export default function AdminPanel() {
     onConfirm: () => void
     variant?: 'default' | 'destructive'
   } | null>(null)
+
+  const [showJoinPassword, setShowJoinPassword] = useState(false)
+  const [joinPasswordDraft, setJoinPasswordDraft] = useState('')
+  const [savingJoinPassword, setSavingJoinPassword] = useState(false)
+  const [togglingPublicClaiming, setTogglingPublicClaiming] = useState(false)
+
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
+  const [restorePreview, setRestorePreview] = useState<RestorePreview | null>(null)
+  const [restoreBusy, setRestoreBusy] = useState(false)
+  const [allSquaresForConflicts, setAllSquaresForConflicts] = useState<Square[]>([])
+  const restoreFileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (loading) return
@@ -54,9 +146,145 @@ export default function AdminPanel() {
     }
   }, [user, loading, navigate])
 
+  useEffect(() => {
+    setJoinPasswordDraft('')
+    setShowJoinPassword(false)
+  }, [game?.id, game?.join_password])
+
+  const loadMockAdminData = () => {
+    const mockGame: Game = {
+      id: 'mock',
+      season: 2026,
+      afc_team: 'Kansas City Chiefs',
+      nfc_team: 'San Francisco 49ers',
+      cost_per_square: 10,
+      charity_percentage: 10,
+      q1_payout: 200,
+      q2_payout: 200,
+      q3_payout: 200,
+      final_payout: 400,
+      venmo_handle: '@snps-squares',
+      join_password: 'mock-join',
+      numbers_locked: false,
+      afc_numbers: [3, 7, 0, 6, 1, 4, 9, 2, 8, 5],
+      nfc_numbers: [2, 5, 8, 1, 9, 3, 6, 0, 7, 4],
+      status: 'active',
+      public_claiming_open: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+
+    const orderId = 'mock-order-1'
+    const mockClaims: ClaimData[] = [
+      {
+        id: 'mock-sq-1',
+        game_id: 'mock',
+        position: 3,
+        first_name: 'Sarah',
+        last_name: 'Johnson',
+        claimed_by_name: 'Sarah Johnson',
+        claimed_by_email: 'sarah@test.com',
+        claimed_at: new Date().toISOString(),
+        payment_status: 'unpaid',
+        payment_method: 'venmo',
+        claim_order_id: orderId,
+        name: 'Sarah Johnson',
+      },
+      {
+        id: 'mock-sq-2',
+        game_id: 'mock',
+        position: 6,
+        first_name: 'Sarah',
+        last_name: 'Johnson',
+        claimed_by_name: 'Sarah Johnson',
+        claimed_by_email: 'sarah@test.com',
+        claimed_at: new Date().toISOString(),
+        payment_status: 'unpaid',
+        payment_method: 'venmo',
+        claim_order_id: orderId,
+        name: 'Sarah Johnson',
+      },
+      {
+        id: 'mock-sq-3',
+        game_id: 'mock',
+        position: 9,
+        first_name: 'Michael',
+        last_name: 'Chen',
+        claimed_by_name: 'Michael Chen',
+        claimed_by_email: 'michael@test.com',
+        claimed_at: new Date().toISOString(),
+        payment_status: 'paid',
+        payment_method: 'cash',
+        paid_at: new Date().toISOString(),
+        name: 'Michael Chen',
+      },
+    ]
+
+    const mockOrders: ClaimOrder[] = [
+      {
+        id: orderId,
+        game_id: 'mock',
+        claimed_by_email: 'sarah@test.com',
+        first_name: 'Sarah',
+        last_name: 'Johnson',
+        payment_method: 'venmo',
+        square_count: 2,
+        square_subtotal: 20,
+        fee: VENMO_ORDER_FEE,
+        total: 22,
+        created_at: new Date().toISOString(),
+      },
+    ]
+
+    const allSquares: Square[] = Array.from({ length: 100 }, (_, i) => {
+      const claimed = mockClaims.find(c => c.position === i)
+      if (claimed) {
+        return {
+          id: claimed.id,
+          game_id: 'mock',
+          position: i,
+          first_name: claimed.first_name,
+          last_name: claimed.last_name,
+          claimed_by_name: claimed.claimed_by_name,
+          claimed_by_email: claimed.claimed_by_email,
+          claimed_at: claimed.claimed_at,
+          payment_status: claimed.payment_status,
+          payment_method: claimed.payment_method,
+          paid_at: claimed.paid_at,
+          claim_order_id: claimed.claim_order_id,
+        }
+      }
+      return {
+        id: `mock-empty-${i}`,
+        game_id: 'mock',
+        position: i,
+        payment_status: 'unpaid',
+      }
+    })
+
+    setGame(mockGame)
+    setClaims(mockClaims)
+    setClaimOrders(mockOrders)
+    setAllSquaresForConflicts(allSquares)
+    setStats({
+      totalClaimed: mockClaims.length,
+      totalPaid: mockClaims.filter(c => c.payment_status === 'paid').length,
+      totalPending: mockClaims.filter(c => c.payment_status !== 'paid').length,
+      revenue: 10,
+      charity: 1,
+    })
+    setClaimsLoading(false)
+  }
+
   const fetchGameAndClaims = async () => {
     try {
       setClaimsLoading(true)
+
+      if (import.meta.env.VITE_USE_MOCK === 'true') {
+        console.log('Using mock admin data (VITE_USE_MOCK)')
+        loadMockAdminData()
+        return
+      }
 
       // Fetch active game
       const { data: gameData, error: gameError } = await supabase
@@ -79,7 +307,7 @@ export default function AdminPanel() {
 
       setGame(gameData)
 
-      // Fetch all squares for this game
+      // Fetch all squares for this game (claimed)
       const { data: squaresData, error: squaresError } = await supabase
         .from('squares')
         .select('*')
@@ -93,6 +321,26 @@ export default function AdminPanel() {
         return
       }
 
+      // All squares (for restore conflict checks)
+      const { data: allSquaresData } = await supabase
+        .from('squares')
+        .select('*')
+        .eq('game_id', gameData.id)
+
+      setAllSquaresForConflicts(allSquaresData || [])
+
+      // Claim orders (fees) — optional if table missing / RLS
+      let orders: ClaimOrder[] = []
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('claim_orders')
+        .select('*')
+        .eq('game_id', gameData.id)
+
+      if (!ordersError && ordersData) {
+        orders = ordersData as ClaimOrder[]
+      }
+      setClaimOrders(orders)
+
       const claimsWithNames: ClaimData[] = (squaresData || []).map(square => ({
         ...square,
         name: square.claimed_by_name || `${square.first_name || ''} ${square.last_name || ''}`.trim() || 'Unknown'
@@ -100,9 +348,23 @@ export default function AdminPanel() {
 
       setClaims(claimsWithNames)
 
-      // Calculate stats
+      // Calculate stats (include Venmo order fees when orders are fully paid)
       const paidCount = claimsWithNames.filter(c => c.payment_status === 'paid').length
-      const totalRevenue = paidCount * gameData.cost_per_square
+      const squareRevenue = paidCount * gameData.cost_per_square
+
+      let feeRevenue = 0
+      if (orders.length > 0) {
+        for (const order of orders) {
+          const orderSquares = claimsWithNames.filter(c => c.claim_order_id === order.id)
+          if (orderSquares.length === 0) continue
+          const allPaid = orderSquares.every(s => s.payment_status === 'paid')
+          if (allPaid) {
+            feeRevenue += Number(order.fee) || 0
+          }
+        }
+      }
+
+      const totalRevenue = squareRevenue + feeRevenue
       const charityAmount = totalRevenue * (gameData.charity_percentage / 100)
 
       setStats({
@@ -119,6 +381,74 @@ export default function AdminPanel() {
       setClaimsLoading(false)
     }
   }
+
+  const groupedClaims: GroupedClaim[] = useMemo(() => {
+    if (!game) return []
+
+    const groups = new Map<string, GroupedClaim>()
+
+    for (const claim of claims) {
+      const email = (claim.claimed_by_email || '').trim().toLowerCase()
+      const key = email || `name:${claim.name.toLowerCase()}`
+      let group = groups.get(key)
+      if (!group) {
+        group = {
+          key,
+          name: claim.name,
+          email: claim.claimed_by_email || '',
+          squares: [],
+          positions: [],
+          unpaidCount: 0,
+          amountDue: 0,
+        }
+        groups.set(key, group)
+      }
+      group.squares.push(claim)
+      group.positions.push(claim.position)
+      if (claim.payment_status !== 'paid') {
+        group.unpaidCount += 1
+      }
+    }
+
+    const orderById = new Map(claimOrders.map(o => [o.id, o]))
+
+    for (const group of groups.values()) {
+      group.positions.sort((a, b) => a - b)
+      group.squares.sort((a, b) => a.position - b.position)
+
+      const unpaidSquares = group.squares.filter(s => s.payment_status !== 'paid')
+      const squareDue = unpaidSquares.length * game.cost_per_square
+
+      let feeDue = 0
+      const countedOrderIds = new Set<string>()
+      let hasUnpaidVenmoWithoutOrder = false
+
+      for (const sq of unpaidSquares) {
+        if (sq.claim_order_id) {
+          if (!countedOrderIds.has(sq.claim_order_id)) {
+            countedOrderIds.add(sq.claim_order_id)
+            const order = orderById.get(sq.claim_order_id)
+            feeDue += order ? (Number(order.fee) || 0) : (sq.payment_method === 'venmo' ? VENMO_ORDER_FEE : 0)
+          }
+        } else if (sq.payment_method === 'venmo') {
+          hasUnpaidVenmoWithoutOrder = true
+        }
+      }
+
+      // Approximate: if claim_orders unavailable / no order ids, add fee once for unpaid venmo
+      if (claimOrders.length === 0 && hasUnpaidVenmoWithoutOrder) {
+        feeDue = VENMO_ORDER_FEE
+      } else if (hasUnpaidVenmoWithoutOrder && countedOrderIds.size === 0) {
+        feeDue += VENMO_ORDER_FEE
+      }
+
+      group.amountDue = squareDue + feeDue
+    }
+
+    return Array.from(groups.values()).sort((a, b) =>
+      a.name.localeCompare(b.name) || a.email.localeCompare(b.email)
+    )
+  }, [claims, claimOrders, game])
 
   const handleSignOut = async () => {
     try {
@@ -157,6 +487,38 @@ export default function AdminPanel() {
     }
   }
 
+  const handleMarkAllPaymentStatus = async (email: string, status: 'paid' | 'unpaid') => {
+    if (!game) return
+    if (!email) {
+      alert('Cannot update payment status without an email.')
+      return
+    }
+
+    const label = status === 'paid' ? 'paid' : 'unpaid'
+    if (!window.confirm(`Mark all squares for ${email} as ${label}?`)) {
+      return
+    }
+
+    try {
+      const { error } = await supabase.rpc('admin_set_payment_status_for_email', {
+        p_game_id: game.id,
+        p_email: email,
+        p_status: status,
+      })
+
+      if (error) {
+        console.error('Error updating payment status for email:', error)
+        alert(`Failed to mark all as ${label}`)
+        return
+      }
+
+      await fetchGameAndClaims()
+    } catch (err) {
+      console.error('Error in handleMarkAllPaymentStatus:', err)
+      alert(`Failed to mark all as ${label}`)
+    }
+  }
+
   const handleRemoveClaim = async (claim: ClaimData) => {
     if (claim.payment_status === 'paid') {
       alert('Cannot remove a paid square.')
@@ -179,7 +541,8 @@ export default function AdminPanel() {
           claimed_at: null,
           payment_status: 'unpaid',
           payment_method: null,
-          paid_at: null
+          paid_at: null,
+          claim_order_id: null,
         })
         .eq('id', claim.id)
 
@@ -221,7 +584,8 @@ export default function AdminPanel() {
           claimed_at: null,
           payment_status: 'unpaid',
           payment_method: null,
-          paid_at: null
+          paid_at: null,
+          claim_order_id: null,
         })
         .eq('game_id', game.id)
 
@@ -347,6 +711,7 @@ export default function AdminPanel() {
     final_payout: number
     venmo_handle: string
     join_password: string
+    public_claiming_open?: boolean
   }) => {
     if (!game) throw new Error('No active game found')
 
@@ -364,6 +729,56 @@ export default function AdminPanel() {
       console.error('Error saving game configuration:', err)
       throw err
     }
+  }
+
+  const handleSaveJoinPassword = async () => {
+    if (!game) return
+    setSavingJoinPassword(true)
+    try {
+      const { error } = await supabase
+        .from('games')
+        .update({ join_password: joinPasswordDraft.trim() })
+        .eq('id', game.id)
+
+      if (error) throw error
+
+      alert('Join password updated.')
+      setJoinPasswordDraft('')
+      setShowJoinPassword(false)
+      await fetchGameAndClaims()
+    } catch {
+      console.error('Error updating join password')
+      alert('Failed to update join password.')
+    } finally {
+      setSavingJoinPassword(false)
+    }
+  }
+
+  const handleTogglePublicClaiming = async () => {
+    if (!game) return
+    const next = !game.public_claiming_open
+    setTogglingPublicClaiming(true)
+    try {
+      const { error } = await supabase
+        .from('games')
+        .update({ public_claiming_open: next })
+        .eq('id', game.id)
+
+      if (error) throw error
+
+      await fetchGameAndClaims()
+    } catch (err) {
+      console.error('Error toggling public claiming:', err)
+      alert('Failed to update public claiming.')
+    } finally {
+      setTogglingPublicClaiming(false)
+    }
+  }
+
+  const handlePrintBoard = () => {
+    // Opens board with ?print=1 — BoardPage/print CSS should hide chrome and auto-print
+    // /board redirects to /, so use /?print=1
+    window.open('/?print=1', '_blank')
   }
 
   const handleExportCSV = async () => {
@@ -414,6 +829,327 @@ export default function AdminPanel() {
     }
   }
 
+  const handleDownloadBackup = async () => {
+    if (!game) {
+      alert('No active game found')
+      return
+    }
+
+    try {
+      const { data: allSquares, error } = await supabase
+        .from('squares')
+        .select('*')
+        .eq('game_id', game.id)
+        .order('position', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching squares for backup:', error)
+        alert('Failed to download backup')
+        return
+      }
+
+      const emails = Array.from(
+        new Set(
+          (allSquares || [])
+            .map(s => (s.claimed_by_email || '').trim().toLowerCase())
+            .filter(Boolean)
+        )
+      )
+
+      const phoneByEmail = new Map<string, string>()
+      if (emails.length > 0) {
+        const { data: playersData, error: playersError } = await supabase
+          .from('players')
+          .select('email, phone')
+          .in('email', emails)
+
+        if (!playersError && playersData) {
+          for (const p of playersData) {
+            if (p.email) {
+              phoneByEmail.set(String(p.email).toLowerCase(), p.phone || '')
+            }
+          }
+        }
+      }
+
+      const lines: string[] = []
+      lines.push('# SNPS Squares game backup')
+      lines.push('# SETTINGS')
+      lines.push(`# season,${csvSafe(game.season)}`)
+      lines.push(`# afc_team,${csvSafe(game.afc_team)}`)
+      lines.push(`# nfc_team,${csvSafe(game.nfc_team)}`)
+      lines.push(`# cost_per_square,${csvSafe(game.cost_per_square)}`)
+      lines.push(`# charity_percentage,${csvSafe(game.charity_percentage)}`)
+      lines.push(`# q1_payout,${csvSafe(game.q1_payout)}`)
+      lines.push(`# q2_payout,${csvSafe(game.q2_payout)}`)
+      lines.push(`# q3_payout,${csvSafe(game.q3_payout)}`)
+      lines.push(`# final_payout,${csvSafe(game.final_payout)}`)
+      lines.push(`# venmo_handle,${csvSafe(game.venmo_handle)}`)
+      lines.push(`# public_claiming_open,${csvSafe(String(Boolean(game.public_claiming_open)))}`)
+      lines.push(`# numbers_locked,${csvSafe(String(game.numbers_locked))}`)
+      lines.push(`# afc_numbers,${csvSafe((game.afc_numbers || []).join('|'))}`)
+      lines.push(`# nfc_numbers,${csvSafe((game.nfc_numbers || []).join('|'))}`)
+      lines.push(`# status,${csvSafe(game.status)}`)
+      lines.push('# (join_password intentionally omitted)')
+      lines.push('# SQUARES')
+      lines.push(
+        [
+          'position',
+          'first_name',
+          'last_name',
+          'full_name',
+          'email',
+          'phone',
+          'payment_method',
+          'payment_status',
+          'claimed_at',
+        ].join(',')
+      )
+
+      for (const square of allSquares || []) {
+        const email = square.claimed_by_email || ''
+        const first = square.first_name || ''
+        const last = square.last_name || ''
+        const full =
+          square.claimed_by_name ||
+          `${first} ${last}`.trim() ||
+          ''
+        const phone = email ? (phoneByEmail.get(email.toLowerCase()) || '') : ''
+
+        lines.push(
+          [
+            csvSafe(square.position),
+            csvSafe(first),
+            csvSafe(last),
+            csvSafe(full),
+            csvSafe(email),
+            csvSafe(phone),
+            csvSafe(square.payment_method || ''),
+            csvSafe(square.payment_status || ''),
+            csvSafe(square.claimed_at || ''),
+          ].join(',')
+        )
+      }
+
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `snps-squares-backup-${game.season}-${new Date().toISOString().split('T')[0]}.csv`
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Error in handleDownloadBackup:', err)
+      alert('Failed to download backup')
+    }
+  }
+
+  const buildRestorePreview = (rows: RestoreSquareRow[]): RestorePreview => {
+    const claimedCount = rows.filter(r => r.email.trim()).length
+    const emptyCount = rows.length - claimedCount
+    const conflicts: RestoreConflict[] = []
+
+    const currentByPos = new Map(
+      allSquaresForConflicts.map(s => [s.position, s])
+    )
+
+    for (const row of rows) {
+      if (!row.email.trim()) continue
+      const current = currentByPos.get(row.position)
+      const currentEmail = (current?.claimed_by_email || '').trim().toLowerCase()
+      if (currentEmail && currentEmail !== row.email.trim().toLowerCase()) {
+        conflicts.push({
+          position: row.position,
+          currentEmail,
+          backupEmail: row.email.trim().toLowerCase(),
+        })
+      }
+    }
+
+    return { rows, claimedCount, emptyCount, conflicts }
+  }
+
+  const validateRestoreRows = (rows: RestoreSquareRow[]): string | null => {
+    const seen = new Set<number>()
+    for (const row of rows) {
+      if (!Number.isInteger(row.position) || row.position < 0 || row.position > 99) {
+        return `Invalid position: ${row.position}`
+      }
+      if (seen.has(row.position)) {
+        return `Duplicate position: ${row.position}`
+      }
+      seen.add(row.position)
+
+      const email = row.email.trim()
+      if (email && !EMAIL_REGEX.test(email)) {
+        return `Invalid email at position ${row.position}: ${email}`
+      }
+
+      const method = (row.payment_method || '').trim().toLowerCase()
+      if (method && method !== 'venmo' && method !== 'cash') {
+        return `Invalid payment_method at position ${row.position}: ${row.payment_method}`
+      }
+
+      const status = (row.payment_status || 'unpaid').trim().toLowerCase()
+      if (status && !['unpaid', 'paid', 'released'].includes(status)) {
+        return `Invalid payment_status at position ${row.position}: ${row.payment_status}`
+      }
+
+      if (email && (!row.first_name.trim() || !row.last_name.trim())) {
+        return `Missing name at position ${row.position}`
+      }
+    }
+    return null
+  }
+
+  const handleRestoreFileSelected = async (file: File | null) => {
+    if (!file || !game) return
+
+    try {
+      const text = await file.text()
+      const rawLines = text.split(/\r?\n/).filter(l => l.trim().length > 0)
+
+      let headerIdx = -1
+      let headers: string[] = []
+      for (let i = 0; i < rawLines.length; i++) {
+        const line = rawLines[i].trim()
+        if (line.startsWith('#')) continue
+        const cells = parseCsvLine(line).map(c => c.toLowerCase())
+        if (cells.includes('position')) {
+          headerIdx = i
+          headers = cells
+          break
+        }
+      }
+
+      if (headerIdx < 0) {
+        alert('Could not find a CSV header row containing "position".')
+        return
+      }
+
+      const col = (name: string) => headers.indexOf(name)
+
+      const rows: RestoreSquareRow[] = []
+      for (let i = headerIdx + 1; i < rawLines.length; i++) {
+        const line = rawLines[i].trim()
+        if (!line || line.startsWith('#')) continue
+        const cells = parseCsvLine(line).map(stripCsvFormulaGuard)
+
+        const positionRaw = cells[col('position')] ?? ''
+        const position = Number(positionRaw)
+        if (!Number.isFinite(position)) continue
+
+        const first_name = cells[col('first_name')] ?? ''
+        const last_name = cells[col('last_name')] ?? ''
+        const full_name = cells[col('full_name')] ?? ''
+        const email = (cells[col('email')] ?? cells[col('claimed_by_email')] ?? '').toLowerCase()
+        const phone = cells[col('phone')] ?? ''
+        const payment_method = (cells[col('payment_method')] ?? '').toLowerCase()
+        const payment_status = (cells[col('payment_status')] ?? 'unpaid').toLowerCase() || 'unpaid'
+        const claimed_at = cells[col('claimed_at')] ?? ''
+
+        let first = first_name
+        let last = last_name
+        if ((!first || !last) && full_name) {
+          const parts = full_name.trim().split(/\s+/)
+          if (!first) first = parts[0] || ''
+          if (!last) last = parts.slice(1).join(' ') || ''
+        }
+
+        rows.push({
+          position,
+          first_name: first,
+          last_name: last,
+          email,
+          phone: phone || undefined,
+          payment_method,
+          payment_status,
+          claimed_at: claimed_at || undefined,
+          full_name: full_name || undefined,
+        })
+      }
+
+      if (rows.length === 0) {
+        alert('No square rows found in backup file.')
+        return
+      }
+
+      const validationError = validateRestoreRows(rows)
+      if (validationError) {
+        alert(validationError)
+        return
+      }
+
+      setRestorePreview(buildRestorePreview(rows))
+    } catch (err) {
+      console.error('Error parsing restore file:', err)
+      alert('Failed to parse backup file.')
+    } finally {
+      if (restoreFileRef.current) {
+        restoreFileRef.current.value = ''
+      }
+    }
+  }
+
+  const handleConfirmRestore = async () => {
+    if (!game || !restorePreview) return
+
+    const validationError = validateRestoreRows(restorePreview.rows)
+    if (validationError) {
+      alert(validationError)
+      return
+    }
+
+    if (
+      !window.confirm(
+        `Restore ${restorePreview.rows.length} squares? ${restorePreview.conflicts.length} conflict(s) will be overwritten.`
+      )
+    ) {
+      return
+    }
+
+    setRestoreBusy(true)
+    try {
+      const payload = restorePreview.rows.map(r => ({
+        position: r.position,
+        first_name: r.first_name,
+        last_name: r.last_name,
+        email: r.email,
+        payment_method: r.payment_method || null,
+        payment_status: r.payment_status || 'unpaid',
+        phone: r.phone || null,
+        claimed_at: r.claimed_at || null,
+      }))
+
+      // Migration defines p_rows (not p_squares)
+      const { data, error } = await supabase.rpc('admin_restore_game_squares', {
+        p_game_id: game.id,
+        p_rows: payload,
+      })
+
+      if (error) {
+        console.error('Error restoring squares:', error)
+        alert('Failed to restore from backup.')
+        return
+      }
+
+      const restored = (data as { restored?: number } | null)?.restored
+      const skipped = (data as { skipped?: number } | null)?.skipped
+      alert(
+        `Restore complete.${restored != null ? ` Restored: ${restored}.` : ''}${
+          skipped != null ? ` Skipped: ${skipped}.` : ''
+        }`
+      )
+      setRestorePreview(null)
+      await fetchGameAndClaims()
+    } catch (err) {
+      console.error('Error in handleConfirmRestore:', err)
+      alert('Failed to restore from backup.')
+    } finally {
+      setRestoreBusy(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--color-background)]">
@@ -428,6 +1164,8 @@ export default function AdminPanel() {
   if (!user) {
     return null
   }
+
+  const publicClaimingOpen = Boolean(game?.public_claiming_open)
   
   return (
     <div className="min-h-screen flex flex-col bg-[var(--color-background)]">
@@ -558,12 +1296,54 @@ export default function AdminPanel() {
                 <span className="text-base font-bold text-[var(--color-text)]">{formatVenmoHandle(game?.venmo_handle) || 'Not set'}</span>
               </div>
               <div className="flex justify-between items-center py-3 border-b border-[var(--color-border-light)]">
-                <span className="text-sm font-medium text-[var(--color-text-secondary)]">Join password</span>
-                <span className="text-base font-bold text-[var(--color-text)]">{game?.join_password ? (
-                  <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                ) : 'Open'}</span>
+                <span className="text-sm font-medium text-[var(--color-text-secondary)]">Public claiming</span>
+                <span className="text-base font-bold text-[var(--color-text)]">
+                  {publicClaimingOpen ? 'Open' : 'Admin only'}
+                </span>
+              </div>
+              <div
+                className="sm:col-span-2 py-3 border-b border-[var(--color-border-light)]"
+                data-testid="admin-join-password"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                  <span className="text-sm font-medium text-[var(--color-text-secondary)]">Join password</span>
+                  <div className="flex items-center gap-2">
+                    {game?.join_password ? (
+                      <>
+                        <span className="text-base font-bold text-[var(--color-text)] font-mono tracking-wide">
+                          {showJoinPassword ? game.join_password : '••••••••'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowJoinPassword(v => !v)}
+                          className="px-2.5 py-1 text-xs font-semibold border border-[var(--color-border)] rounded-md hover:bg-slate-50 text-[var(--color-text-secondary)]"
+                        >
+                          {showJoinPassword ? 'Hide' : 'Show'}
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-base font-bold text-[var(--color-text)]">Open (none set)</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type={showJoinPassword ? 'text' : 'password'}
+                    value={joinPasswordDraft}
+                    onChange={(e) => setJoinPasswordDraft(e.target.value)}
+                    placeholder="New join password (blank = open)"
+                    className="flex-1 min-w-[12rem] px-3 py-2 text-sm border border-[var(--color-border)] rounded-lg bg-white text-[var(--color-text)]"
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSaveJoinPassword}
+                    disabled={!game || savingJoinPassword}
+                    className="px-4 py-2 text-sm font-semibold bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50"
+                  >
+                    {savingJoinPassword ? 'Saving…' : 'Save'}
+                  </button>
+                </div>
               </div>
             </div>
           </section>
@@ -584,6 +1364,20 @@ export default function AdminPanel() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 Configure Game
+              </button>
+              <button
+                type="button"
+                data-testid="admin-public-claiming-toggle"
+                onClick={handleTogglePublicClaiming}
+                disabled={!game || togglingPublicClaiming}
+                className={`w-full border-2 py-3 px-4 rounded-lg transition-all text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 ${
+                  publicClaimingOpen
+                    ? 'border-green-300 bg-green-50 text-green-800 hover:bg-green-100'
+                    : 'border-[var(--color-border)] text-[var(--color-text)] hover:bg-slate-50'
+                }`}
+                title="When off, only admins can claim squares"
+              >
+                Public claiming open: {publicClaimingOpen ? 'ON' : 'OFF'}
               </button>
               <button 
                 onClick={handleRandomizeNumbers}
@@ -627,6 +1421,19 @@ export default function AdminPanel() {
                 </svg>
                 {game?.numbers_locked ? 'Unlock Numbers' : 'Lock Numbers'}
               </button>
+              <button
+                type="button"
+                data-testid="admin-print-board"
+                onClick={handlePrintBoard}
+                disabled={!game}
+                className="w-full border-2 border-[var(--color-border)] text-[var(--color-text)] py-3 px-4 rounded-lg hover:bg-slate-50 hover:border-[var(--color-text-muted)] transition-all text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
+                title="Open board with ?print=1 for PDF print (print CSS hides chrome)"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                Print board (PDF)
+              </button>
               <button 
                 onClick={handleExportCSV}
                 disabled={!game}
@@ -638,6 +1445,32 @@ export default function AdminPanel() {
                 </svg>
                 Export Roster CSV
               </button>
+              <button
+                type="button"
+                data-testid="admin-download-backup"
+                onClick={handleDownloadBackup}
+                disabled={!game}
+                className="w-full border-2 border-[var(--color-border)] text-[var(--color-text)] py-3 px-4 rounded-lg hover:bg-slate-50 hover:border-[var(--color-text-muted)] transition-all text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
+                title="Download full game backup (settings + squares). Join password excluded."
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download game backup
+              </button>
+              <div data-testid="admin-restore-backup" className="space-y-2">
+                <input
+                  ref={restoreFileRef}
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="block w-full text-xs text-[var(--color-text-secondary)] file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-[var(--color-text)] hover:file:bg-slate-200"
+                  onChange={(e) => handleRestoreFileSelected(e.target.files?.[0] ?? null)}
+                  disabled={!game || restoreBusy}
+                />
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  Restore from backup — select a CSV exported above
+                </p>
+              </div>
               <div className="pt-3">
                 <button 
                   disabled
@@ -666,13 +1499,70 @@ export default function AdminPanel() {
           </section>
         </div>
 
+        {restorePreview && (
+          <section className="mb-10 bg-white rounded-xl border border-[var(--color-border)] shadow-md p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-[var(--color-text)]">Restore preview</h2>
+                <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+                  {restorePreview.claimedCount} claimed, {restorePreview.emptyCount} empty
+                  {restorePreview.conflicts.length > 0
+                    ? ` · ${restorePreview.conflicts.length} conflict(s)`
+                    : ' · no conflicts'}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRestorePreview(null)}
+                  className="px-4 py-2 text-sm font-semibold border border-[var(--color-border)] rounded-lg hover:bg-slate-50"
+                  disabled={restoreBusy}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmRestore}
+                  disabled={restoreBusy}
+                  className="px-4 py-2 text-sm font-semibold bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50"
+                >
+                  {restoreBusy ? 'Restoring…' : 'Confirm restore'}
+                </button>
+              </div>
+            </div>
+            {restorePreview.conflicts.length > 0 && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-semibold text-amber-900 mb-2">
+                  Sample conflicts (position already claimed by a different email):
+                </p>
+                <ul className="text-sm text-amber-800 space-y-1">
+                  {restorePreview.conflicts.slice(0, 8).map((c) => (
+                    <li key={c.position}>
+                      #{c.position}: {c.currentEmail} → {c.backupEmail}
+                    </li>
+                  ))}
+                  {restorePreview.conflicts.length > 8 && (
+                    <li>…and {restorePreview.conflicts.length - 8} more</li>
+                  )}
+                </ul>
+              </div>
+            )}
+          </section>
+        )}
+
         <PastPlayersSection />
 
         <AdminClaimOnBehalf game={game} onDone={fetchGameAndClaims} />
 
-        <section className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden">
+        <section
+          className="bg-white rounded-xl border border-[var(--color-border)] shadow-md overflow-hidden"
+          data-testid="admin-claims-grouped"
+        >
           <div className="px-6 py-5 border-b border-[var(--color-border)] bg-slate-50">
             <h2 className="text-xl font-bold text-[var(--color-text)]">Claims & Payments</h2>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+              Grouped by email · amount due includes unpaid squares and Venmo order fees
+            </p>
           </div>
           {claimsLoading ? (
             <div className="flex justify-center items-center py-16">
@@ -684,15 +1574,15 @@ export default function AdminPanel() {
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Name</th>
-                    <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Square</th>
                     <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Email</th>
-                    <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Status</th>
-                    <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Payment</th>
+                    <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Squares</th>
+                    <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Positions</th>
+                    <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Amount due</th>
                     <th className="text-left py-4 px-6 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--color-border-light)]">
-                  {claims.length === 0 ? (
+                  {groupedClaims.length === 0 ? (
                     <tr>
                       <td className="py-16 px-6 text-center" colSpan={6}>
                         <div className="flex flex-col items-center">
@@ -704,67 +1594,115 @@ export default function AdminPanel() {
                       </td>
                     </tr>
                   ) : (
-                    claims.map((claim) => (
-                      <tr key={claim.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-5 px-6 text-sm font-semibold text-[var(--color-text)]">{claim.name}</td>
-                        <td className="py-5 px-6">
-                          <span className="inline-flex items-center justify-center bg-[var(--color-primary)] text-white font-bold text-xs px-3 py-1.5 rounded-md">
-                            #{claim.position}
-                          </span>
-                        </td>
-                        <td className="py-5 px-6 text-sm font-medium text-[var(--color-text-secondary)]">
-                          {claim.claimed_by_email || 'N/A'}
-                        </td>
-                        <td className="py-5 px-6">
-                          <span className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-bold ${
-                            claim.payment_status === 'paid' 
-                              ? 'bg-green-50 text-green-700 border-2 border-green-200' 
-                              : claim.payment_status === 'unpaid'
-                              ? 'bg-yellow-50 text-yellow-700 border-2 border-yellow-200'
-                              : 'bg-gray-50 text-gray-700 border-2 border-gray-200'
-                          }`}>
-                            {claim.payment_status}
-                          </span>
-                        </td>
-                        <td className="py-5 px-6">
-                          {claim.payment_method ? (
-                            <span className="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border-2 border-blue-200 capitalize">
-                              {claim.payment_method}
-                            </span>
-                          ) : (
-                            <span className="text-[var(--color-text-muted)] text-sm font-medium">—</span>
-                          )}
-                        </td>
-                        <td className="py-5 px-6">
-                          <div className="flex items-center gap-2">
-                            {claim.payment_status !== 'paid' && (
-                              <>
-                                <button
-                                  onClick={() => handleMarkPaid(claim.id)}
-                                  className="px-4 py-2 bg-[var(--color-success)] text-white text-xs font-semibold rounded-lg hover:bg-opacity-90 transition-all shadow-sm"
-                                >
-                                  Mark Paid
-                                </button>
-                                <button
-                                  onClick={() => handleRemoveClaim(claim)}
-                                  className="px-4 py-2 border-2 border-red-300 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-50 transition-all"
-                                >
-                                  Remove
-                                </button>
-                              </>
-                            )}
-                            {claim.payment_status === 'paid' && (
-                              <div className="flex items-center gap-2 text-[var(--color-success)] text-sm font-semibold">
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
-                                Paid
+                    groupedClaims.map((group) => {
+                      const expanded = Boolean(expandedGroups[group.key])
+                      return (
+                        <Fragment key={group.key}>
+                          <tr className="hover:bg-slate-50 transition-colors">
+                            <td className="py-5 px-6 text-sm font-semibold text-[var(--color-text)]">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setExpandedGroups(prev => ({
+                                    ...prev,
+                                    [group.key]: !prev[group.key],
+                                  }))
+                                }
+                                className="inline-flex items-center gap-2 text-left hover:text-[var(--color-primary)]"
+                              >
+                                <span className="text-[var(--color-text-muted)]">{expanded ? '▾' : '▸'}</span>
+                                {group.name}
+                              </button>
+                            </td>
+                            <td className="py-5 px-6 text-sm font-medium text-[var(--color-text-secondary)]">
+                              {group.email || 'N/A'}
+                            </td>
+                            <td className="py-5 px-6 text-sm font-semibold text-[var(--color-text)]">
+                              {group.squares.length}
+                              {group.unpaidCount > 0 && (
+                                <span className="ml-2 text-xs font-bold text-amber-700">
+                                  ({group.unpaidCount} unpaid)
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-5 px-6 text-sm text-[var(--color-text-secondary)]">
+                              {group.positions.map(p => `#${p}`).join(', ')}
+                            </td>
+                            <td className="py-5 px-6 text-sm font-bold text-[var(--color-text)]">
+                              ${group.amountDue.toFixed(2)}
+                            </td>
+                            <td className="py-5 px-6">
+                              <div className="flex flex-wrap items-center gap-2">
+                                {group.email && group.unpaidCount > 0 && (
+                                  <button
+                                    type="button"
+                                    data-testid="mark-all-paid"
+                                    onClick={() => handleMarkAllPaymentStatus(group.email, 'paid')}
+                                    className="px-3 py-1.5 bg-[var(--color-success)] text-white text-xs font-semibold rounded-lg hover:bg-opacity-90 transition-all shadow-sm"
+                                  >
+                                    Mark all paid
+                                  </button>
+                                )}
+                                {group.email && group.squares.some(s => s.payment_status === 'paid') && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMarkAllPaymentStatus(group.email, 'unpaid')}
+                                    className="px-3 py-1.5 border-2 border-[var(--color-border)] text-[var(--color-text-secondary)] text-xs font-semibold rounded-lg hover:bg-slate-50 transition-all"
+                                  >
+                                    Mark unpaid
+                                  </button>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                            </td>
+                          </tr>
+                          {expanded &&
+                            group.squares.map((claim) => (
+                              <tr key={claim.id} className="bg-slate-50/80">
+                                <td className="py-3 px-6 pl-12 text-sm text-[var(--color-text-secondary)]" colSpan={2}>
+                                  Square #{claim.position}
+                                  {claim.payment_method ? (
+                                    <span className="ml-2 capitalize text-xs font-semibold text-blue-700">
+                                      ({claim.payment_method})
+                                    </span>
+                                  ) : null}
+                                </td>
+                                <td className="py-3 px-6" colSpan={2}>
+                                  <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold ${
+                                    claim.payment_status === 'paid'
+                                      ? 'bg-green-50 text-green-700 border border-green-200'
+                                      : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                                  }`}>
+                                    {claim.payment_status}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-6" colSpan={2}>
+                                  <div className="flex items-center gap-2">
+                                    {claim.payment_status !== 'paid' && (
+                                      <>
+                                        <button
+                                          onClick={() => handleMarkPaid(claim.id)}
+                                          className="px-3 py-1.5 bg-[var(--color-success)] text-white text-xs font-semibold rounded-lg hover:bg-opacity-90 transition-all shadow-sm"
+                                        >
+                                          Mark Paid
+                                        </button>
+                                        <button
+                                          onClick={() => handleRemoveClaim(claim)}
+                                          className="px-3 py-1.5 border-2 border-red-300 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-50 transition-all"
+                                        >
+                                          Remove
+                                        </button>
+                                      </>
+                                    )}
+                                    {claim.payment_status === 'paid' && (
+                                      <span className="text-[var(--color-success)] text-sm font-semibold">Paid</span>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                        </Fragment>
+                      )
+                    })
                   )}
                 </tbody>
               </table>

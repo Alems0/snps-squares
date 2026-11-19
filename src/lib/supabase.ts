@@ -47,6 +47,8 @@ export interface Game {
   afc_numbers: number[]
   nfc_numbers: number[]
   status: 'active' | 'completed' | 'archived'
+  /** When false, only admins may claim. Default false. */
+  public_claiming_open?: boolean
   created_at: string
   updated_at: string
 }
@@ -63,7 +65,25 @@ export interface Square {
   payment_status: 'unpaid' | 'paid' | 'released'
   payment_method?: 'venmo' | 'cash'
   paid_at?: string
+  claim_order_id?: string | null
 }
+
+export interface ClaimOrder {
+  id: string
+  game_id: string
+  claimed_by_email: string
+  first_name: string
+  last_name: string
+  payment_method: 'venmo' | 'cash'
+  square_count: number
+  square_subtotal: number
+  fee: number
+  total: number
+  created_at: string
+}
+
+/** Flat $2 Venmo fee per claim order (not per square). */
+export const VENMO_ORDER_FEE = 2
 
 export interface Admin {
   id: string
@@ -105,7 +125,14 @@ export const SQUARES_PUBLIC_COLUMNS =
 
 /** Columns safe for anon SELECT (excludes join_password). */
 export const GAMES_PUBLIC_COLUMNS =
-  'id, season, afc_team, nfc_team, cost_per_square, charity_percentage, q1_payout, q2_payout, q3_payout, final_payout, venmo_handle, numbers_locked, afc_numbers, nfc_numbers, status, created_at, updated_at'
+  'id, season, afc_team, nfc_team, cost_per_square, charity_percentage, q1_payout, q2_payout, q3_payout, final_payout, venmo_handle, numbers_locked, afc_numbers, nfc_numbers, status, public_claiming_open, created_at, updated_at'
+
+/** Escape CSV cell; neutralize formula injection (=, +, -, @). */
+export function csvSafe(value: string | number | null | undefined): string {
+  const raw = value == null ? '' : String(value)
+  const neutralized = /^[=+\-@]/.test(raw) ? `'${raw}` : raw
+  return `"${neutralized.replace(/"/g, '""')}"`
+}
 
 export const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 

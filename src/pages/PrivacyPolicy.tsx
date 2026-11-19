@@ -25,161 +25,145 @@ export default function PrivacyPolicy() {
       <main className="container mx-auto max-w-4xl px-4 py-12">
         <div className="bg-white rounded-xl shadow-lg p-8 sm:p-12">
           <h1 className="text-4xl font-bold text-[var(--color-primary)] mb-2">Privacy Policy</h1>
-          <p className="text-sm text-[var(--color-text-muted)] mb-8">Last Updated: September 2026</p>
+          <p className="text-sm text-[var(--color-text-muted)] mb-8">Last updated: November 19, 2026</p>
 
           <div className="prose prose-lg max-w-none space-y-8">
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Introduction</h2>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Who we are</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
-                Welcome to SNPS Squares. This Privacy Policy explains how we collect, use, disclose, and safeguard 
-                your information when you use our Super Bowl squares board application. This service is operated as a 
-                charitable fundraiser for SNPS (Sunday Night Pong Series) and is designed to support community causes 
-                while providing entertainment during the Super Bowl.
+                SNPS Squares is a charitable fundraiser run by the Saint Nicholas Patriotic Society (SNPS).
+                It is not a gambling site. When you claim a square, you are making a donation that helps
+                support veterans, families in distress, and student scholarships. This policy explains what
+                information we collect and how we use it.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Information We Collect</h2>
-              
-              <h3 className="text-xl font-semibold text-[var(--color-text)] mt-6 mb-3">Personal Information You Provide</h3>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Information we collect</h2>
               <p className="text-[var(--color-text)] leading-relaxed mb-4">
-                When you claim a square on our board, we collect:
+                When you claim a square, we may collect:
               </p>
               <ul className="list-disc list-inside space-y-2 text-[var(--color-text)] ml-4">
                 <li>Your name</li>
                 <li>Your email address</li>
-                <li>Square selection and claim timestamp</li>
+                <li>Your phone number (if you provide one)</li>
+                <li>Which squares you claimed and when</li>
+                <li>Whether your donation/payment has been marked as paid</li>
               </ul>
-
-              <h3 className="text-xl font-semibold text-[var(--color-text)] mt-6 mb-3">Administrator Information</h3>
-              <p className="text-[var(--color-text)] leading-relaxed mb-4">
-                For authorized administrators:
+              <p className="text-[var(--color-text)] leading-relaxed mt-4 mb-4">
+                For administrators, we also collect the Google account email used to sign in, plus session
+                information needed to keep them logged in.
               </p>
-              <ul className="list-disc list-inside space-y-2 text-[var(--color-text)] ml-4">
-                <li>Google account email address (for authentication)</li>
-                <li>Session tokens and authentication cookies</li>
-              </ul>
-
-              <h3 className="text-xl font-semibold text-[var(--color-text)] mt-6 mb-3">Game Settings and Board Data</h3>
-              <ul className="list-disc list-inside space-y-2 text-[var(--color-text)] ml-4">
-                <li>Cost per square and charity donation percentage</li>
-                <li>Game configuration (teams, status, quarter scores)</li>
-                <li>Board state (randomized numbers, locked status)</li>
-                <li>Payment tracking information (marked as paid or pending)</li>
-              </ul>
-
-              <h3 className="text-xl font-semibold text-[var(--color-text)] mt-6 mb-3">Automatically Collected Information</h3>
               <p className="text-[var(--color-text)] leading-relaxed">
-                Our hosting provider (Supabase) may automatically collect certain technical information including 
-                IP addresses, browser type, device information, and usage patterns. We do not directly access or 
-                use this information for tracking purposes.
+                Our hosting provider may collect basic technical data (such as IP address or browser type)
+                as part of running the site. We do not use that data to track you for advertising.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">How We Use Your Information</h2>
-              <p className="text-[var(--color-text)] leading-relaxed mb-4">
-                We use the information we collect to:
-              </p>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">How we use your information</h2>
               <ul className="list-disc list-inside space-y-2 text-[var(--color-text)] ml-4">
-                <li>Operate and display the Super Bowl squares board</li>
-                <li>Track square claims and prevent duplicate claims</li>
-                <li>Enable administrators to manage payment tracking</li>
-                <li>Calculate charity donation totals and prize distributions</li>
-                <li>Contact you about your squares or payment status if necessary</li>
-                <li>Display leaderboards showing top buyers (name and square count only)</li>
-                <li>Ensure only authorized administrators can access administrative functions</li>
+                <li>
+                  <strong>Names</strong> are shown on the public board so everyone can see who claimed each square.
+                </li>
+                <li>
+                  <strong>Email and phone</strong> are used only for payment confirmation and so an administrator
+                  can contact you about your claim or donation. They are not shown publicly on the board.
+                </li>
+                <li>
+                  <strong>Join passwords</strong> (if used for a game) are never made public. They are for
+                  authorized access only and are not displayed to other participants.
+                </li>
+                <li>
+                  Board and claim data are used to run the fundraiser, track donations, calculate charity totals
+                  and payouts, and manage the game.
+                </li>
               </ul>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Information Sharing and Disclosure</h2>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">What we share</h2>
               <p className="text-[var(--color-text)] leading-relaxed mb-4">
-                We do not sell, rent, or trade your personal information. Your information may be shared only in these limited circumstances:
+                We do not sell or rent your personal information. We share it only as needed to run this fundraiser:
               </p>
               <ul className="list-disc list-inside space-y-2 text-[var(--color-text)] ml-4">
-                <li><strong>Public Display:</strong> Your first name and square count appear on the public board and Top Buyers leaderboard</li>
-                <li><strong>Administrator Access:</strong> Authorized SNPS administrators can view claim details including names and emails for payment tracking purposes</li>
-                <li><strong>Service Provider:</strong> We use Supabase as our database and authentication provider, subject to their privacy policy</li>
-                <li><strong>Legal Requirements:</strong> We may disclose information if required by law or in response to valid legal requests</li>
+                <li>Your name appears on the public board (and related public lists, such as top buyers).</li>
+                <li>Administrators can see claim details, including email and phone when provided, to confirm payments and contact participants.</li>
+                <li>Our database and hosting provider stores the data needed to operate the app.</li>
+                <li>We may disclose information if the law requires it.</li>
               </ul>
               <p className="text-[var(--color-text)] leading-relaxed mt-4">
-                <strong>Note:</strong> We do NOT process payments directly. All Venmo and cash payments are handled 
-                off-platform between participants and the administrator. We do not store payment credentials or 
-                financial account information.
+                We do not process credit cards or store bank login details on this site. Donation payments
+                (for example Venmo or cash) are handled off-platform between you and the organizer.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Cookies and Session Data</h2>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Cookies</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
-                We use session cookies for administrator authentication only. These cookies are essential for the 
-                service to function and allow administrators to remain logged in securely. Regular users (non-admins) 
-                claiming squares do not require authentication and no tracking cookies are placed on their devices.
+                We use session cookies mainly so administrators can stay signed in. People who only claim
+                squares are not required to create an account, and we do not place advertising or tracking
+                cookies for that purpose.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Data Retention</h2>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">How long we keep data</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
-                We retain board and claim data for the duration of each Super Bowl season and for archival purposes. 
-                Historical data may be retained to support multi-season statistics and charity fundraising reporting. 
-                You may request deletion of your personal information by contacting us at stecher2789@gmail.com.
+                We keep board and claim records for the season and may keep historical records for charity
+                reporting and future fundraiser planning. If you want your personal information removed,
+                contact us at the email below and we will do our best to help.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Data Security</h2>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Security</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
-                We implement appropriate technical and organizational security measures to protect your personal 
-                information. Our database is hosted by Supabase with industry-standard encryption and access controls. 
-                However, no method of electronic transmission or storage is 100% secure, and we cannot guarantee 
-                absolute security.
+                We take reasonable steps to protect your information. No online service is completely secure,
+                so we cannot promise absolute security.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Children's Privacy</h2>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Children</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
-                Our service is not directed to children under the age of 18. We do not knowingly collect personal 
-                information from children. If you are a parent or guardian and believe your child has provided us 
-                with personal information, please contact us so we can delete such information.
+                This fundraiser is intended for adults (18 and older). We do not knowingly collect information
+                from children. If you believe a child has submitted information, please contact us so we can
+                remove it.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Your California Privacy Rights</h2>
-              <p className="text-[var(--color-text)] leading-relaxed mb-4">
-                If you are a California resident, you have certain rights under the California Consumer Privacy Act (CCPA):
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-[var(--color-text)] ml-4">
-                <li>Right to know what personal information we collect, use, and disclose</li>
-                <li>Right to request deletion of your personal information</li>
-                <li>Right to opt-out of the sale of personal information (note: we do not sell personal information)</li>
-                <li>Right to non-discrimination for exercising your privacy rights</li>
-              </ul>
-              <p className="text-[var(--color-text)] leading-relaxed mt-4">
-                To exercise these rights, contact us at stecher2789@gmail.com.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Changes to This Privacy Policy</h2>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Your choices</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
-                We may update this Privacy Policy from time to time. We will notify you of any material changes by 
-                updating the "Last Updated" date at the top of this policy. Your continued use of the service after 
-                such changes constitutes acceptance of the updated policy.
+                You can ask what personal information we have about you, or ask us to delete it, by emailing
+                us. If you are a California resident, you also have rights under state privacy law, including
+                the right to know, delete, and not be discriminated against for exercising those rights. We
+                do not sell personal information.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Contact Us</h2>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Changes</h2>
               <p className="text-[var(--color-text)] leading-relaxed">
-                If you have questions or concerns about this Privacy Policy or our data practices, please contact us at:
+                We may update this policy from time to time. When we do, we will change the “Last updated”
+                date at the top. Continued use of the site after an update means you accept the revised policy.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Contact</h2>
+              <p className="text-[var(--color-text)] leading-relaxed">
+                Questions about this Privacy Policy? Contact us:
               </p>
               <div className="bg-gray-50 rounded-lg p-6 mt-4">
-                <p className="text-[var(--color-text)] font-semibold">SNPS Squares</p>
-                <p className="text-[var(--color-text)]">Email: <a href="mailto:stecher2789@gmail.com" className="text-[var(--color-primary)] hover:underline">stecher2789@gmail.com</a></p>
+                <p className="text-[var(--color-text)] font-semibold">Saint Nicholas Patriotic Society — SNPS Squares</p>
+                <p className="text-[var(--color-text)]">
+                  Email:{' '}
+                  <a href="mailto:stecher2789@gmail.com" className="text-[var(--color-primary)] hover:underline">
+                    stecher2789@gmail.com
+                  </a>
+                </p>
               </div>
             </section>
           </div>
