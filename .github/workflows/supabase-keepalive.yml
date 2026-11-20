@@ -1,0 +1,49 @@
+# Ping a read-only public RPC so the free Supabase project is not paused for inactivity.
+name: Supabase keep-alive
+
+on:
+  schedule:
+    # Every 3 days at 14:17 UTC
+    - cron: '17 14 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping get_public_buyers (read-only)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_ANON_KEY}" ]; then
+            echo "::error::SUPABASE_ANON_KEY secret is empty. Add the Supabase anon key as a repository secret named SUPABASE_ANON_KEY (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+
+          URL="${SUPABASE_URL:-}"
+          if [ -z "${URL}" ]; then
+            URL="https://axkxwguwquuxbjyntjeq.supabase.co"
+          fi
+
+          CODE="$(curl --fail-with-body -sS \
+            -o /dev/null \
+            -w '%{http_code}' \
+            -X POST \
+            "${URL}/rest/v1/rpc/get_public_buyers" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{}')"
+
+          echo "Keep-alive HTTP status: ${CODE}"
+          case "${CODE}" in
+            2??) ;;
+            *)
+              echo "::error::Keep-alive request failed with HTTP ${CODE}"
+              exit 1
+              ;;
+          esac
