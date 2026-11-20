@@ -113,6 +113,17 @@ npm run preview
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon key | Yes |
 | `VITE_ADMIN_EMAIL` | Admin email allowlist (Google OAuth) | Yes |
 
+## Keep-alive
+
+Free Supabase projects pause after inactivity. A scheduled GitHub Actions workflow (`.github/workflows/supabase-keepalive.yml`) POSTs to the read-only `get_public_buyers` RPC every 3 days (and on manual `workflow_dispatch`) so the project stays awake. It never writes data or calls restore/admin RPCs.
+
+Add these **repository secrets** (Settings → Secrets and variables → Actions):
+
+| Secret | Description |
+|--------|-------------|
+| `SUPABASE_ANON_KEY` | Supabase anon/public key (required) |
+| `SUPABASE_URL` | Project URL (optional; defaults to `https://axkxwguwquuxbjyntjeq.supabase.co` if unset) |
+
 ## Project Structure
 
 ```
