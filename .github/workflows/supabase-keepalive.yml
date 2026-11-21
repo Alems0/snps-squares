@@ -37,7 +37,7 @@ jobs:
             -H "apikey: ${SUPABASE_ANON_KEY}" \
             -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
             -H "Content-Type: application/json" \
-            -d '{}')"
+            -d '{"p_game_id":"00000000-0000-0000-0000-000000000000"}')"
 
           echo "Keep-alive HTTP status: ${CODE}"
           case "${CODE}" in
