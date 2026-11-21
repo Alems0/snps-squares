@@ -29,38 +29,17 @@ function buildCrOnlyCsv(): string {
 }
 
 test.describe('Restore from backup CSV (mock)', () => {
-  test('CR-only file shows preview, scrolls, Confirm calls RPC', async ({ page }) => {
-    // Auto-accept window.confirm / alert
+  test('CR-only file shows preview, scrolls, Confirm with Game Password', async ({
+    page,
+  }) => {
     await page.addInitScript(() => {
-      window.confirm = () => true
       window.alert = () => {}
+      sessionStorage.setItem('mock_game_password', 'Ab1!xy')
+      sessionStorage.setItem('mock_game_password_set', '1')
     })
 
     await gotoAdminPanel(page)
-
-    let rpcCalled = false
-    let rpcBody: string | null = null
-    await page.route('**/*admin_restore_game_squares*', async (route) => {
-      rpcCalled = true
-      rpcBody = route.request().postData()
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ restored: 100, skipped: 0, errors: [] }),
-      })
-    })
-    // Never hit real Supabase for other REST calls during this test
-    await page.route('**/rest/v1/**', async (route) => {
-      if (route.request().url().includes('admin_restore_game_squares')) {
-        await route.fallback()
-        return
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: '[]',
-      })
-    })
+    await expect(page.getByTestId('admin-game-password-status')).toContainText('Set')
 
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'snps-cr-'))
     const csvPath = path.join(tmpDir, 'mac-excel-cr.csv')
@@ -74,8 +53,9 @@ test.describe('Restore from backup CSV (mock)', () => {
     await expect(preview.getByRole('heading', { name: 'Restore preview' })).toBeVisible()
     await expect(preview.getByText(/1 claimed/)).toBeVisible()
 
-    // Ensure scrolled into view (app uses smooth scroll; also force for headless timing)
-    await preview.evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' as ScrollBehavior }))
+    await preview.evaluate((el) =>
+      el.scrollIntoView({ block: 'start', behavior: 'instant' as ScrollBehavior })
+    )
     await expect
       .poll(
         async () =>
@@ -88,8 +68,11 @@ test.describe('Restore from backup CSV (mock)', () => {
       .toBe(true)
 
     await page.getByTestId('confirm-restore').click()
-    await expect.poll(() => rpcCalled, { timeout: 10_000 }).toBe(true)
-    expect(rpcBody).toBeTruthy()
+    await expect(page.getByTestId('confirmation-modal')).toBeVisible()
+    await page.getByTestId('confirm-game-password').fill('Ab1!xy')
+    await page.getByTestId('confirm-modal-confirm').click()
+    await expect(page.getByTestId('confirmation-modal')).toHaveCount(0)
+    await expect(page.getByTestId('restore-preview')).toHaveCount(0)
 
     fs.rmSync(tmpDir, { recursive: true, force: true })
   })

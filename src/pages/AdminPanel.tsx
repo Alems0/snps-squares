@@ -24,6 +24,14 @@ import { formatVenmoHandle } from '../lib/formatVenmo'
 import { displaySquareNumber, formatSquareLabel } from '../lib/displaySquareNumber'
 import { formatEasternDateTime } from '../lib/formatEasternDateTime'
 import { earliestClaimedAt } from '../lib/publicBuyers'
+import {
+  GAME_PASSWORD_UNSET_MESSAGE,
+  GAME_PASSWORD_WRONG_MESSAGE,
+  gamePasswordValidationError,
+  mockGamePasswordIsSet,
+  mockSetGamePassword,
+  mockVerifyGamePassword,
+} from '../lib/gamePassword'
 
 interface ClaimData extends Square {
   name: string
@@ -75,8 +83,11 @@ export default function AdminPanel() {
   const [confirmAction, setConfirmAction] = useState<{
     title: string
     description: string
-    onConfirm: () => void
+    onConfirm: (password?: string) => void | Promise<void>
     variant?: 'default' | 'destructive'
+    requirePassword?: boolean
+    passwordUnset?: boolean
+    confirmText?: string
   } | null>(null)
 
   const [showJoinPassword, setShowJoinPassword] = useState(false)
@@ -132,12 +143,13 @@ export default function AdminPanel() {
       nfc_team: 'Eagles',
       cost_per_square: 10,
       charity_percentage: 10,
-      q1_payout: 200,
-      q2_payout: 200,
-      q3_payout: 200,
+      q1_payout: 100,
+      q2_payout: 150,
+      q3_payout: 100,
       final_payout: 400,
       venmo_handle: '@snps-squares',
       join_password: 'mock-join',
+      game_password_set: mockGamePasswordIsSet(),
       numbers_locked: false,
       afc_numbers: [3, 7, 0, 6, 1, 4, 9, 2, 8, 5],
       nfc_numbers: [2, 5, 8, 1, 9, 3, 6, 0, 7, 4],
@@ -541,76 +553,122 @@ export default function AdminPanel() {
     }
   }
 
-  const handleResetBoard = async () => {
+  const handleResetBoard = () => {
     if (!game) {
       alert('No active game found.')
       return
     }
 
-    const confirmMsg = '⚠️ WARNING: This will remove ALL claimed squares for the active game and cannot be undone. Are you sure?'
-    if (!window.confirm(confirmMsg)) {
-      return
-    }
+    const passwordUnset = !game.game_password_set
+    setConfirmAction({
+      title: 'Reset Board?',
+      description:
+        'This will remove ALL claimed squares for the active game and cannot be undone.',
+      confirmText: 'Reset Board',
+      requirePassword: true,
+      passwordUnset,
+      variant: 'destructive',
+      onConfirm: async (password) => {
+        if (passwordUnset) {
+          throw new Error(GAME_PASSWORD_UNSET_MESSAGE)
+        }
+        if (import.meta.env.VITE_USE_MOCK === 'true') {
+          mockVerifyGamePassword(password || '')
+          setClaims([])
+          setAllSquaresForConflicts((prev) =>
+            prev.map((s) => ({
+              ...s,
+              first_name: undefined,
+              last_name: undefined,
+              claimed_by_name: undefined,
+              claimed_by_email: undefined,
+              claimed_at: undefined,
+              payment_status: 'unpaid' as const,
+              payment_method: undefined,
+              paid_at: undefined,
+              claim_order_id: undefined,
+            }))
+          )
+          setStats((s) => ({
+            ...s,
+            totalClaimed: 0,
+            totalPaid: 0,
+            totalPending: 0,
+            revenue: 0,
+            charity: 0,
+          }))
+          setConfirmAction(null)
+          alert('Board reset successfully! All claims have been removed.')
+          return
+        }
 
-    // Double confirmation for safety
-    const doubleConfirm = window.confirm('This is your last chance. Really reset the entire board?')
-    if (!doubleConfirm) {
-      return
-    }
-
-    try {
-      const { error } = await supabase
-        .from('squares')
-        .update({
-          first_name: null,
-          last_name: null,
-          claimed_by_name: null,
-          claimed_by_email: null,
-          claimed_at: null,
-          payment_status: 'unpaid',
-          payment_method: null,
-          paid_at: null,
-          claim_order_id: null,
+        const { error } = await supabase.rpc('admin_reset_board', {
+          p_game_id: game.id,
+          p_game_password: password || '',
         })
-        .eq('game_id', game.id)
-
-      if (error) throw error
-
-      alert('Board reset successfully! All claims have been removed.')
-      await fetchGameAndClaims()
-    } catch (err) {
-      console.error('Error resetting board:', err)
-      alert('Failed to reset board. Please try again.')
-    }
+        if (error) {
+          const msg = error.message || ''
+          if (/incorrect game password/i.test(msg)) {
+            throw new Error(GAME_PASSWORD_WRONG_MESSAGE)
+          }
+          if (/not set/i.test(msg)) {
+            throw new Error(GAME_PASSWORD_UNSET_MESSAGE)
+          }
+          throw new Error(msg || 'Failed to reset board.')
+        }
+        setConfirmAction(null)
+        alert('Board reset successfully! All claims have been removed.')
+        await fetchGameAndClaims()
+      },
+    })
   }
 
   const handleClearNumbers = () => {
     if (!game) return
-    
+
+    const passwordUnset = !game.game_password_set
     setConfirmAction({
-      title: 'Are you sure?',
-      description: 'This will reset all NFC and AFC numbers back to unassigned (?). This action cannot be undone.',
-      onConfirm: async () => {
-        setConfirmAction(null)
-        try {
-          const { error } = await supabase
-            .from('games')
-            .update({
-              afc_numbers: [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
-              nfc_numbers: [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
-            })
-            .eq('id', game.id)
-
-          if (error) throw error
-
-          alert('Numbers cleared successfully!')
-          await fetchGameAndClaims()
-        } catch (err) {
-          console.error('Error clearing numbers:', err)
-          alert('Failed to clear numbers. Please try again.')
+      title: 'Clear Numbers?',
+      description:
+        'This will reset all NFC and AFC numbers back to unassigned (?). This action cannot be undone.',
+      confirmText: 'Clear Numbers',
+      requirePassword: true,
+      passwordUnset,
+      variant: 'destructive',
+      onConfirm: async (password) => {
+        if (passwordUnset) {
+          throw new Error(GAME_PASSWORD_UNSET_MESSAGE)
         }
+        if (import.meta.env.VITE_USE_MOCK === 'true') {
+          mockVerifyGamePassword(password || '')
+          setGame({
+            ...game,
+            afc_numbers: [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+            nfc_numbers: [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+          })
+          setConfirmAction(null)
+          alert('Numbers cleared successfully!')
+          return
+        }
+
+        const { error } = await supabase.rpc('admin_clear_numbers', {
+          p_game_id: game.id,
+          p_game_password: password || '',
+        })
+        if (error) {
+          const msg = error.message || ''
+          if (/incorrect game password/i.test(msg)) {
+            throw new Error(GAME_PASSWORD_WRONG_MESSAGE)
+          }
+          if (/not set/i.test(msg)) {
+            throw new Error(GAME_PASSWORD_UNSET_MESSAGE)
+          }
+          throw new Error(msg || 'Failed to clear numbers.')
+        }
+        setConfirmAction(null)
+        alert('Numbers cleared successfully!')
+        await fetchGameAndClaims()
       },
-      variant: 'destructive'
     })
   }
 
@@ -696,19 +754,43 @@ export default function AdminPanel() {
     final_payout: number
     venmo_handle: string
     join_password: string
+    game_password: string
     public_claiming_open?: boolean
     nfc_team: string
     afc_team: string
   }) => {
     if (!game) throw new Error('No active game found')
 
+    const { game_password, ...gameUpdates } = updates
+    const pwError = gamePasswordValidationError(game_password)
+    if (pwError) throw new Error(pwError)
+
     try {
+      if (import.meta.env.VITE_USE_MOCK === 'true') {
+        if (game_password) {
+          mockSetGamePassword(game_password)
+        }
+        setGame({
+          ...game,
+          ...gameUpdates,
+          game_password_set: game_password ? true : mockGamePasswordIsSet(),
+        })
+        alert('Game configuration saved successfully!')
+        return
+      }
+
       const { error } = await supabase
         .from('games')
-        .update(updates)
+        .update(gameUpdates)
         .eq('id', game.id)
 
       if (error) throw error
+
+      const { error: pwRpcError } = await supabase.rpc('admin_set_game_password', {
+        p_game_id: game.id,
+        p_game_password: game_password,
+      })
+      if (pwRpcError) throw new Error(pwRpcError.message || 'Failed to save Game Password')
 
       alert('Game configuration saved successfully!')
       await fetchGameAndClaims()
@@ -1035,7 +1117,7 @@ export default function AdminPanel() {
     }
   }
 
-  const handleConfirmRestore = async () => {
+  const handleConfirmRestore = () => {
     if (!game || !restorePreview) return
 
     const validationError = validateRestoreRows(restorePreview.rows)
@@ -1044,67 +1126,85 @@ export default function AdminPanel() {
       return
     }
 
-    if (
-      !window.confirm(
-        `Restore ${restorePreview.rows.length} squares? ${restorePreview.conflicts.length} conflict(s) will be overwritten.`
-      )
-    ) {
-      return
-    }
+    const passwordUnset = !game.game_password_set
+    const preview = restorePreview
+    setConfirmAction({
+      title: 'Confirm restore?',
+      description: `Restore ${preview.rows.length} squares? ${preview.conflicts.length} conflict(s) will be overwritten.`,
+      confirmText: 'Confirm restore',
+      requirePassword: true,
+      passwordUnset,
+      variant: 'destructive',
+      onConfirm: async (password) => {
+        if (passwordUnset) {
+          throw new Error(GAME_PASSWORD_UNSET_MESSAGE)
+        }
 
-    setRestoreBusy(true)
-    try {
-      const payload = restorePreview.rows.map(r => ({
-        position: r.position,
-        first_name: r.first_name,
-        last_name: r.last_name,
-        email: r.email,
-        payment_method: r.payment_method || null,
-        payment_status: r.payment_status || 'unpaid',
-        phone: r.phone || null,
-        claimed_at: r.claimed_at || null,
-      }))
+        const payload = preview.rows.map((r) => ({
+          position: r.position,
+          first_name: r.first_name,
+          last_name: r.last_name,
+          email: r.email,
+          payment_method: r.payment_method || null,
+          payment_status: r.payment_status || 'unpaid',
+          phone: r.phone || null,
+          claimed_at: r.claimed_at || null,
+        }))
 
-      // Migration defines p_rows (not p_squares)
-      const { data, error } = await supabase.rpc('admin_restore_game_squares', {
-        p_game_id: game.id,
-        p_rows: payload,
-      })
+        setRestoreBusy(true)
+        try {
+          if (import.meta.env.VITE_USE_MOCK === 'true') {
+            mockVerifyGamePassword(password || '')
+            setConfirmAction(null)
+            setRestorePreview(null)
+            alert('Restore complete. Restored: 100. Skipped: 0.')
+            await fetchGameAndClaims()
+            return
+          }
 
-      if (error) {
-        console.error('Error restoring squares:', error)
-        alert(`Failed to restore from backup.\n${error.message || String(error)}`)
-        return
-      }
+          const { data, error } = await supabase.rpc('admin_restore_game_squares', {
+            p_game_id: game.id,
+            p_rows: payload,
+            p_game_password: password || '',
+          })
 
-      const result = data as {
-        restored?: number
-        skipped?: number
-        errors?: Array<{ row?: number; error?: string }>
-      } | null
-      const restored = result?.restored
-      const skipped = result?.skipped
-      const serverErrors = Array.isArray(result?.errors) ? result!.errors! : []
-      const errorLines = serverErrors
-        .slice(0, 12)
-        .map((e) => `row ${e.row ?? '?'}: ${e.error ?? 'unknown'}`)
-        .join('\n')
+          if (error) {
+            const msg = error.message || ''
+            if (/incorrect game password/i.test(msg)) {
+              throw new Error(GAME_PASSWORD_WRONG_MESSAGE)
+            }
+            if (/not set/i.test(msg)) {
+              throw new Error(GAME_PASSWORD_UNSET_MESSAGE)
+            }
+            throw new Error(msg || 'Failed to restore from backup.')
+          }
 
-      alert(
-        `Restore complete.${restored != null ? ` Restored: ${restored}.` : ''}${
-          skipped != null ? ` Skipped: ${skipped}.` : ''
-        }${errorLines ? `\n\nServer skipped/errors:\n${errorLines}` : ''}`
-      )
-      setRestorePreview(null)
-      await fetchGameAndClaims()
-    } catch (err) {
-      console.error('Error in handleConfirmRestore:', err)
-      alert(
-        `Failed to restore from backup.\n${err instanceof Error ? err.message : String(err)}`
-      )
-    } finally {
-      setRestoreBusy(false)
-    }
+          const result = data as {
+            restored?: number
+            skipped?: number
+            errors?: Array<{ row?: number; error?: string }>
+          } | null
+          const restored = result?.restored
+          const skipped = result?.skipped
+          const serverErrors = Array.isArray(result?.errors) ? result!.errors! : []
+          const errorLines = serverErrors
+            .slice(0, 12)
+            .map((e) => `row ${e.row ?? '?'}: ${e.error ?? 'unknown'}`)
+            .join('\n')
+
+          setConfirmAction(null)
+          alert(
+            `Restore complete.${restored != null ? ` Restored: ${restored}.` : ''}${
+              skipped != null ? ` Skipped: ${skipped}.` : ''
+            }${errorLines ? `\n\nServer skipped/errors:\n${errorLines}` : ''}`
+          )
+          setRestorePreview(null)
+          await fetchGameAndClaims()
+        } finally {
+          setRestoreBusy(false)
+        }
+      },
+    })
   }
 
   if (loading) {
@@ -1280,6 +1380,17 @@ export default function AdminPanel() {
                 </span>
               </div>
               <div
+                className="flex justify-between items-center py-3 border-b border-[var(--color-border-light)]"
+                data-testid="admin-game-password-status"
+              >
+                <span className="text-sm font-medium text-[var(--color-text-secondary)]">
+                  Game Password
+                </span>
+                <span className="text-base font-bold text-[var(--color-text)]">
+                  {game?.game_password_set ? 'Set' : 'Not set'}
+                </span>
+              </div>
+              <div
                 className="sm:col-span-2 py-3 border-b border-[var(--color-border-light)]"
                 data-testid="admin-join-password"
               >
@@ -1368,10 +1479,12 @@ export default function AdminPanel() {
                 </svg>
                 Randomize Numbers
               </button>
-              <button 
+              <button
+                type="button"
+                data-testid="admin-clear-numbers"
                 onClick={handleClearNumbers}
                 disabled={!game || game.numbers_locked}
-                className="w-full border-2 border-[var(--color-border)] text-[var(--color-text)] py-3 px-4 rounded-lg hover:bg-slate-50 hover:border-[var(--color-text-muted)] transition-all text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
+                className="w-full min-h-[44px] touch-manipulation border-2 border-[var(--color-border)] text-[var(--color-text)] py-3 px-4 rounded-lg hover:bg-slate-50 hover:border-[var(--color-text-muted)] transition-all text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
                 title={game?.numbers_locked ? 'Numbers are locked' : 'Reset all numbers back to unassigned (?)'}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1462,9 +1575,11 @@ export default function AdminPanel() {
                 </button>
               </div>
               <div className="pt-5 border-t border-[var(--color-border)]">
-                <button 
+                <button
+                  type="button"
+                  data-testid="admin-reset-board"
                   onClick={handleResetBoard}
-                  className="w-full border-2 border-red-300 bg-red-50 text-red-700 py-3 px-4 rounded-lg hover:bg-red-100 hover:border-red-400 transition-all text-sm font-semibold flex items-center justify-center gap-2.5"
+                  className="w-full min-h-[44px] touch-manipulation border-2 border-red-300 bg-red-50 text-red-700 py-3 px-4 rounded-lg hover:bg-red-100 hover:border-red-400 transition-all text-sm font-semibold flex items-center justify-center gap-2.5"
                   title="Remove all claims from all squares (cannot be undone)"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1905,9 +2020,12 @@ export default function AdminPanel() {
         <ConfirmationModal
           title={confirmAction.title}
           description={confirmAction.description}
+          confirmText={confirmAction.confirmText}
           onConfirm={confirmAction.onConfirm}
           onCancel={() => setConfirmAction(null)}
           variant={confirmAction.variant}
+          requirePassword={confirmAction.requirePassword}
+          passwordUnset={confirmAction.passwordUnset}
         />
       )}
     </div>
