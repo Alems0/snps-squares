@@ -12,6 +12,7 @@ import { formatSquareLabel } from '../lib/displaySquareNumber'
 import ClaimPopover from './ClaimPopover'
 import ClaimSuccess from './ClaimSuccess'
 import { MAX_CLAIM_SQUARES } from '../lib/claimErrors'
+import { mockGetGameAxis } from '../lib/mockGameAxis'
 
 interface BoardProps {
   onClaimSuccess?: () => void
@@ -109,16 +110,31 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
     // Full 100-square board with long names (print one-page stress test)
     const fullBoard =
       params.get('mock_full') === '1' || params.get('print') === '1'
-    // blank = '?' placeholders; alt = post-randomize permutation; default = seeded numbers
+    // blank = '?' placeholders; alt = post-randomize permutation;
+    // otherwise prefer shared mock axis (admin reset/clear) then seeded defaults
     const blank = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
-    const seededAfc = [3, 7, 0, 6, 1, 4, 9, 2, 8, 5]
-    const seededNfc = [2, 5, 8, 1, 9, 3, 6, 0, 7, 4]
     const altAfc = [9, 1, 4, 0, 7, 2, 5, 8, 3, 6]
     const altNfc = [0, 6, 3, 8, 1, 5, 9, 2, 4, 7]
+    const sharedAxis = mockGetGameAxis()
     const afc =
-      numbersMode === 'blank' ? blank : numbersMode === 'alt' ? altAfc : seededAfc
+      numbersMode === 'blank'
+        ? blank
+        : numbersMode === 'alt'
+          ? altAfc
+          : sharedAxis.afc_numbers
     const nfc =
-      numbersMode === 'blank' ? blank : numbersMode === 'alt' ? altNfc : seededNfc
+      numbersMode === 'blank'
+        ? blank
+        : numbersMode === 'alt'
+          ? altNfc
+          : sharedAxis.nfc_numbers
+    // fullBoard / alt → locked; blank → unlocked; else shared axis (reset/clear)
+    const numbersLocked =
+      fullBoard || numbersMode === 'alt'
+        ? true
+        : numbersMode === 'blank'
+          ? false
+          : sharedAxis.numbers_locked
 
     setGame({
       id: 'mock',
@@ -133,7 +149,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       final_payout: 400,
       venmo_handle: '@snps-squares',
       join_password: '',
-      numbers_locked: numbersMode === 'alt' || fullBoard,
+      numbers_locked: numbersLocked,
       afc_numbers: afc,
       nfc_numbers: nfc,
       status: 'active',
