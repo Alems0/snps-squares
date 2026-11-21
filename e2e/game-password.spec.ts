@@ -9,8 +9,16 @@ async function gotoAdmin(page: Page) {
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.addInitScript(() => {
     window.alert = () => {}
+  })
+  // Clear mock session once on the app origin (not via addInitScript — that
+  // re-runs on every navigation and would wipe Reset Board axis state).
+  await page.goto('/')
+  await page.evaluate(() => {
     sessionStorage.removeItem('mock_game_password')
     sessionStorage.removeItem('mock_game_password_set')
+    sessionStorage.removeItem('mock_afc_numbers')
+    sessionStorage.removeItem('mock_nfc_numbers')
+    sessionStorage.removeItem('mock_numbers_locked')
   })
   await page.goto('/admin/panel?mock_admin=1')
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({
@@ -111,6 +119,9 @@ test.describe('Game Password gates Reset / Clear / Restore', () => {
     await setGamePasswordViaConfigure(page, VALID_PASSWORD)
 
     await page.getByTestId('admin-reset-board').click()
+    await expect(page.getByTestId('confirmation-modal')).toContainText(
+      /clear the randomized NFC\/AFC numbers/i
+    )
     await page.getByTestId('confirm-game-password').fill('Wrong1!')
     await page.getByTestId('confirm-modal-confirm').click()
     await expect(page.getByTestId('confirm-password-error')).toContainText(/incorrect/i)
@@ -119,6 +130,36 @@ test.describe('Game Password gates Reset / Clear / Restore', () => {
     await page.getByTestId('confirm-game-password').fill(VALID_PASSWORD)
     await page.getByTestId('confirm-modal-confirm').click()
     await expect(page.getByTestId('confirmation-modal')).toHaveCount(0)
+  })
+
+  test('Reset Board clears axis numbers and unlocks (headers become ?)', async ({ page }) => {
+    await gotoAdmin(page)
+    await setGamePasswordViaConfigure(page, VALID_PASSWORD)
+
+    // Mock starts with seeded digits; lock them so unlock is observable after reset
+    await page.getByTestId('admin-lock-numbers').click()
+    await page.getByTestId('confirm-modal-confirm').click()
+    await expect(page.getByText('Locked', { exact: true })).toBeVisible()
+    await expect(page.getByTestId('admin-clear-numbers')).toBeDisabled()
+
+    await page.getByTestId('admin-reset-board').click()
+    await expect(page.getByTestId('confirmation-modal')).toContainText(
+      /Numbers will be unlocked/i
+    )
+    await page.getByTestId('confirm-game-password').fill(VALID_PASSWORD)
+    await page.getByTestId('confirm-modal-confirm').click()
+    await expect(page.getByTestId('confirmation-modal')).toHaveCount(0)
+
+    // Unlocked + unrandomized: Board Status Open; Lock disabled until numbers assigned
+    await expect(page.getByText('Open', { exact: true })).toBeVisible()
+    await expect(page.getByTestId('admin-lock-numbers')).toBeDisabled()
+    await expect(page.getByTestId('admin-clear-numbers')).toBeEnabled()
+
+    // Public board shares mock axis storage → '?' headers after reset
+    await page.goto('/')
+    await expect(page.locator('button[data-position="1"]')).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByTestId('nfc-num-0')).toHaveText('?')
+    await expect(page.getByTestId('afc-num-0')).toHaveText('?')
   })
 
   test('wrong then correct password for Clear Numbers', async ({ page }) => {

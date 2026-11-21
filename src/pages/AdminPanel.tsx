@@ -32,6 +32,11 @@ import {
   mockSetGamePassword,
   mockVerifyGamePassword,
 } from '../lib/gamePassword'
+import {
+  mockGetGameAxis,
+  mockResetAxisNumbers,
+  mockSetGameAxis,
+} from '../lib/mockGameAxis'
 
 interface ClaimData extends Square {
   name: string
@@ -136,6 +141,7 @@ export default function AdminPanel() {
   }, [restorePreview])
 
   const loadMockAdminData = () => {
+    const axis = mockGetGameAxis()
     const mockGame: Game = {
       id: 'mock',
       season: 2026,
@@ -150,9 +156,9 @@ export default function AdminPanel() {
       venmo_handle: '@snps-squares',
       join_password: 'mock-join',
       game_password_set: mockGamePasswordIsSet(),
-      numbers_locked: false,
-      afc_numbers: [3, 7, 0, 6, 1, 4, 9, 2, 8, 5],
-      nfc_numbers: [2, 5, 8, 1, 9, 3, 6, 0, 7, 4],
+      numbers_locked: axis.numbers_locked,
+      afc_numbers: axis.afc_numbers,
+      nfc_numbers: axis.nfc_numbers,
       status: 'active',
       public_claiming_open: false,
       created_at: new Date().toISOString(),
@@ -563,7 +569,7 @@ export default function AdminPanel() {
     setConfirmAction({
       title: 'Reset Board?',
       description:
-        'This will remove ALL claimed squares for the active game and cannot be undone.',
+        'This will remove ALL claimed squares and clear the randomized NFC/AFC numbers (headers back to ?) for the active game. Numbers will be unlocked. This cannot be undone.',
       confirmText: 'Reset Board',
       requirePassword: true,
       passwordUnset,
@@ -573,7 +579,9 @@ export default function AdminPanel() {
           throw new Error(GAME_PASSWORD_UNSET_MESSAGE)
         }
         if (import.meta.env.VITE_USE_MOCK === 'true') {
+          // Mirrors admin_reset_board: clear claims + wipe axis numbers + unlock
           mockVerifyGamePassword(password || '')
+          const axis = mockResetAxisNumbers()
           setClaims([])
           setAllSquaresForConflicts((prev) =>
             prev.map((s) => ({
@@ -589,6 +597,12 @@ export default function AdminPanel() {
               claim_order_id: undefined,
             }))
           )
+          setGame({
+            ...game,
+            afc_numbers: axis.afc_numbers,
+            nfc_numbers: axis.nfc_numbers,
+            numbers_locked: axis.numbers_locked,
+          })
           setStats((s) => ({
             ...s,
             totalClaimed: 0,
@@ -598,7 +612,7 @@ export default function AdminPanel() {
             charity: 0,
           }))
           setConfirmAction(null)
-          alert('Board reset successfully! All claims have been removed.')
+          alert('Board reset successfully! All claims and axis numbers have been cleared.')
           return
         }
 
@@ -617,7 +631,7 @@ export default function AdminPanel() {
           throw new Error(msg || 'Failed to reset board.')
         }
         setConfirmAction(null)
-        alert('Board reset successfully! All claims have been removed.')
+        alert('Board reset successfully! All claims and axis numbers have been cleared.')
         await fetchGameAndClaims()
       },
     })
@@ -641,11 +655,13 @@ export default function AdminPanel() {
         }
         if (import.meta.env.VITE_USE_MOCK === 'true') {
           mockVerifyGamePassword(password || '')
-          setGame({
-            ...game,
+          const axis = {
             afc_numbers: [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
             nfc_numbers: [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
-          })
+            numbers_locked: game.numbers_locked,
+          }
+          mockSetGameAxis(axis)
+          setGame({ ...game, ...axis })
           setConfirmAction(null)
           alert('Numbers cleared successfully!')
           return
@@ -694,6 +710,18 @@ export default function AdminPanel() {
           const afcNumbers = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
           const nfcNumbers = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 
+          if (import.meta.env.VITE_USE_MOCK === 'true') {
+            const axis = {
+              afc_numbers: afcNumbers,
+              nfc_numbers: nfcNumbers,
+              numbers_locked: game.numbers_locked,
+            }
+            mockSetGameAxis(axis)
+            setGame({ ...game, ...axis })
+            alert('Numbers randomized successfully!')
+            return
+          }
+
           const { error } = await supabase
             .from('games')
             .update({
@@ -728,6 +756,18 @@ export default function AdminPanel() {
       onConfirm: async () => {
         setConfirmAction(null)
         try {
+          if (import.meta.env.VITE_USE_MOCK === 'true') {
+            const axis = {
+              afc_numbers: game.afc_numbers,
+              nfc_numbers: game.nfc_numbers,
+              numbers_locked: newLockState,
+            }
+            mockSetGameAxis(axis)
+            setGame({ ...game, numbers_locked: newLockState })
+            alert(`Board ${action}ed successfully!`)
+            return
+          }
+
           const { error } = await supabase
             .from('games')
             .update({ numbers_locked: newLockState })
@@ -1492,7 +1532,9 @@ export default function AdminPanel() {
                 </svg>
                 Clear Numbers
               </button>
-              <button 
+              <button
+                type="button"
+                data-testid="admin-lock-numbers"
                 onClick={handleLockBoard}
                 disabled={!game || (!game.numbers_locked && (game.afc_numbers.every(n => n === -1) || game.nfc_numbers.every(n => n === -1)))}
                 className="w-full border-2 border-[var(--color-border)] text-[var(--color-text)] py-3 px-4 rounded-lg hover:bg-slate-50 hover:border-[var(--color-text-muted)] transition-all text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
