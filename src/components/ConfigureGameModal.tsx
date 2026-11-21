@@ -1,5 +1,12 @@
 import { useState, FormEvent } from 'react'
 import { Game, TEAM_NAME_MAX_LEN } from '../lib/supabase'
+import {
+  GAME_PASSWORD_HELPER,
+  GAME_PASSWORD_RULES,
+  evaluateGamePassword,
+  gamePasswordValidationError,
+  isGamePasswordValid,
+} from '../lib/gamePassword'
 
 interface ConfigureGameModalProps {
   game: Game
@@ -13,6 +20,8 @@ interface ConfigureGameModalProps {
     final_payout: number
     venmo_handle: string
     join_password: string
+    /** Blank keeps the existing Game Password. */
+    game_password: string
     public_claiming_open?: boolean
     nfc_team: string
     afc_team: string
@@ -33,6 +42,8 @@ export default function ConfigureGameModal({
   const [venmoHandle, setVenmoHandle] = useState(game.venmo_handle || '')
   const [joinPassword, setJoinPassword] = useState(game.join_password || '')
   const [showJoinPassword, setShowJoinPassword] = useState(false)
+  const [gamePassword, setGamePassword] = useState('')
+  const [showGamePassword, setShowGamePassword] = useState(false)
   const [publicClaimingOpen, setPublicClaimingOpen] = useState(
     Boolean(game.public_claiming_open)
   )
@@ -40,6 +51,10 @@ export default function ConfigureGameModal({
   const [afcTeam, setAfcTeam] = useState(game.afc_team || '')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  const gamePasswordChecks = evaluateGamePassword(gamePassword)
+  const gamePasswordBlocking =
+    gamePassword.length > 0 && !isGamePasswordValid(gamePassword)
 
   // Calculate totals for preview
   const costNum = parseFloat(costPerSquare) || 0
@@ -83,6 +98,12 @@ export default function ConfigureGameModal({
       return
     }
 
+    const pwError = gamePasswordValidationError(gamePassword)
+    if (pwError) {
+      setError(pwError)
+      return
+    }
+
     setIsSubmitting(true)
     try {
       await onSave({
@@ -94,6 +115,7 @@ export default function ConfigureGameModal({
         final_payout: finalNum,
         venmo_handle: venmoHandle.trim(),
         join_password: joinPassword.trim(),
+        game_password: gamePassword,
         public_claiming_open: publicClaimingOpen,
         nfc_team: nfcTrimmed,
         afc_team: afcTrimmed,
@@ -389,6 +411,68 @@ export default function ConfigureGameModal({
               </div>
             </div>
 
+            <div data-testid="configure-game-password">
+              <label
+                htmlFor="gamePassword"
+                className="block text-sm font-semibold text-[var(--color-text)] mb-2"
+              >
+                Game Password
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type={showGamePassword ? 'text' : 'password'}
+                  id="gamePassword"
+                  data-testid="game-password-input"
+                  value={gamePassword}
+                  onChange={(e) => setGamePassword(e.target.value)}
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
+                  placeholder={
+                    game.game_password_set
+                      ? 'Leave blank to keep existing password'
+                      : 'Set a Game Password'
+                  }
+                  disabled={isSubmitting}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowGamePassword((v) => !v)}
+                  className="shrink-0 min-h-[44px] touch-manipulation px-3 py-2 border-2 border-gray-300 rounded-lg text-base font-semibold text-[var(--color-text-secondary)] hover:bg-slate-50"
+                >
+                  {showGamePassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              <p className="text-xs text-[var(--color-text-muted)] mt-2 leading-relaxed">
+                {GAME_PASSWORD_HELPER}
+              </p>
+              {gamePassword.length > 0 && (
+                <ul
+                  data-testid="game-password-checklist"
+                  className="mt-3 space-y-1.5 text-sm"
+                  aria-live="polite"
+                >
+                  {GAME_PASSWORD_RULES.map((rule) => {
+                    const ok = gamePasswordChecks[rule.id]
+                    return (
+                      <li
+                        key={rule.id}
+                        data-testid={`game-password-rule-${rule.id}`}
+                        data-ok={ok ? 'true' : 'false'}
+                        className={`flex items-center gap-2 ${
+                          ok ? 'text-[var(--color-paid)]' : 'text-[var(--color-text-muted)]'
+                        }`}
+                      >
+                        <span aria-hidden="true" className="font-bold w-4 text-center">
+                          {ok ? '✓' : '○'}
+                        </span>
+                        <span>{rule.label}</span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+
             <label className="flex items-start gap-3 min-h-[44px] p-3 border-2 border-[var(--color-border)] rounded-lg cursor-pointer touch-manipulation">
               <input
                 type="checkbox"
@@ -467,8 +551,9 @@ export default function ConfigureGameModal({
             </button>
             <button
               type="submit"
+              data-testid="configure-save"
               className="flex-1 min-h-[44px] touch-manipulation px-4 sm:px-6 py-2.5 sm:py-3 bg-[var(--color-primary)] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-base"
-              disabled={isSubmitting}
+              disabled={isSubmitting || gamePasswordBlocking}
             >
               {isSubmitting ? 'Saving...' : 'Save Configuration'}
             </button>

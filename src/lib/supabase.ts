@@ -43,6 +43,8 @@ export interface Game {
   final_payout: number
   venmo_handle: string
   join_password?: string
+  /** True when an admin Game Password hash exists (never the hash/value itself). */
+  game_password_set?: boolean
   numbers_locked: boolean
   afc_numbers: number[]
   nfc_numbers: number[]
