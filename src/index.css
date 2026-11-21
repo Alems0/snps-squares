@@ -125,49 +125,241 @@ textarea {
   font-size: 16px !important;
 }
 
-/* Admin "Print board (PDF)" — landscape, board grid only */
+/* Screen: print-only chrome stays hidden */
+.print-only {
+  display: none !important;
+}
+
+/* Admin "Print board (PDF)" / browser Print — exactly one letter landscape page */
 @media print {
   @page {
-    size: landscape;
-    margin: 0.4in;
+    size: letter landscape;
+    margin: 0.3in;
   }
 
-  body {
+  html,
+  body,
+  #root {
     background: white !important;
+    /* Fill the letter-landscape content box so the grid can stretch */
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .no-print {
     display: none !important;
   }
 
+  .print-only {
+    display: block !important;
+  }
+
   header,
   footer,
   nav,
-  [data-testid='view-only-notice'] {
+  [data-testid='view-only-notice'],
+  [data-testid='claim-popover'],
+  [data-testid='claim-success'],
+  [data-testid='buyers-list'],
+  [data-testid='top-buyers-list'] {
     display: none !important;
   }
 
+  /* App shell: drop min-h-screen so print height is the page, not the viewport */
+  #root > .min-h-screen,
+  #root > div {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+    background: white !important;
+  }
+
+  /* Single printable sheet — fill page, no page breaks */
+  .print-sheet {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    max-height: 100% !important; /* stay inside one letter landscape page */
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+  }
+
+  .print-masthead {
+    flex: 0 0 auto !important;
+    text-align: center !important;
+    margin: 0 0 0.12in !important;
+    padding: 0 !important;
+  }
+
+  .print-masthead h1 {
+    margin: 0 !important;
+    font-size: 14pt !important;
+    font-weight: 800 !important;
+    color: var(--color-primary) !important;
+    line-height: 1.15 !important;
+  }
+
+  .print-payouts {
+    margin: 0.06in 0 0 !important;
+    font-size: 7.5pt !important;
+    font-weight: 600 !important;
+    color: var(--color-text-secondary) !important;
+    line-height: 1.2 !important;
+  }
+
+  .print-printed-at {
+    flex: 0 0 auto !important;
+    margin: 0.08in 0 0 !important;
+    padding: 0 !important;
+    text-align: center !important;
+    font-size: 7pt !important;
+    font-weight: 500 !important;
+    color: var(--color-text-muted) !important;
+  }
+
+  main {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    max-width: none !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
   #print-board {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
     box-shadow: none !important;
     border: none !important;
     border-radius: 0 !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     width: 100% !important;
     max-width: none !important;
+    background: white !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  #print-board > .p-6,
+  #print-board .print-board-inner {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #print-board .print-board-axes {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    gap: 0.1in !important;
+    min-height: 0 !important;
+    align-items: stretch !important;
+  }
+
+  #print-board .print-afc-rail {
+    max-width: 0.35in !important;
+    flex-shrink: 0 !important;
+  }
+
+  #print-board [data-testid='nfc-axis-label'],
+  #print-board [data-testid='afc-axis-label'] {
+    font-size: 8pt !important;
+    padding: 0.04in 0.06in !important;
+    border-radius: 2pt !important;
+    box-shadow: none !important;
+  }
+
+  #print-board [data-testid='nfc-axis-label'] {
+    margin-bottom: 0.08in !important;
   }
 
   #print-board .board-scroll {
-    overflow: visible !important;
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    display: flex !important;
   }
 
   #print-board .board-grid {
-    min-width: 0 !important;
+    flex: 1 1 auto !important;
     width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    gap: 1.5pt !important;
+    --board-cell: 0;
+    grid-template-columns: [row-header] 0.28in repeat(10, minmax(0, 1fr)) !important;
+    grid-template-rows: 0.28in repeat(10, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
   }
 
   #print-board .board-corner,
   #print-board .board-nfc-header,
   #print-board .board-afc-header {
     position: static !important;
+    box-shadow: none !important;
+    border-radius: 1.5pt !important;
+    font-size: 7pt !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    aspect-ratio: auto !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  #print-board .board-cell {
+    aspect-ratio: auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    font-size: 5pt !important;
+    line-height: 1.05 !important;
+    padding: 0.5pt !important;
+    border-radius: 1pt !important;
+    break-inside: avoid !important;
+  }
+
+  #print-board .board-cell span {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  /* Paid green border must survive print */
+  #print-board .board-cell.border-\[3px\],
+  #print-board .board-cell[class*='border-[var(--color-paid)]'] {
+    border-color: var(--color-paid) !important;
   }
 }

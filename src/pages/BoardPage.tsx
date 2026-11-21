@@ -1,5 +1,5 @@
 import { Link, useSearchParams } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Board from '../components/Board'
 import {
   supabase,
@@ -7,7 +7,7 @@ import {
   GAMES_PUBLIC_COLUMNS,
   SQUARES_PUBLIC_COLUMNS,
 } from '../lib/supabase'
-import { formatEasternDateTime } from '../lib/formatEasternDateTime'
+import { formatEasternDateTime, formatPrintedAt } from '../lib/formatEasternDateTime'
 import {
   aggregatePublicBuyers,
   type PublicBuyer,
@@ -68,14 +68,32 @@ export default function BoardPage() {
   const payoutChips = getConfiguredPayouts(game)
   const availableCount = Math.max(0, 100 - claimedCount)
   const isPrintMode = searchParams.get('print') === '1'
+  // Stamp only at print / PDF time — not on page load.
+  // beforeprint must write the DOM synchronously (setState alone can miss the capture).
+  const stampPrintedAt = useCallback(() => {
+    const text = formatPrintedAt(new Date())
+    const el = document.querySelector<HTMLElement>('[data-testid="print-printed-at"]')
+    if (el) el.textContent = text
+    return text
+  }, [])
+
+  useEffect(() => {
+    const onBeforePrint = () => {
+      stampPrintedAt()
+    }
+    window.addEventListener('beforeprint', onBeforePrint)
+    return () => window.removeEventListener('beforeprint', onBeforePrint)
+  }, [stampPrintedAt])
 
   useEffect(() => {
     if (!isPrintMode) return
     const t = window.setTimeout(() => {
+      // Dedicated PDF / ?print=1 path: refresh stamp immediately before print
+      stampPrintedAt()
       window.print()
     }, 600)
     return () => window.clearTimeout(t)
-  }, [isPrintMode])
+  }, [isPrintMode, stampPrintedAt])
 
   const faqItems: FAQItem[] = [
     {
@@ -352,9 +370,25 @@ export default function BoardPage() {
 
       {/* Main Board Section */}
       <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-12 min-w-0">
-        {/* Board - Full Width Hero */}
-        <div className="mb-8 min-w-0 w-full">
+        {/* Print sheet: masthead + board + printed-at (one landscape page) */}
+        <div className="print-sheet mb-8 min-w-0 w-full">
+          <div className="print-only print-masthead" data-testid="print-masthead">
+            <h1>SNPS Squares</h1>
+            {payoutChips.length > 0 && (
+              <p className="print-payouts" data-testid="print-payouts">
+                Prizes:{' '}
+                {payoutChips
+                  .map((chip) => `${chip.shortLabel} ${formatCurrency(chip.amount)}`)
+                  .join(' · ')}
+              </p>
+            )}
+          </div>
           <Board onClaimSuccess={fetchTopBuyers} />
+          <p
+            className="print-only print-printed-at"
+            data-testid="print-printed-at"
+            aria-live="polite"
+          />
         </div>
 
         {/* Public Buyers list — anon-safe (name / count / first claimed_at only) */}
