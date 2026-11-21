@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { GAME_PASSWORD_UNSET_MESSAGE } from '../lib/gamePassword'
+import { useFocusTrap } from '../lib/useFocusTrap'
 
 interface ConfirmationModalProps {
   title: string
@@ -26,24 +27,16 @@ export default function ConfirmationModal({
   requirePassword = false,
   passwordUnset = false,
 }: ConfirmationModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
   const cancelButtonRef = useRef<HTMLButtonElement>(null)
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => {
-    cancelButtonRef.current?.focus()
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !busy) {
-        onCancel()
-      }
-    }
-
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  }, [onCancel, busy])
+  useFocusTrap(true, dialogRef, () => {
+    if (!busy) onCancel()
+  }, { initialFocusRef: cancelButtonRef })
 
   const handleConfirm = async () => {
     setError('')
@@ -77,15 +70,15 @@ export default function ConfirmationModal({
       }}
     >
       <div
-        className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl max-w-md w-full flex flex-col overflow-hidden"
-        style={{ maxHeight: 'min(calc(100dvh - 24px), calc(100vh - 24px))' }}
+        ref={dialogRef}
+        className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl max-w-md w-full flex flex-col overflow-hidden max-h-[min(calc(100dvh-24px),calc(100vh-24px))]"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-modal-title"
         data-testid="confirmation-modal"
       >
-        <div className="shrink-0 flex items-start justify-between gap-3 px-4 pt-4 sm:px-6 sm:pt-5">
+        <div className="sticky top-0 shrink-0 flex items-start justify-between gap-3 px-4 pt-4 sm:px-6 sm:pt-5 bg-white z-10">
           <h2 id="confirm-modal-title" className="text-lg sm:text-xl font-bold text-[var(--color-text)]">
             {title}
           </h2>
@@ -93,7 +86,7 @@ export default function ConfirmationModal({
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="min-h-[44px] min-w-[44px] touch-manipulation inline-flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text)] rounded-lg"
+            className="min-h-[44px] min-w-[44px] touch-manipulation inline-flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text)] rounded-lg"
             aria-label="Close"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -109,7 +102,7 @@ export default function ConfirmationModal({
           {requirePassword && passwordUnset && (
             <div
               data-testid="game-password-unset"
-              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900"
+              className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-3 text-sm text-amber-950"
             >
               {GAME_PASSWORD_UNSET_MESSAGE}
             </div>
@@ -133,14 +126,16 @@ export default function ConfirmationModal({
                     setPassword(e.target.value)
                     if (error) setError('')
                   }}
-                  className="flex-1 min-w-0 px-4 py-3 text-base border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
+                  className="flex-1 min-w-0 px-4 py-3 text-base border-2 border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
                   autoComplete="current-password"
                   disabled={busy}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="shrink-0 min-h-[44px] touch-manipulation px-3 py-2 border-2 border-gray-300 rounded-lg text-base font-semibold text-[var(--color-text-secondary)] hover:bg-slate-50"
+                  aria-label={showPassword ? 'Hide game password' : 'Show game password'}
+                  aria-controls="confirm-game-password"
+                  className="shrink-0 min-h-[44px] touch-manipulation px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-base font-semibold text-[var(--color-text-secondary)] hover:bg-slate-50"
                   disabled={busy}
                 >
                   {showPassword ? 'Hide' : 'Show'}
@@ -152,13 +147,13 @@ export default function ConfirmationModal({
           {error && (
             <div
               data-testid="confirm-password-error"
-              className="rounded-lg border border-red-200 bg-red-50 px-3 py-3 text-sm font-medium text-red-700"
+              className="rounded-lg border border-red-300 bg-red-50 px-3 py-3 text-sm font-medium text-[var(--color-danger)]"
             >
               {error}
             </div>
           )}
         </div>
-        <div className="shrink-0 flex gap-3 justify-end px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-6 border-t border-[var(--color-border-light)] bg-white">
+        <div className="sticky bottom-0 shrink-0 flex gap-3 justify-end px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-6 border-t border-[var(--color-border-light)] bg-white z-10">
           <button
             ref={cancelButtonRef}
             type="button"
@@ -173,10 +168,10 @@ export default function ConfirmationModal({
             data-testid="confirm-modal-confirm"
             onClick={handleConfirm}
             disabled={busy || (requirePassword && passwordUnset)}
-            className={`min-h-[44px] touch-manipulation px-4 sm:px-5 py-2.5 rounded-lg font-semibold transition-all text-base disabled:opacity-50 ${
+            className={`min-h-[44px] touch-manipulation px-4 sm:px-5 py-2.5 rounded-lg font-semibold transition-all text-base ${
               variant === 'destructive'
-                ? 'bg-red-600 text-white hover:bg-red-700'
-                : 'bg-[var(--color-primary)] text-white hover:bg-opacity-90'
+                ? 'bg-[var(--color-secondary)] text-white hover:opacity-90'
+                : 'bg-[var(--color-primary)] text-white hover:opacity-90'
             }`}
           >
             {busy ? 'Working…' : confirmText}

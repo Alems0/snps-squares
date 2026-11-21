@@ -4,17 +4,16 @@ export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <header className="bg-[#16a34a] text-white py-6 px-4 shadow-lg">
+      <header className="bg-[var(--color-primary)] text-white py-6 px-4 shadow-lg">
         <div className="container mx-auto max-w-4xl flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center gap-4">
-            <span className="text-3xl">🏈</span>
             <div>
               <h1 className="text-2xl font-bold leading-tight tracking-tight">SNPS Squares</h1>
             </div>
           </div>
           <Link
             to="/"
-            className="inline-flex items-center min-h-[44px] touch-manipulation border-2 border-white text-white px-4 sm:px-5 py-2.5 rounded-lg text-base font-bold hover:bg-white hover:text-[#16a34a] transition-all shadow-md hover:shadow-lg whitespace-nowrap"
+            className="inline-flex items-center min-h-[44px] touch-manipulation border-2 border-[var(--color-cream)] text-white bg-[var(--color-primary)] px-4 sm:px-5 py-2.5 rounded-lg text-base font-bold hover:bg-[var(--color-cream)] hover:text-[var(--color-primary)] transition-all shadow-md hover:shadow-lg whitespace-nowrap"
           >
             Back to Board
           </Link>

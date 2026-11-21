@@ -1445,6 +1445,7 @@ export default function AdminPanel() {
                         <button
                           type="button"
                           onClick={() => setShowJoinPassword(v => !v)}
+                          aria-label={showJoinPassword ? 'Hide join password' : 'Show join password'}
                           className="min-h-[44px] touch-manipulation px-3 py-2 text-sm font-semibold border border-[var(--color-border)] rounded-md hover:bg-slate-50 text-[var(--color-text-secondary)]"
                         >
                           {showJoinPassword ? 'Hide' : 'Show'}
@@ -1455,20 +1456,29 @@ export default function AdminPanel() {
                     )}
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <input
-                    type={showJoinPassword ? 'text' : 'password'}
-                    value={joinPasswordDraft}
-                    onChange={(e) => setJoinPasswordDraft(e.target.value)}
-                    placeholder="New join password (blank = open)"
-                    className="flex-1 min-w-0 w-full sm:min-w-[12rem] px-3 py-3 text-base border border-[var(--color-border)] rounded-lg bg-white text-[var(--color-text)]"
-                    autoComplete="new-password"
-                  />
+                <div className="flex flex-wrap items-end gap-2">
+                  <div className="flex-1 min-w-0 w-full sm:min-w-[12rem]">
+                    <label
+                      htmlFor="admin-join-password-draft"
+                      className="block text-sm font-semibold text-[var(--color-text)] mb-1.5"
+                    >
+                      New join password
+                    </label>
+                    <input
+                      id="admin-join-password-draft"
+                      type={showJoinPassword ? 'text' : 'password'}
+                      value={joinPasswordDraft}
+                      onChange={(e) => setJoinPasswordDraft(e.target.value)}
+                      placeholder="Blank = open board"
+                      className="w-full px-3 py-3 text-base border border-[var(--color-border)] rounded-lg bg-white text-[var(--color-text)]"
+                      autoComplete="new-password"
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={handleSaveJoinPassword}
                     disabled={!game || savingJoinPassword}
-                    className="min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50"
+                    className="min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold bg-[var(--color-primary)] text-white rounded-lg hover:opacity-90"
                   >
                     {savingJoinPassword ? 'Saving…' : 'Save'}
                   </button>
@@ -1482,10 +1492,12 @@ export default function AdminPanel() {
               <h2 className="text-xl font-bold text-[var(--color-text)]">Board Actions</h2>
             </div>
             <div className="space-y-3">
-              <button 
+              <button
+                type="button"
+                data-testid="admin-configure-game"
                 onClick={() => setShowConfigureModal(true)}
                 disabled={!game}
-                className="w-full bg-[var(--color-primary)] text-white py-3 px-4 rounded-lg hover:bg-opacity-90 transition-all text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 shadow-sm"
+                className="w-full min-h-[44px] touch-manipulation bg-[var(--color-primary)] text-white py-3 px-4 rounded-lg hover:opacity-90 transition-all text-sm font-semibold flex items-center justify-center gap-2.5 shadow-sm"
                 title="Edit game cost, payouts, charity %, venmo handle, and join password"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1592,22 +1604,32 @@ export default function AdminPanel() {
                 Download game backup
               </button>
               <div data-testid="admin-restore-backup" className="space-y-2">
+                <label
+                  htmlFor="admin-restore-file"
+                  className="block text-sm font-semibold text-[var(--color-text)]"
+                >
+                  Restore from backup
+                </label>
                 <input
+                  id="admin-restore-file"
                   ref={restoreFileRef}
                   type="file"
                   accept=".csv,text/csv"
-                  className="block w-full text-xs text-[var(--color-text-secondary)] file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-[var(--color-text)] hover:file:bg-slate-200"
+                  aria-label="Choose game backup CSV file"
+                  className="block w-full text-base text-[var(--color-text-secondary)] file:mr-3 file:py-2.5 file:px-3 file:min-h-[44px] file:rounded-lg file:border-0 file:text-base file:font-semibold file:bg-slate-100 file:text-[var(--color-text)] hover:file:bg-slate-200"
                   onChange={(e) => handleRestoreFileSelected(e.target.files?.[0] ?? null)}
                   disabled={!game || restoreBusy}
                 />
-                <p className="text-xs text-[var(--color-text-muted)]">
-                  Restore from backup — select a CSV exported above
+                <p className="text-sm text-[var(--color-text-secondary)]">
+                  Select a CSV exported via Download game backup
                 </p>
               </div>
               <div className="pt-3">
-                <button 
+                <button
+                  type="button"
                   disabled
-                  className="w-full border-2 border-[var(--color-border-light)] text-[var(--color-text-light)] py-3 px-4 rounded-lg text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
+                  aria-disabled="true"
+                  className="w-full min-h-[44px] border-2 border-[var(--color-border)] text-[var(--color-text-secondary)] bg-[var(--color-disabled-bg)] py-3 px-4 rounded-lg text-sm font-semibold cursor-not-allowed flex items-center justify-center gap-2.5"
                   title="Coming soon: Manual score entry for Q1-Final"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1908,7 +1930,7 @@ export default function AdminPanel() {
                                     type="button"
                                     data-testid="mark-all-paid"
                                     onClick={() => handleMarkAllPaymentStatus(group.email, 'paid')}
-                                    className="min-h-[44px] touch-manipulation px-4 py-2 bg-[var(--color-success)] text-white text-sm font-semibold rounded-lg hover:bg-opacity-90 transition-all shadow-sm"
+                                    className="min-h-[44px] touch-manipulation px-4 py-2 bg-[var(--color-success)] text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all shadow-sm"
                                   >
                                     Mark all paid
                                   </button>
@@ -1958,7 +1980,7 @@ export default function AdminPanel() {
                                           type="button"
                                           data-testid="mark-paid"
                                           onClick={() => handleMarkPaid(claim.id)}
-                                          className="min-h-[44px] touch-manipulation px-4 py-2 bg-[var(--color-success)] text-white text-sm font-semibold rounded-lg hover:bg-opacity-90 transition-all shadow-sm"
+                                          className="min-h-[44px] touch-manipulation px-4 py-2 bg-[var(--color-success)] text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all shadow-sm"
                                         >
                                           Mark Paid
                                         </button>

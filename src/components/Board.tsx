@@ -493,6 +493,9 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
           <div
             data-testid="board-scroll"
             className="board-scroll flex-1 min-w-0 overflow-auto"
+            role="region"
+            aria-label="Squares board"
+            tabIndex={0}
           >
             <div data-testid="board-grid" className="board-grid">
               {/* Sticky corner */}

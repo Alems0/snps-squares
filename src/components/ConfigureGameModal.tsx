@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useRef } from 'react'
 import { Game, TEAM_NAME_MAX_LEN } from '../lib/supabase'
 import {
   GAME_PASSWORD_HELPER,
@@ -7,6 +7,7 @@ import {
   gamePasswordValidationError,
   isGamePasswordValid,
 } from '../lib/gamePassword'
+import { useFocusTrap } from '../lib/useFocusTrap'
 
 interface ConfigureGameModalProps {
   game: Game
@@ -28,11 +29,16 @@ interface ConfigureGameModalProps {
   }) => Promise<void>
 }
 
+const fieldClass =
+  'w-full px-4 py-2.5 text-base border-2 border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none'
+
 export default function ConfigureGameModal({
   game,
   onClose,
   onSave,
 }: ConfigureGameModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
   const [costPerSquare, setCostPerSquare] = useState(game.cost_per_square.toString())
   const [charityPercentage, setCharityPercentage] = useState(game.charity_percentage.toString())
   const [q1Payout, setQ1Payout] = useState(game.q1_payout.toString())
@@ -52,11 +58,14 @@ export default function ConfigureGameModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
+  useFocusTrap(true, dialogRef, () => {
+    if (!isSubmitting) onClose()
+  }, { initialFocusRef: closeButtonRef })
+
   const gamePasswordChecks = evaluateGamePassword(gamePassword)
   const gamePasswordBlocking =
     gamePassword.length > 0 && !isGamePasswordValid(gamePassword)
 
-  // Calculate totals for preview
   const costNum = parseFloat(costPerSquare) || 0
   const charityPct = parseFloat(charityPercentage) || 0
   const q1Num = parseFloat(q1Payout) || 0
@@ -64,7 +73,7 @@ export default function ConfigureGameModal({
   const q3Num = parseFloat(q3Payout) || 0
   const finalNum = parseFloat(finalPayout) || 0
 
-  const totalPot = costNum * 100 // 100 squares
+  const totalPot = costNum * 100
   const charityAmount = totalPot * (charityPct / 100)
   const totalPayouts = q1Num + q2Num + q3Num + finalNum
   const remaining = totalPot - charityAmount - totalPayouts
@@ -73,7 +82,6 @@ export default function ConfigureGameModal({
     e.preventDefault()
     setError('')
 
-    // Validation
     if (costNum < 0) {
       setError('Cost per square must be non-negative')
       return
@@ -131,420 +139,370 @@ export default function ConfigureGameModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
       <div
-        className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl max-w-3xl w-full flex flex-col overflow-hidden"
-        style={{ maxHeight: 'min(calc(100dvh - 24px), calc(100vh - 24px))' }}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="configure-game-title"
+        data-testid="configure-game-modal"
+        className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl max-w-3xl w-full flex flex-col overflow-hidden max-h-[min(calc(100dvh-24px),calc(100vh-24px))]"
       >
-        {/* Header */}
-        <div className="shrink-0 bg-[var(--color-primary)] text-white px-4 py-3 sm:px-6 sm:py-4 z-10">
+        <div className="sticky top-0 shrink-0 bg-[var(--color-primary)] text-white px-4 py-3 sm:px-6 sm:py-4 z-10">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl sm:text-2xl font-bold">Configure Game</h2>
+            <h2 id="configure-game-title" className="text-xl sm:text-2xl font-bold">
+              Configure Game
+            </h2>
             <button
+              ref={closeButtonRef}
               type="button"
               onClick={onClose}
               className="min-h-[44px] min-w-[44px] touch-manipulation inline-flex items-center justify-center text-white hover:text-gray-200 text-3xl leading-none rounded-lg"
               disabled={isSubmitting}
-              aria-label="Close"
+              aria-label="Close configure game"
             >
               ×
             </button>
           </div>
         </div>
 
-        {/* Content */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-5 sm:space-y-6">
-          {/* Axis team names */}
-          <section className="space-y-4" data-testid="configure-team-names">
-            <h3 className="text-lg font-bold text-[var(--color-primary)] border-b-2 border-[var(--color-border)] pb-2">
-              Board Axis Teams
-            </h3>
-            <p className="text-sm text-[var(--color-text-muted)]">
-              Shown on the board as “NFC – …” (top) and “AFC – …” (side). Leave blank to show only NFC or AFC.
-            </p>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="nfcTeam"
-                  className="block text-sm font-semibold text-[var(--color-text)] mb-2"
-                >
-                  NFC team (horizontal)
-                </label>
-                <input
-                  type="text"
-                  id="nfcTeam"
-                  value={nfcTeam}
-                  onChange={(e) => setNfcTeam(e.target.value)}
-                  maxLength={TEAM_NAME_MAX_LEN}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
-                  placeholder="e.g. Eagles"
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="afcTeam"
-                  className="block text-sm font-semibold text-[var(--color-text)] mb-2"
-                >
-                  AFC team (vertical)
-                </label>
-                <input
-                  type="text"
-                  id="afcTeam"
-                  value={afcTeam}
-                  onChange={(e) => setAfcTeam(e.target.value)}
-                  maxLength={TEAM_NAME_MAX_LEN}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
-                  placeholder="e.g. Chiefs"
-                  disabled={isSubmitting}
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* Cost & Charity Section */}
-          <section className="space-y-4">
-            <h3 className="text-lg font-bold text-[var(--color-primary)] border-b-2 border-[var(--color-border)] pb-2">
-              Pricing & Charity
-            </h3>
-            
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="costPerSquare"
-                  className="block text-sm font-semibold text-[var(--color-text)] mb-2"
-                >
-                  Cost per Square ($)
-                </label>
-                <input
-                  type="number"
-                  id="costPerSquare"
-                  value={costPerSquare}
-                  onChange={(e) => setCostPerSquare(e.target.value)}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
-                  placeholder="20"
-                  min="0"
-                  step="1"
-                  disabled={isSubmitting}
-                  required
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="charityPercentage"
-                  className="block text-sm font-semibold text-[var(--color-text)] mb-2"
-                >
-                  Charity Percentage (%)
-                </label>
-                <input
-                  type="number"
-                  id="charityPercentage"
-                  value={charityPercentage}
-                  onChange={(e) => setCharityPercentage(e.target.value)}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
-                  placeholder="50"
-                  min="0"
-                  max="100"
-                  step="1"
-                  disabled={isSubmitting}
-                  required
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* Payouts Section */}
-          <section className="space-y-4">
-            <h3 className="text-lg font-bold text-[var(--color-primary)] border-b-2 border-[var(--color-border)] pb-2">
-              Quarter Payouts ($)
-            </h3>
-            
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="q1Payout"
-                  className="block text-sm font-semibold text-[var(--color-text)] mb-2"
-                >
-                  Q1 Payout
-                </label>
-                <input
-                  type="number"
-                  id="q1Payout"
-                  value={q1Payout}
-                  onChange={(e) => setQ1Payout(e.target.value)}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
-                  placeholder="100"
-                  min="0"
-                  step="1"
-                  disabled={isSubmitting}
-                  required
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="q2Payout"
-                  className="block text-sm font-semibold text-[var(--color-text)] mb-2"
-                >
-                  Q2 Payout (Halftime)
-                </label>
-                <input
-                  type="number"
-                  id="q2Payout"
-                  value={q2Payout}
-                  onChange={(e) => setQ2Payout(e.target.value)}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
-                  placeholder="150"
-                  min="0"
-                  step="1"
-                  disabled={isSubmitting}
-                  required
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="q3Payout"
-                  className="block text-sm font-semibold text-[var(--color-text)] mb-2"
-                >
-                  Q3 Payout
-                </label>
-                <input
-                  type="number"
-                  id="q3Payout"
-                  value={q3Payout}
-                  onChange={(e) => setQ3Payout(e.target.value)}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
-                  placeholder="100"
-                  min="0"
-                  step="1"
-                  disabled={isSubmitting}
-                  required
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="finalPayout"
-                  className="block text-sm font-semibold text-[var(--color-text)] mb-2"
-                >
-                  Final Payout
-                </label>
-                <input
-                  type="number"
-                  id="finalPayout"
-                  value={finalPayout}
-                  onChange={(e) => setFinalPayout(e.target.value)}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
-                  placeholder="650"
-                  min="0"
-                  step="1"
-                  disabled={isSubmitting}
-                  required
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* Payment Details Section */}
-          <section className="space-y-4">
-            <h3 className="text-lg font-bold text-[var(--color-primary)] border-b-2 border-[var(--color-border)] pb-2">
-              Payment & Access
-            </h3>
-            
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="venmoHandle"
-                  className="block text-sm font-semibold text-[var(--color-text)] mb-2"
-                >
-                  Venmo Handle
-                </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] font-semibold">
-                    @
-                  </span>
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-5 sm:space-y-6">
+            <section className="space-y-4" data-testid="configure-team-names">
+              <h3 className="text-lg font-bold text-[var(--color-primary)] border-b-2 border-[var(--color-border)] pb-2">
+                Board Axis Teams
+              </h3>
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                Shown on the board as “NFC – …” (top) and “AFC – …” (side). Leave blank to show only NFC or AFC.
+              </p>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="nfcTeam"
+                    className="block text-sm font-semibold text-[var(--color-text)] mb-2"
+                  >
+                    NFC team (horizontal)
+                  </label>
                   <input
                     type="text"
-                    id="venmoHandle"
-                    value={venmoHandle}
-                    onChange={(e) => setVenmoHandle(e.target.value)}
-                    className="w-full pl-8 pr-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
-                    placeholder="your-venmo-handle"
+                    id="nfcTeam"
+                    value={nfcTeam}
+                    onChange={(e) => setNfcTeam(e.target.value)}
+                    maxLength={TEAM_NAME_MAX_LEN}
+                    className={fieldClass}
+                    placeholder="e.g. Eagles"
                     disabled={isSubmitting}
                   />
                 </div>
-                <p className="text-xs text-[var(--color-text-muted)] mt-1">
-                  Players will see this for Venmo payments
-                </p>
+                <div>
+                  <label
+                    htmlFor="afcTeam"
+                    className="block text-sm font-semibold text-[var(--color-text)] mb-2"
+                  >
+                    AFC team (vertical)
+                  </label>
+                  <input
+                    type="text"
+                    id="afcTeam"
+                    value={afcTeam}
+                    onChange={(e) => setAfcTeam(e.target.value)}
+                    maxLength={TEAM_NAME_MAX_LEN}
+                    className={fieldClass}
+                    placeholder="e.g. Chiefs"
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <h3 className="text-lg font-bold text-[var(--color-primary)] border-b-2 border-[var(--color-border)] pb-2">
+                Pricing & Charity
+              </h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="costPerSquare"
+                    className="block text-sm font-semibold text-[var(--color-text)] mb-2"
+                  >
+                    Cost per Square ($)
+                  </label>
+                  <input
+                    type="number"
+                    id="costPerSquare"
+                    value={costPerSquare}
+                    onChange={(e) => setCostPerSquare(e.target.value)}
+                    className={fieldClass}
+                    placeholder="20"
+                    min="0"
+                    step="1"
+                    disabled={isSubmitting}
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="charityPercentage"
+                    className="block text-sm font-semibold text-[var(--color-text)] mb-2"
+                  >
+                    Charity Percentage (%)
+                  </label>
+                  <input
+                    type="number"
+                    id="charityPercentage"
+                    value={charityPercentage}
+                    onChange={(e) => setCharityPercentage(e.target.value)}
+                    className={fieldClass}
+                    placeholder="50"
+                    min="0"
+                    max="100"
+                    step="1"
+                    disabled={isSubmitting}
+                    required
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <h3 className="text-lg font-bold text-[var(--color-primary)] border-b-2 border-[var(--color-border)] pb-2">
+                Quarter Payouts ($)
+              </h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                {(
+                  [
+                    ['q1Payout', 'Q1 Payout', q1Payout, setQ1Payout, '100'],
+                    ['q2Payout', 'Q2 Payout (Halftime)', q2Payout, setQ2Payout, '150'],
+                    ['q3Payout', 'Q3 Payout', q3Payout, setQ3Payout, '100'],
+                    ['finalPayout', 'Final Payout', finalPayout, setFinalPayout, '650'],
+                  ] as const
+                ).map(([id, label, value, setter, placeholder]) => (
+                  <div key={id}>
+                    <label
+                      htmlFor={id}
+                      className="block text-sm font-semibold text-[var(--color-text)] mb-2"
+                    >
+                      {label}
+                    </label>
+                    <input
+                      type="number"
+                      id={id}
+                      value={value}
+                      onChange={(e) => setter(e.target.value)}
+                      className={fieldClass}
+                      placeholder={placeholder}
+                      min="0"
+                      step="1"
+                      disabled={isSubmitting}
+                      required
+                    />
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <h3 className="text-lg font-bold text-[var(--color-primary)] border-b-2 border-[var(--color-border)] pb-2">
+                Payment & Access
+              </h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="venmoHandle"
+                    className="block text-sm font-semibold text-[var(--color-text)] mb-2"
+                  >
+                    Venmo Handle
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)] font-semibold">
+                      @
+                    </span>
+                    <input
+                      type="text"
+                      id="venmoHandle"
+                      value={venmoHandle}
+                      onChange={(e) => setVenmoHandle(e.target.value)}
+                      className={`${fieldClass} pl-8`}
+                      placeholder="your-venmo-handle"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-1">
+                    Players will see this for Venmo payments
+                  </p>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="joinPassword"
+                    className="block text-sm font-semibold text-[var(--color-text)] mb-2"
+                  >
+                    Join Password (Optional)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type={showJoinPassword ? 'text' : 'password'}
+                      id="joinPassword"
+                      value={joinPassword}
+                      onChange={(e) => setJoinPassword(e.target.value)}
+                      className={fieldClass}
+                      placeholder="Leave empty for open board"
+                      disabled={isSubmitting}
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowJoinPassword((v) => !v)}
+                      aria-label={showJoinPassword ? 'Hide join password' : 'Show join password'}
+                      aria-controls="joinPassword"
+                      className="shrink-0 min-h-[44px] touch-manipulation px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-base font-semibold text-[var(--color-text-secondary)] hover:bg-slate-50"
+                    >
+                      {showJoinPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-1">
+                    Admin-only secret — never shown to public visitors
+                  </p>
+                </div>
               </div>
 
-              <div>
+              <div data-testid="configure-game-password">
                 <label
-                  htmlFor="joinPassword"
+                  htmlFor="gamePassword"
                   className="block text-sm font-semibold text-[var(--color-text)] mb-2"
                 >
-                  Join Password (Optional)
+                  Game Password
                 </label>
                 <div className="flex gap-2">
                   <input
-                    type={showJoinPassword ? 'text' : 'password'}
-                    id="joinPassword"
-                    value={joinPassword}
-                    onChange={(e) => setJoinPassword(e.target.value)}
-                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
-                    placeholder="Leave empty for open board"
+                    type={showGamePassword ? 'text' : 'password'}
+                    id="gamePassword"
+                    data-testid="game-password-input"
+                    value={gamePassword}
+                    onChange={(e) => setGamePassword(e.target.value)}
+                    className={fieldClass}
+                    placeholder={
+                      game.game_password_set
+                        ? 'Leave blank to keep existing password'
+                        : 'Set a Game Password'
+                    }
                     disabled={isSubmitting}
                     autoComplete="new-password"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowJoinPassword((v) => !v)}
-                    className="shrink-0 min-h-[44px] touch-manipulation px-3 py-2 border-2 border-gray-300 rounded-lg text-base font-semibold text-[var(--color-text-secondary)] hover:bg-slate-50"
+                    onClick={() => setShowGamePassword((v) => !v)}
+                    aria-label={showGamePassword ? 'Hide game password' : 'Show game password'}
+                    aria-controls="gamePassword"
+                    className="shrink-0 min-h-[44px] touch-manipulation px-3 py-2 border-2 border-[var(--color-border)] rounded-lg text-base font-semibold text-[var(--color-text-secondary)] hover:bg-slate-50"
                   >
-                    {showJoinPassword ? 'Hide' : 'Show'}
+                    {showGamePassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
-                <p className="text-xs text-[var(--color-text-muted)] mt-1">
-                  Admin-only secret — never shown to public visitors
+                <p className="text-xs text-[var(--color-text-secondary)] mt-2 leading-relaxed">
+                  {GAME_PASSWORD_HELPER}
                 </p>
+                {gamePassword.length > 0 && (
+                  <ul
+                    data-testid="game-password-checklist"
+                    className="mt-3 space-y-1.5 text-sm"
+                    aria-live="polite"
+                  >
+                    {GAME_PASSWORD_RULES.map((rule) => {
+                      const ok = gamePasswordChecks[rule.id]
+                      return (
+                        <li
+                          key={rule.id}
+                          data-testid={`game-password-rule-${rule.id}`}
+                          data-ok={ok ? 'true' : 'false'}
+                          className={`flex items-center gap-2 ${
+                            ok
+                              ? 'text-[var(--color-paid)]'
+                              : 'text-[var(--color-text-secondary)]'
+                          }`}
+                        >
+                          <span aria-hidden="true" className="font-bold w-4 text-center">
+                            {ok ? '✓' : '○'}
+                          </span>
+                          <span>{rule.label}</span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
               </div>
-            </div>
 
-            <div data-testid="configure-game-password">
-              <label
-                htmlFor="gamePassword"
-                className="block text-sm font-semibold text-[var(--color-text)] mb-2"
-              >
-                Game Password
-              </label>
-              <div className="flex gap-2">
+              <label className="flex items-start gap-3 min-h-[44px] p-3 border-2 border-[var(--color-border)] rounded-lg cursor-pointer touch-manipulation">
                 <input
-                  type={showGamePassword ? 'text' : 'password'}
-                  id="gamePassword"
-                  data-testid="game-password-input"
-                  value={gamePassword}
-                  onChange={(e) => setGamePassword(e.target.value)}
-                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none"
-                  placeholder={
-                    game.game_password_set
-                      ? 'Leave blank to keep existing password'
-                      : 'Set a Game Password'
-                  }
+                  type="checkbox"
+                  checked={publicClaimingOpen}
+                  onChange={(e) => setPublicClaimingOpen(e.target.checked)}
+                  className="mt-1 h-5 w-5 shrink-0"
                   disabled={isSubmitting}
-                  autoComplete="new-password"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowGamePassword((v) => !v)}
-                  className="shrink-0 min-h-[44px] touch-manipulation px-3 py-2 border-2 border-gray-300 rounded-lg text-base font-semibold text-[var(--color-text-secondary)] hover:bg-slate-50"
-                >
-                  {showGamePassword ? 'Hide' : 'Show'}
-                </button>
+                <div>
+                  <div className="font-semibold text-sm text-[var(--color-text)]">
+                    Public claiming open
+                  </div>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                    When off (default), only signed-in admins can select and claim squares.
+                    Visitors see a view-only board.
+                  </p>
+                </div>
+              </label>
+            </section>
+
+            <section className="bg-[var(--color-cream)] rounded-lg p-4 space-y-3">
+              <h3 className="text-sm font-bold text-[var(--color-text-secondary)] uppercase tracking-wide">
+                Preview Summary
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white rounded-lg p-3 shadow-sm">
+                  <div className="text-xs text-[var(--color-text-secondary)] mb-1">Total Pot</div>
+                  <div className="text-lg font-bold text-[var(--color-primary)]">
+                    ${totalPot.toFixed(2)}
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-3 shadow-sm">
+                  <div className="text-xs text-[var(--color-text-secondary)] mb-1">To Charity</div>
+                  <div className="text-lg font-bold text-[var(--color-info)]">
+                    ${charityAmount.toFixed(2)}
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-3 shadow-sm">
+                  <div className="text-xs text-[var(--color-text-secondary)] mb-1">Total Payouts</div>
+                  <div className="text-lg font-bold text-[var(--color-paid)]">
+                    ${totalPayouts.toFixed(2)}
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-3 shadow-sm">
+                  <div className="text-xs text-[var(--color-text-secondary)] mb-1">Remaining</div>
+                  <div
+                    className={`text-lg font-bold ${
+                      remaining < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text)]'
+                    }`}
+                  >
+                    ${remaining.toFixed(2)}
+                  </div>
+                </div>
               </div>
-              <p className="text-xs text-[var(--color-text-muted)] mt-2 leading-relaxed">
-                {GAME_PASSWORD_HELPER}
-              </p>
-              {gamePassword.length > 0 && (
-                <ul
-                  data-testid="game-password-checklist"
-                  className="mt-3 space-y-1.5 text-sm"
-                  aria-live="polite"
-                >
-                  {GAME_PASSWORD_RULES.map((rule) => {
-                    const ok = gamePasswordChecks[rule.id]
-                    return (
-                      <li
-                        key={rule.id}
-                        data-testid={`game-password-rule-${rule.id}`}
-                        data-ok={ok ? 'true' : 'false'}
-                        className={`flex items-center gap-2 ${
-                          ok ? 'text-[var(--color-paid)]' : 'text-[var(--color-text-muted)]'
-                        }`}
-                      >
-                        <span aria-hidden="true" className="font-bold w-4 text-center">
-                          {ok ? '✓' : '○'}
-                        </span>
-                        <span>{rule.label}</span>
-                      </li>
-                    )
-                  })}
-                </ul>
+              {remaining < 0 && (
+                <div className="text-sm text-[var(--color-danger)] font-semibold">
+                  Warning: Payouts exceed available funds
+                </div>
               )}
-            </div>
+            </section>
 
-            <label className="flex items-start gap-3 min-h-[44px] p-3 border-2 border-[var(--color-border)] rounded-lg cursor-pointer touch-manipulation">
-              <input
-                type="checkbox"
-                checked={publicClaimingOpen}
-                onChange={(e) => setPublicClaimingOpen(e.target.checked)}
-                className="mt-1 h-5 w-5 shrink-0"
-                disabled={isSubmitting}
-              />
-              <div>
-                <div className="font-semibold text-sm text-[var(--color-text)]">
-                  Public claiming open
-                </div>
-                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                  When off (default), only signed-in admins can select and claim squares.
-                  Visitors see a view-only board.
-                </p>
-              </div>
-            </label>
-          </section>
-
-          {/* Preview Section */}
-          <section className="bg-gray-50 rounded-lg p-4 space-y-3">
-            <h3 className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wide">
-              Preview Summary
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg p-3 shadow-sm">
-                <div className="text-xs text-[var(--color-text-muted)] mb-1">Total Pot</div>
-                <div className="text-lg font-bold text-[var(--color-primary)]">
-                  ${totalPot.toFixed(2)}
-                </div>
-              </div>
-              <div className="bg-white rounded-lg p-3 shadow-sm">
-                <div className="text-xs text-[var(--color-text-muted)] mb-1">To Charity</div>
-                <div className="text-lg font-bold text-[var(--color-info)]">
-                  ${charityAmount.toFixed(2)}
-                </div>
-              </div>
-              <div className="bg-white rounded-lg p-3 shadow-sm">
-                <div className="text-xs text-[var(--color-text-muted)] mb-1">Total Payouts</div>
-                <div className="text-lg font-bold text-[var(--color-success)]">
-                  ${totalPayouts.toFixed(2)}
-                </div>
-              </div>
-              <div className="bg-white rounded-lg p-3 shadow-sm">
-                <div className="text-xs text-[var(--color-text-muted)] mb-1">Remaining</div>
-                <div className={`text-lg font-bold ${remaining < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text)]'}`}>
-                  ${remaining.toFixed(2)}
-                </div>
-              </div>
-            </div>
-            {remaining < 0 && (
-              <div className="text-xs text-[var(--color-danger)] font-semibold">
-                ⚠️ Warning: Payouts exceed available funds
+            {error && (
+              <div className="bg-red-50 border-2 border-red-300 text-[var(--color-danger)] px-4 py-3 rounded-lg text-sm font-medium">
+                {error}
               </div>
             )}
-          </section>
+          </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm font-medium">
-              {error}
-            </div>
-          )}
-        </div>
-
-          {/* Sticky footer actions */}
-          <div className="shrink-0 flex gap-3 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-6 border-t border-[var(--color-border-light)] bg-white">
+          <div className="sticky bottom-0 shrink-0 flex gap-3 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-6 border-t border-[var(--color-border-light)] bg-white z-10">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 min-h-[44px] touch-manipulation px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-gray-300 rounded-lg font-semibold text-[var(--color-text)] hover:bg-gray-50 transition-colors text-base"
+              className="flex-1 min-h-[44px] touch-manipulation px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-[var(--color-border)] rounded-lg font-semibold text-[var(--color-text)] hover:bg-slate-50 transition-colors text-base"
               disabled={isSubmitting}
             >
               Cancel
@@ -552,7 +510,7 @@ export default function ConfigureGameModal({
             <button
               type="submit"
               data-testid="configure-save"
-              className="flex-1 min-h-[44px] touch-manipulation px-4 sm:px-6 py-2.5 sm:py-3 bg-[var(--color-primary)] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-base"
+              className="flex-1 min-h-[44px] touch-manipulation px-4 sm:px-6 py-2.5 sm:py-3 bg-[var(--color-primary)] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:cursor-not-allowed shadow-md text-base"
               disabled={isSubmitting || gamePasswordBlocking}
             >
               {isSubmitting ? 'Saving...' : 'Save Configuration'}

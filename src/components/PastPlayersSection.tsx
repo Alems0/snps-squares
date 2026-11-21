@@ -522,11 +522,16 @@ export default function PastPlayersSection() {
               Reset default
             </button>
           </div>
+          <label htmlFor="invite-template" className="sr-only">
+            Text invite message template
+          </label>
           <textarea
+            id="invite-template"
             value={inviteTemplate}
             onChange={(e) => setInviteTemplate(e.target.value)}
             rows={3}
             data-testid="invite-template"
+            aria-label="Text invite message template"
             className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base resize-y"
           />
           <div className="flex flex-wrap gap-2">
@@ -534,7 +539,7 @@ export default function PastPlayersSection() {
               type="button"
               disabled={selectedWithPhone.length === 0}
               onClick={copySelectedNumbers}
-              className="min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold border border-[var(--color-border)] rounded-lg hover:bg-white disabled:opacity-40"
+              className="min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold border border-[var(--color-border)] rounded-lg hover:bg-white"
             >
               Copy numbers
             </button>
@@ -542,19 +547,22 @@ export default function PastPlayersSection() {
               type="button"
               disabled={selectedWithPhone.length === 0}
               onClick={copySelectedMessage}
-              className="min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold border border-[var(--color-border)] rounded-lg hover:bg-white disabled:opacity-40"
+              className="min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold border border-[var(--color-border)] rounded-lg hover:bg-white"
             >
               Copy message
             </button>
             {textSelectedHref ? (
               <a
                 href={textSelectedHref}
-                className="inline-flex items-center min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold bg-[var(--color-primary)] text-white rounded-lg hover:bg-opacity-90"
+                className="inline-flex items-center min-h-[44px] touch-manipulation px-4 py-2.5 text-base font-semibold bg-[var(--color-primary)] text-white rounded-lg hover:opacity-90"
               >
                 Text selected ({selectedWithPhone.length})
               </a>
             ) : (
-              <span className="inline-flex items-center min-h-[44px] px-4 py-2.5 text-base font-semibold bg-[var(--color-primary)] text-white rounded-lg opacity-40">
+              <span
+                aria-disabled="true"
+                className="inline-flex items-center min-h-[44px] px-4 py-2.5 text-base font-semibold bg-[var(--color-disabled-bg)] text-[var(--color-disabled-text)] rounded-lg cursor-not-allowed"
+              >
                 Text selected
               </span>
             )}
@@ -565,30 +573,54 @@ export default function PastPlayersSection() {
           <div className="bg-slate-50 border border-[var(--color-border-light)] rounded-lg p-4 space-y-3">
             <h3 className="font-semibold text-[var(--color-text)]">{editing ? 'Edit Player' : 'Add Player'}</h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <input
-                className="px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
-                placeholder="First name"
-                value={form.first_name}
-                onChange={(e) => setForm((f) => ({ ...f, first_name: e.target.value }))}
-              />
-              <input
-                className="px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
-                placeholder="Last name"
-                value={form.last_name}
-                onChange={(e) => setForm((f) => ({ ...f, last_name: e.target.value }))}
-              />
-              <input
-                className="px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
-                placeholder="Email"
-                value={form.email}
-                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              />
-              <input
-                className="px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
-                placeholder="Phone (optional)"
-                value={form.phone}
-                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-              />
+              <div>
+                <label htmlFor="pp-first-name" className="block text-sm font-semibold text-[var(--color-text)] mb-1">
+                  First name
+                </label>
+                <input
+                  id="pp-first-name"
+                  className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
+                  placeholder="First name"
+                  value={form.first_name}
+                  onChange={(e) => setForm((f) => ({ ...f, first_name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label htmlFor="pp-last-name" className="block text-sm font-semibold text-[var(--color-text)] mb-1">
+                  Last name
+                </label>
+                <input
+                  id="pp-last-name"
+                  className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
+                  placeholder="Last name"
+                  value={form.last_name}
+                  onChange={(e) => setForm((f) => ({ ...f, last_name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label htmlFor="pp-email" className="block text-sm font-semibold text-[var(--color-text)] mb-1">
+                  Email
+                </label>
+                <input
+                  id="pp-email"
+                  className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
+                  placeholder="Email"
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label htmlFor="pp-phone" className="block text-sm font-semibold text-[var(--color-text)] mb-1">
+                  Phone (optional)
+                </label>
+                <input
+                  id="pp-phone"
+                  className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
+                  placeholder="Phone"
+                  value={form.phone}
+                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                />
+              </div>
             </div>
             <div className="flex gap-2">
               <button
@@ -669,8 +701,10 @@ export default function PastPlayersSection() {
         )}
 
         <input
+          id="past-players-search"
           type="search"
           data-testid="past-players-search"
+          aria-label="Search past players by name, email, or phone"
           placeholder="Search name, email, or phone…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
