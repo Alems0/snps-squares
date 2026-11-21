@@ -1,6 +1,8 @@
+import { useRef } from 'react'
 import { formatVenmoHandle } from '../lib/formatVenmo'
 import { formatSquareLabel } from '../lib/displaySquareNumber'
 import { VENMO_ORDER_FEE } from '../lib/supabase'
+import { useFocusTrap } from '../lib/useFocusTrap'
 
 interface ClaimSuccessProps {
   squareCount: number
@@ -21,8 +23,11 @@ export default function ClaimSuccess({
   venmoHandle,
   onClose,
 }: ClaimSuccessProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
   const fee = paymentMethod === 'venmo' ? VENMO_ORDER_FEE : 0
   const grandTotal = totalCost + fee
+
+  useFocusTrap(true, dialogRef, onClose)
 
   return (
     <div
@@ -30,12 +35,12 @@ export default function ClaimSuccess({
       role="presentation"
     >
       <div
+        ref={dialogRef}
         data-testid="claim-success"
         role="dialog"
         aria-modal="true"
         aria-labelledby="claim-success-title"
-        className="bg-white w-full sm:max-w-md shadow-2xl flex flex-col overflow-hidden rounded-t-2xl sm:rounded-xl"
-        style={{ maxHeight: 'min(calc(100dvh - 24px), calc(100vh - 24px))' }}
+        className="bg-white w-full sm:max-w-md shadow-2xl flex flex-col overflow-hidden rounded-t-2xl sm:rounded-xl max-h-[min(calc(100dvh-24px),calc(100vh-24px))]"
       >
         {/* Header — always visible */}
         <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-3.5 border-b border-[var(--color-border-light)]">

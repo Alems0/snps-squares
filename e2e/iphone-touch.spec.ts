@@ -83,16 +83,16 @@ test.describe('iPhone touch: claim flow payment choice', () => {
     await assertMinTapHeight(cash, 44)
 
     await venmo.tap()
-    await expect(venmo).toHaveAttribute('aria-pressed', 'true')
-    await expect(cash).toHaveAttribute('aria-pressed', 'false')
+    await expect(venmo).toHaveAttribute('aria-checked', 'true')
+    await expect(cash).toHaveAttribute('aria-checked', 'false')
     await expect(popover.getByText('Venmo fee')).toBeVisible()
 
     await cash.tap()
-    await expect(cash).toHaveAttribute('aria-pressed', 'true')
-    await expect(venmo).toHaveAttribute('aria-pressed', 'false')
+    await expect(cash).toHaveAttribute('aria-checked', 'true')
+    await expect(venmo).toHaveAttribute('aria-checked', 'false')
 
     await venmo.tap()
-    await expect(venmo).toHaveAttribute('aria-pressed', 'true')
+    await expect(venmo).toHaveAttribute('aria-checked', 'true')
 
     await popover.locator('#firstName').fill('Don')
     await popover.locator('#lastName').fill('Tester')
@@ -191,7 +191,7 @@ test.describe('iPhone touch: admin actions', () => {
     await expect(page.getByTestId('payment-method-toggle').first()).toBeVisible()
     await page.getByTestId('payment-cash').first().tap()
     await expect(page.getByTestId('payment-cash').first()).toHaveAttribute(
-      'aria-pressed',
+      'aria-checked',
       'true'
     )
 

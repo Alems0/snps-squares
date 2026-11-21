@@ -180,10 +180,14 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
         )}
 
         <div>
-          <label className="block text-xs font-semibold text-[var(--color-text)] mb-1">
+          <label
+            htmlFor="admin-claim-positions"
+            className="block text-sm font-semibold text-[var(--color-text)] mb-1"
+          >
             Square numbers (1–100)
           </label>
           <input
+            id="admin-claim-positions"
             value={positionsRaw}
             onChange={(e) => setPositionsRaw(e.target.value)}
             placeholder="e.g. 13, 14, 25"
@@ -192,8 +196,14 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
         </div>
 
         <div className="relative">
-          <label className="block text-xs font-semibold text-[var(--color-text)] mb-1">Find player</label>
+          <label
+            htmlFor="admin-claim-find-player"
+            className="block text-sm font-semibold text-[var(--color-text)] mb-1"
+          >
+            Find player
+          </label>
           <input
+            id="admin-claim-find-player"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value)
@@ -215,7 +225,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
                     <span className="font-semibold text-[var(--color-text)]">
                       {p.first_name} {p.last_name}
                     </span>
-                    <span className="text-[var(--color-text-muted)] ml-2">{p.email}</span>
+                    <span className="text-[var(--color-text-secondary)] ml-2">{p.email}</span>
                   </button>
                 </li>
               ))}
@@ -225,34 +235,44 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
-            <label className="block text-xs font-semibold mb-1">First name</label>
+            <label htmlFor="admin-claim-first" className="block text-sm font-semibold mb-1">
+              First name
+            </label>
             <input
+              id="admin-claim-first"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Last name</label>
+            <label htmlFor="admin-claim-last" className="block text-sm font-semibold mb-1">
+              Last name
+            </label>
             <input
+              id="admin-claim-last"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Email</label>
+            <label htmlFor="admin-claim-email" className="block text-sm font-semibold mb-1">
+              Email
+            </label>
             <input
+              id="admin-claim-email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-3 border-2 border-[var(--color-border)] rounded-lg text-base"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">
-              Phone <span className="text-[var(--color-text-muted)] font-normal">(optional)</span>
+            <label htmlFor="admin-claim-phone" className="block text-sm font-semibold mb-1">
+              Phone <span className="text-[var(--color-text-secondary)] font-normal">(optional)</span>
             </label>
             <input
+              id="admin-claim-phone"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -271,7 +291,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
         <button
           type="submit"
           disabled={busy || !game}
-          className="min-h-[44px] touch-manipulation px-5 py-2.5 bg-[var(--color-primary)] text-white rounded-lg text-base font-semibold disabled:opacity-50"
+          className="min-h-[44px] touch-manipulation px-5 py-2.5 bg-[var(--color-primary)] text-white rounded-lg text-base font-semibold"
         >
           {busy ? 'Claiming…' : 'Claim Squares'}
         </button>

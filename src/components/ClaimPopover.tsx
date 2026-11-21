@@ -11,6 +11,7 @@ import {
 } from '../lib/supabase'
 import PaymentMethodToggle from './PaymentMethodToggle'
 import { formatClaimError } from '../lib/claimErrors'
+import { useFocusTrap } from '../lib/useFocusTrap'
 
 interface ClaimPopoverProps {
   selectedSquares: number[]
@@ -278,18 +279,7 @@ export default function ClaimPopover({
     }
   }, [calculatePosition])
 
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  }, [onClose])
-
-  useEffect(() => {
-    const firstInput = popoverRef.current?.querySelector('input')
-    firstInput?.focus()
-  }, [])
+  useFocusTrap(true, popoverRef, onClose)
 
   // Public name autocomplete (names only — never emails)
   useEffect(() => {

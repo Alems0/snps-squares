@@ -42,7 +42,7 @@ export default defineConfig({
         hasTouch: true,
         isMobile: true,
       },
-      testMatch: /iphone-touch.*\.spec\.ts|board-align\.spec\.ts/,
+      testMatch: /iphone-touch.*\.spec\.ts|board-align\.spec\.ts|a11y\.spec\.ts/,
     },
     {
       name: 'webkit-iphone-se',
