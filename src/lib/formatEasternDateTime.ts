@@ -23,3 +23,28 @@ export function formatEasternDateTime(
 
   return `${formatted} ET`
 }
+
+/**
+ * Print footer stamp in America/New_York, e.g.
+ * "Printed Sat, Nov 21, 2026, 10:21 AM ET"
+ */
+export function formatPrintedAt(when: Date = new Date()): string {
+  if (Number.isNaN(when.getTime())) return 'Printed —'
+
+  const weekday = new Intl.DateTimeFormat('en-US', {
+    timeZone: ET_ZONE,
+    weekday: 'short',
+  }).format(when)
+
+  const rest = new Intl.DateTimeFormat('en-US', {
+    timeZone: ET_ZONE,
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(when)
+
+  return `Printed ${weekday}, ${rest} ET`
+}

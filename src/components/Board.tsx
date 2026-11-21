@@ -106,6 +106,9 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
   const loadMockData = () => {
     const params = new URLSearchParams(window.location.search)
     const numbersMode = params.get('mock_numbers')
+    // Full 100-square board with long names (print one-page stress test)
+    const fullBoard =
+      params.get('mock_full') === '1' || params.get('print') === '1'
     // blank = '?' placeholders; alt = post-randomize permutation; default = seeded numbers
     const blank = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
     const seededAfc = [3, 7, 0, 6, 1, 4, 9, 2, 8, 5]
@@ -130,7 +133,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       final_payout: 400,
       venmo_handle: '@snps-squares',
       join_password: '',
-      numbers_locked: numbersMode === 'alt',
+      numbers_locked: numbersMode === 'alt' || fullBoard,
       afc_numbers: afc,
       nfc_numbers: nfc,
       status: 'active',
@@ -149,17 +152,34 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       'Lauren Walker'
     ]
 
+    const longNames = [
+      'Christopher Montgomery',
+      'Alexandria Fitzgerald',
+      'Maximilian Harrington',
+      'Anastasia Vanderberg',
+      'Bartholomew Ellington',
+      'Genevieve Whitaker-Jones',
+      'Theodore Remington III',
+      'Penelope Cartwright',
+      'Sebastian Hawthorne',
+      'Evangeline Rutherford',
+    ]
+
     const mockSquares = Array.from({ length: 100 }, (_, i) => {
-      const isClaimed = i % 3 === 0
-      const isPaid = isClaimed && i % 6 !== 0
-      const nameIndex = Math.floor(i / 4) % mockNames.length
+      const isClaimed = fullBoard ? true : i % 3 === 0
+      const isPaid = fullBoard ? i % 2 === 0 : isClaimed && i % 6 !== 0
+      const name = fullBoard
+        ? longNames[i % longNames.length]
+        : mockNames[Math.floor(i / 4) % mockNames.length]
+      const [first, ...rest] = name.split(' ')
+      const last = rest.join(' ') || first
       return {
         id: `mock-${i}`,
         game_id: 'mock',
         position: i,
-        first_name: isClaimed ? mockNames[nameIndex].split(' ')[0] : null,
-        last_name: isClaimed ? mockNames[nameIndex].split(' ')[1] : null,
-        claimed_by_name: isClaimed ? mockNames[nameIndex] : null,
+        first_name: isClaimed ? first : null,
+        last_name: isClaimed ? last : null,
+        claimed_by_name: isClaimed ? name : null,
         claimed_by_email: isClaimed ? `user${i}@test.com` : null,
         claimed_at: isClaimed ? new Date().toISOString() : null,
         payment_status: isPaid ? 'paid' : 'unpaid',
@@ -425,7 +445,7 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
         className="bg-white rounded-xl shadow-md overflow-hidden border border-[var(--color-border)] min-w-0 w-full max-w-full"
       >
       {/* Board container */}
-      <div className="p-6 min-w-0">
+      <div className="print-board-inner p-6 min-w-0">
         {/* NFC header - full width bar */}
         <div className="mb-4 min-w-0">
           <div
@@ -437,9 +457,9 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
           </div>
         </div>
 
-        <div className="flex gap-3 sm:gap-4 min-w-0">
+        <div className="print-board-axes flex gap-3 sm:gap-4 min-w-0">
           {/* Left AFC label - full height vertical bar */}
-          <div className="flex items-stretch flex-shrink-0 max-w-[3rem] sm:max-w-[3.5rem]">
+          <div className="print-afc-rail flex items-stretch flex-shrink-0 max-w-[3rem] sm:max-w-[3.5rem]">
             <div
               data-testid="afc-axis-label"
               title={formatAxisLabel('AFC', game.afc_team)}

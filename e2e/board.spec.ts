@@ -130,6 +130,13 @@ test.describe('Axis team labels', () => {
   }
 })
 
+/** Count /Type /Page objects in a PDF buffer (excludes /Pages). */
+function countPdfPages(pdf: Buffer): number {
+  const text = pdf.toString('latin1')
+  const matches = text.match(/\/Type\s*\/Page(?!\s*s)/g)
+  return matches?.length ?? 0
+}
+
 test.describe('Board chrome: prizes, trophies, FAQ, print', () => {
   test('prizes banner, trophies, FAQ, and print board', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
@@ -155,6 +162,43 @@ test.describe('Board chrome: prizes, trophies, FAQ, print', () => {
     await expect(page.locator('#print-board')).toBeVisible({ timeout: 30_000 })
     await expect(page.getByTestId('nfc-axis-label')).toHaveText('NFC – Eagles')
     await expect(page.getByTestId('afc-axis-label')).toHaveText('AFC – Chiefs')
+  })
+
+  test('print fits on one letter landscape page with printed-at stamp', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.addInitScript(() => {
+      window.print = () => {}
+    })
+    // mock_full=1 + print=1 → 100 long names; stamp set just before window.print()
+    await page.goto('/?print=1&mock_full=1')
+    await waitForBoard(page)
+    await expect(page.locator('#print-board')).toBeVisible()
+
+    // Stamp is written synchronously before the stubbed print()
+    const printedAt = page.getByTestId('print-printed-at')
+    await expect(printedAt).toHaveText(/^Printed [A-Za-z]{3}, .+ ET$/, { timeout: 5_000 })
+
+    await page.emulateMedia({ media: 'print' })
+    await expect(printedAt).toBeVisible()
+    await expect(page.getByTestId('print-masthead')).toBeVisible()
+    await expect(page.getByTestId('nfc-axis-label')).toBeVisible()
+    await expect(page.getByTestId('afc-axis-label')).toBeVisible()
+    // Long names from full mock appear on the grid
+    await expect(page.getByText('Christopher Montgomery').first()).toBeVisible()
+
+    const pdf = await page.pdf({
+      format: 'letter',
+      landscape: true,
+      printBackground: true,
+      margin: { top: '0.3in', right: '0.3in', bottom: '0.3in', left: '0.3in' },
+    })
+    expect(countPdfPages(Buffer.from(pdf))).toBe(1)
+
+    // PNG of print-media render for walkthrough artifact
+    await page.screenshot({
+      path: '/opt/cursor/artifacts/print-board-one-page.png',
+      fullPage: true,
+    })
   })
 })
 
