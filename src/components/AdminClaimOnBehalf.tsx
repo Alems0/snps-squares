@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react'
 import { supabase, type Game, type Player, EMAIL_REGEX, normalizePhone } from '../lib/supabase'
 import { parseDisplaySquareNumber } from '../lib/displaySquareNumber'
 import PaymentMethodToggle, { type PaymentMethod } from './PaymentMethodToggle'
+import { formatClaimError } from '../lib/claimErrors'
 
 interface AdminClaimOnBehalfProps {
   game: Game | null
@@ -156,7 +157,7 @@ export default function AdminClaimOnBehalf({ game, onDone }: AdminClaimOnBehalfP
       setPhone('')
       onDone()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Claim failed')
+      setError(formatClaimError(err))
     } finally {
       setBusy(false)
     }

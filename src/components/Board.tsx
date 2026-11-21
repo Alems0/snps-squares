@@ -11,6 +11,7 @@ import { useAuth } from '../lib/useAuth'
 import { formatSquareLabel } from '../lib/displaySquareNumber'
 import ClaimPopover from './ClaimPopover'
 import ClaimSuccess from './ClaimSuccess'
+import { MAX_CLAIM_SQUARES } from '../lib/claimErrors'
 
 interface BoardProps {
   onClaimSuccess?: () => void
@@ -222,8 +223,55 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
   }) => {
     if (!game) throw new Error('No active game')
 
+    if (selectedSquares.length > MAX_CLAIM_SQUARES) {
+      throw new Error(`Too many positions (max ${MAX_CLAIM_SQUARES})`)
+    }
+
+    // Playwright / local mock: claim in memory (cap 100, conflict detection)
+    if (import.meta.env.VITE_USE_MOCK === 'true') {
+      // Test hook: force a taken-square error without racing React state
+      if (data.email.trim().toLowerCase() === 'taken@conflict.test') {
+        throw new Error('Those squares are no longer available')
+      }
+      const conflicts = selectedSquares.filter((pos) => {
+        const sq = squares.find((s) => s.position === pos)
+        return Boolean(sq?.claimed_by_name)
+      })
+      if (conflicts.length > 0) {
+        throw new Error('Those squares are no longer available')
+      }
+      const displayName = `${data.firstName.trim()} ${data.lastName.trim()}`.trim()
+      const email = (data.email || 'mock@test.com').trim().toLowerCase()
+      setSquares((prev) =>
+        prev.map((sq) =>
+          selectedSquares.includes(sq.position)
+            ? {
+                ...sq,
+                first_name: data.firstName.trim(),
+                last_name: data.lastName.trim(),
+                claimed_by_name: displayName,
+                claimed_by_email: email,
+                claimed_at: new Date().toISOString(),
+                payment_method: data.paymentMethod,
+                payment_status: 'unpaid',
+              }
+            : sq
+        )
+      )
+      setSuccessData({
+        squareCount: selectedSquares.length,
+        positions: [...selectedSquares],
+        totalCost: selectedSquares.length * game.cost_per_square,
+        paymentMethod: data.paymentMethod,
+      })
+      setShowClaimModal(false)
+      setShowSuccess(true)
+      setSelectedSquares([])
+      if (onClaimSuccess) onClaimSuccess()
+      return
+    }
+
     if (data.playerId) {
-      // Returning-player path stays name-only publicly; phone only if provided (admin)
       const playerArgs: {
         p_player_id: string
         p_game_id: string
@@ -242,8 +290,6 @@ export default function Board({ onClaimSuccess }: BoardProps = {}) {
       const claimed = (result as { claimed?: number })?.claimed ?? 0
       if (claimed === 0) throw new Error('Those squares are no longer available')
     } else {
-      // Guest typed path: SECURITY DEFINER RPC (anon cannot SELECT claimed_by_email)
-      // Optional phone is stored on players only — never on squares / anon columns
       const guestArgs: {
         p_game_id: string
         p_positions: number[]

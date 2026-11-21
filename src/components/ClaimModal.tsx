@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react'
 import { formatVenmoHandle } from '../lib/formatVenmo'
 import { displaySquareNumber } from '../lib/displaySquareNumber'
 import PaymentMethodToggle from './PaymentMethodToggle'
+import { formatClaimError } from '../lib/claimErrors'
 
 interface ClaimModalProps {
   selectedSquares: number[]
@@ -69,7 +70,7 @@ export default function ClaimModal({
         paymentMethod,
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to claim squares')
+      setError(formatClaimError(err))
       setIsSubmitting(false)
     }
   }

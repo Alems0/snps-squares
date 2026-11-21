@@ -10,6 +10,7 @@ import {
   type PlayerNameSuggestion,
 } from '../lib/supabase'
 import PaymentMethodToggle from './PaymentMethodToggle'
+import { formatClaimError } from '../lib/claimErrors'
 
 interface ClaimPopoverProps {
   selectedSquares: number[]
@@ -374,8 +375,8 @@ export default function ClaimPopover({
         playerId: selectedPlayerId || undefined,
         phone: normalizedPhone,
       })
-    } catch {
-      setError('Failed to claim squares. Please try again.')
+    } catch (err) {
+      setError(formatClaimError(err))
       setIsSubmitting(false)
     }
   }
